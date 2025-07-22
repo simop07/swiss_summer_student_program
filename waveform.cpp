@@ -48,6 +48,9 @@ void setFitStyle() {
 // This function analyses the waveform by building areaVStime, Noise, PE counts
 // and pulseWidth histos
 void waveformAnalysis() {
+  // To avoid reloading manually if .so is present
+  R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
+
   double const samplePeriod_ns = 2.0;
   std::ifstream infile(
       "DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
@@ -129,14 +132,14 @@ void waveformAnalysis() {
       std::cout << "  Width                 = " << p.endTime - p.startTime
                 << " ns\n";
       std::cout << "  Area                  = " << p.area << " ADC*ns\n";
-      std::cout << "  Area in PE            = " << p.area / 130.0 << " PE\n";
+      std::cout << "  Area in PE            = " << p.area / 10400. << " PE\n";
 
       // Fill pulse info
       hAreaVsTime->Fill(p.peakTime - wf.getTimestamp(), p.area);
       hWidth->Fill(p.endTime - p.startTime);
 
       // Convert area to PE (if you know 1 PE ~ X ADC*ns)
-      double areaInPE = p.area / 130.;  // Example: 1 PE = 130 ADC*ns
+      double areaInPE = p.area / 10400.;  // Example: 1 PE = 10400 ADC*ns
       hPhotoElectrons->Fill(areaInPE);
     }
 
@@ -183,6 +186,10 @@ void waveformAnalysis() {
 
 // Plot waveform amplitudes as function of time
 void waveformTotal() {
+  // To avoid reloading manually if .so is present
+  R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
+
+  // Creating files and canvases
   TFile *file = new TFile("waveform.root", "RECREATE");
   TCanvas *c2 = new TCanvas("c2", "Waveform", 1500, 700);
 

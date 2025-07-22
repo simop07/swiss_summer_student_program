@@ -4,23 +4,21 @@
 #include <vector>
 
 // Define constants
-inline constexpr int nMinAnalysedRows{0};    // minimum index of analysed rows
-inline constexpr int nMaxAnalysedRows{9930}; // maximum rows
+inline constexpr int nMinAnalysedRows{0};     // minimum index of analysed rows
+inline constexpr int nMaxAnalysedRows{9930};  // maximum rows
 
 // Pulse struct allows to define the properties of pulses in a waveform
-struct Pulse
-{
-  double startTime{}; // Overall start time of the pulse
-  double endTime{};   // Overall end time of the pulse
-  double peakTime{};  // Overall time at which peak takes place
-  double peakValue{}; // Value of the pulse's peak in ADC
-  double area{};      // Area of pulse
+struct Pulse {
+  double startTime{};  // Overall start time of the pulse
+  double endTime{};    // Overall end time of the pulse
+  double peakTime{};   // Overall time at which peak takes place
+  double peakValue{};  // Value of the pulse's peak in ADC
+  double area{};       // Area of pulse
 };
 
 // Waveform class allows to perform waveform analysis
-class WaveformAnalysis
-{
-public:
+class WaveformAnalysis {
+ public:
   WaveformAnalysis(std::vector<double> const &s = {}, double ts = {},
                    double sp = {});
 
@@ -49,12 +47,12 @@ public:
   // Find area of 1 pulse
   Pulse integratePulse(int pulseStart, int pulseEnd);
 
-private:
-  std::vector<double> fSamples{}; // Vector of samples forming the waveform
-  double fTimestamp{};            // Overall timestamp of the waveform
-  double fSamplePeriod{};         // Sampling period
-  double fBaseline{};             // Baseline of the waveform
-  std::vector<Pulse> fPulses{};   // Vector of pulses forming the waveform
+ private:
+  std::vector<double> fSamples{};  // Vector of samples forming the waveform
+  double fTimestamp{};             // Overall timestamp of the waveform
+  double fSamplePeriod{};          // Sampling period
+  double fBaseline{};              // Baseline of the waveform
+  std::vector<Pulse> fPulses{};    // Vector of pulses forming the waveform
 };
 
 #endif
