@@ -1,4 +1,4 @@
-
+// To compile in SHELL: "analysis.cpp `root-config --cflags --libs`"
 #include <time.h>
 
 #include <algorithm>
@@ -21,6 +21,10 @@
 #include "TROOT.h"
 #include "TStyle.h"
 #include "waveformAnalysis.hpp"
+
+// Define global constants
+constexpr int nMinAnalysedRows{0};     // minimum index of analysed rows (0)
+constexpr int nMaxAnalysedRows{9961};  // maximum rows (9961)
 
 void setFitStyle() {
   gROOT->SetStyle("Plain");
@@ -64,14 +68,14 @@ void waveformAnalysis() {
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
                                "Pulse area vs time since start; Time since "
                                "start [ns]; Area [ADC #times ns]",
-                               100, 100., 300., 100, 0., 30000.);
+                               33, 100., 300., 100, 0., 30000.);
   TH1F *hNoise = new TH1F("hNoise", "Noise distribution; ADC counts; Counts",
                           30, 8020, 8050);
   TH1F *hPhotoElectrons =
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
-               1000, 0, 350);
+               1000, 0, 6);
   TH1F *hWidth =
-      new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 30, 2, 18);
+      new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 2, 50);
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -222,11 +226,9 @@ void waveformTotal() {
     double timestamp = 0.;
     int sample_index = 0;
 
-    std::vector<double> x_vals;  // time data
-    std::vector<double> y_vals;  // amplitude data
-    std::vector<double> colours{
-        1,  2,  3,  4,  5,  6,  7,  8,  9, 40,
-        41, 42, 43, 44, 45, 46, 47, 48, 49};  // Colour vector
+    std::vector<double> x_vals;                              // Time data
+    std::vector<double> y_vals;                              // Amplitude data
+    std::vector<double> colours{1, 2, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
 
     // Loop on columns
     while (std::getline(ss, item, '\t')) {
@@ -244,7 +246,7 @@ void waveformTotal() {
       ++column;
     }
 
-    int RandIndex = rand() % 19;  // generates a random number between 0 and 18
+    int RandIndex = rand() % 9;  // generates a random number between 0 and 8
 
     // Plot each waveform with a graph object
     TGraph *g = new TGraph(x_vals.size(), x_vals.data(), y_vals.data());
