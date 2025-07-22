@@ -3,10 +3,6 @@
 
 #include <vector>
 
-// Define constants
-inline constexpr int nMinAnalysedRows{0};     // minimum index of analysed rows
-inline constexpr int nMaxAnalysedRows{9930};  // maximum rows
-
 // Pulse struct allows to define the properties of pulses in a waveform
 struct Pulse {
   double startTime{};  // Overall start time of the pulse
