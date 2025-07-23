@@ -38,12 +38,81 @@ Double_t asymGaussians(Double_t *x, Double_t *par) {
   return fitVal;
 }
 
-// Symmetric gaussian function
-Double_t gaussian(Double_t *x, Double_t *par) {
-  Double_t xVal = x[0];
-  Double_t fitVal = par[0] * TMath::Exp(-0.5 * ((xVal - par[1]) / par[2]) *
-                                        ((xVal - par[1]) / par[2]));
-  return fitVal;
+// Group functions for fitting PE histo
+void fitPEHisto(TH1F *hPhotoElectrons) {
+  // Import user defined function asymmetric gaussians for 1 PE
+  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.4, 1.7, 4);
+  fAsymmetric1PE->SetLineColor(kRed);
+  fAsymmetric1PE->SetLineWidth(4);
+  fAsymmetric1PE->SetLineStyle(2);
+  fAsymmetric1PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
+  fAsymmetric1PE->SetParameter(0, 0.3);  // Constant
+  fAsymmetric1PE->SetParameter(1, 1.);   // #mu
+  fAsymmetric1PE->SetParameter(2, 0.5);  // #sigma_{1}
+  fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma_{2}
+
+  // Import user defined function symmetric gaussian for 1 PE
+  TF1 *fSymmetric1PE = new TF1("fSymmetric1PE", "gaus", 0.4, 1.7);
+  fSymmetric1PE->SetLineColor(kGreen);
+  fSymmetric1PE->SetLineWidth(4);
+  fSymmetric1PE->SetLineStyle(2);
+  fSymmetric1PE->SetParNames("Constant", "#mu", "#sigma");
+  fSymmetric1PE->SetParameter(0, 0.3);  // Constant
+  fSymmetric1PE->SetParameter(1, 1.);   // #mu
+  fSymmetric1PE->SetParameter(2, 0.5);  // #sigma
+
+  // Import user defined function asymmetric gaussians for 2 PE
+  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.6, 4);
+  fAsymmetric2PE->SetLineColor(kCyan);
+  fAsymmetric2PE->SetLineWidth(4);
+  fAsymmetric2PE->SetLineStyle(2);
+  fAsymmetric2PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
+  fAsymmetric2PE->SetParameter(0, 0.1);  // Constant
+  fAsymmetric2PE->SetParameter(1, 2.2);  // #mu
+  fAsymmetric2PE->SetParameter(2, 0.5);  // #sigma_{1}
+  fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma_{2}
+
+  // Import user defined function symmetric gaussian for 2 PE
+  TF1 *fSymmetric2PE = new TF1("fSymmetric2PE", "gaus", 1.8, 2.6);
+  fSymmetric2PE->SetLineColor(kYellow);
+  fSymmetric2PE->SetLineWidth(4);
+  fSymmetric2PE->SetLineStyle(2);
+  fSymmetric2PE->SetParNames("Constant", "#mu", "#sigma");
+  fSymmetric2PE->SetParameter(0, 0.1);  // Constant
+  fSymmetric2PE->SetParameter(1, 2.2);  // #mu
+  fSymmetric2PE->SetParameter(2, 0.5);  // #sigma
+
+  // Import user defined function asymmetric gaussians for 3 PE
+  TF1 *fAsymmetric3PE = new TF1("fAsymmetric3PE", asymGaussians, 2.8, 3.6, 4);
+  fAsymmetric3PE->SetLineColor(kViolet);
+  fAsymmetric3PE->SetLineWidth(4);
+  fAsymmetric3PE->SetLineStyle(2);
+  fAsymmetric3PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
+  fAsymmetric3PE->SetParameter(0, 0.01);  // Constant
+  fAsymmetric3PE->SetParameter(1, 3.1);   // #mu
+  fAsymmetric3PE->SetParameter(2, 0.5);   // #sigma_{1}
+  fAsymmetric3PE->SetParameter(3, 0.5);   // #sigma_{2}
+
+  // Import user defined function symmetric gaussian for 3 PE
+  TF1 *fSymmetric3PE = new TF1("fSymmetric3PE", "gaus", 1.8, 2.6);
+  fSymmetric3PE->SetLineColor(kRedBlue);
+  fSymmetric3PE->SetLineWidth(4);
+  fSymmetric3PE->SetLineStyle(2);
+  fSymmetric3PE->SetParNames("Constant", "#mu", "#sigma");
+  fSymmetric3PE->SetParameter(0, 0.01);  // Constant
+  fSymmetric3PE->SetParameter(1, 3.1);   // #mu
+  fSymmetric3PE->SetParameter(2, 0.5);   // #sigma
+
+  // Normalise  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
+  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
+
+  // Fit PE graph with both symmetric and asymmetric gaussians
+  hPhotoElectrons->Fit(fAsymmetric1PE, "R");
+  hPhotoElectrons->Fit(fSymmetric1PE, "R+");
+  hPhotoElectrons->Fit(fAsymmetric2PE, "R+");
+  hPhotoElectrons->Fit(fSymmetric2PE, "R+");
+  hPhotoElectrons->Fit(fAsymmetric3PE, "R+");
+  hPhotoElectrons->Fit(fSymmetric3PE, "R+");
 }
 
 void setFitStyle() {
@@ -180,79 +249,8 @@ void waveformAnalysis() {
   // Fit noise with gaussian function
   hNoise->Fit("gaus");
 
-  // Import user defined function asymmetric gaussians for 1 PE
-  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.4, 1.7, 4);
-  fAsymmetric1PE->SetLineColor(kRed);
-  fAsymmetric1PE->SetLineWidth(4);
-  fAsymmetric1PE->SetLineStyle(2);
-  fAsymmetric1PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
-  fAsymmetric1PE->SetParameter(0, 0.3);  // Constant
-  fAsymmetric1PE->SetParameter(1, 1.);   // #mu
-  fAsymmetric1PE->SetParameter(2, 0.5);  // #sigma_{1}
-  fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma_{2}
-
-  // Import user defined function symmetric gaussian for 1 PE
-  TF1 *fSymmetric1PE = new TF1("fSymmetric1PE", gaussian, 0.4, 1.7, 3);
-  fSymmetric1PE->SetLineColor(kGreen);
-  fSymmetric1PE->SetLineWidth(4);
-  fSymmetric1PE->SetLineStyle(2);
-  fSymmetric1PE->SetParNames("Constant", "#mu", "#sigma");
-  fSymmetric1PE->SetParameter(0, 0.3);  // Constant
-  fSymmetric1PE->SetParameter(1, 1.);   // #mu
-  fSymmetric1PE->SetParameter(2, 0.5);  // #sigma
-
-  // Import user defined function asymmetric gaussians for 2 PE
-  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.6, 4);
-  fAsymmetric2PE->SetLineColor(kCyan);
-  fAsymmetric2PE->SetLineWidth(4);
-  fAsymmetric2PE->SetLineStyle(2);
-  fAsymmetric2PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
-  fAsymmetric2PE->SetParameter(0, 0.1);  // Constant
-  fAsymmetric2PE->SetParameter(1, 2.2);  // #mu
-  fAsymmetric2PE->SetParameter(2, 0.5);  // #sigma_{1}
-  fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma_{2}
-
-  // Import user defined function symmetric gaussian for 2 PE
-  TF1 *fSymmetric2PE = new TF1("fSymmetric2PE", gaussian, 1.8, 2.6, 3);
-  fSymmetric2PE->SetLineColor(kYellow);
-  fSymmetric2PE->SetLineWidth(4);
-  fSymmetric2PE->SetLineStyle(2);
-  fSymmetric2PE->SetParNames("Constant", "#mu", "#sigma");
-  fSymmetric2PE->SetParameter(0, 0.1);  // Constant
-  fSymmetric2PE->SetParameter(1, 2.2);  // #mu
-  fSymmetric2PE->SetParameter(2, 0.5);  // #sigma
-
-  // Import user defined function asymmetric gaussians for 3 PE
-  TF1 *fAsymmetric3PE = new TF1("fAsymmetric3PE", asymGaussians, 2.8, 3.6, 4);
-  fAsymmetric3PE->SetLineColor(kViolet);
-  fAsymmetric3PE->SetLineWidth(4);
-  fAsymmetric3PE->SetLineStyle(2);
-  fAsymmetric3PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
-  fAsymmetric3PE->SetParameter(0, 0.01);  // Constant
-  fAsymmetric3PE->SetParameter(1, 3.1);   // #mu
-  fAsymmetric3PE->SetParameter(2, 0.5);   // #sigma_{1}
-  fAsymmetric3PE->SetParameter(3, 0.5);   // #sigma_{2}
-
-  // Import user defined function symmetric gaussian for 3 PE
-  TF1 *fSymmetric3PE = new TF1("fSymmetric3PE", gaussian, 1.8, 2.6, 3);
-  fSymmetric3PE->SetLineColor(kRedBlue);
-  fSymmetric3PE->SetLineWidth(4);
-  fSymmetric3PE->SetLineStyle(2);
-  fSymmetric3PE->SetParNames("Constant", "#mu", "#sigma");
-  fSymmetric3PE->SetParameter(0, 0.01);  // Constant
-  fSymmetric3PE->SetParameter(1, 3.1);   // #mu
-  fSymmetric3PE->SetParameter(2, 0.5);   // #sigma
-
-  // Normalise  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
-  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
-
-  // Fit PE graph with both symmetric and asymmetric gaussians
-  hPhotoElectrons->Fit(fAsymmetric1PE, "R");
-  hPhotoElectrons->Fit(fSymmetric1PE, "R+");
-  hPhotoElectrons->Fit(fAsymmetric2PE, "R+");
-  hPhotoElectrons->Fit(fSymmetric2PE, "R+");
-  hPhotoElectrons->Fit(fAsymmetric3PE, "R+");
-  hPhotoElectrons->Fit(fSymmetric3PE, "R+");
+  // Fit PE histograms with several functions
+  fitPEHisto(hPhotoElectrons);
 
   // Draw all histograms on canvas
   TCanvas *c1 = new TCanvas("c1", "Pulse analysis", 1300, 700);
