@@ -23,8 +23,28 @@
 #include "waveformAnalysis.hpp"
 
 // Define global constants
-constexpr int nMinAnalysedRows{0};     // minimum index of analysed rows (0)
-constexpr int nMaxAnalysedRows{9961};  // maximum rows (9961)
+constexpr int nMinAnalysedRows{0};  // minimum index of analysed rows excluded
+constexpr int nMaxAnalysedRows{9961};  // maximum rows included (9961)
+
+// Asymmetric gaussian function
+Double_t asymGaussians(Double_t *x, Double_t *par) {
+  Double_t xVal = x[0];
+  Double_t fitVal =
+      par[0] *
+      (((xVal < par[1]) * (TMath::Exp(-0.5 * ((xVal - par[1]) / par[2]) *
+                                      ((xVal - par[1]) / par[2])))) +
+       ((xVal >= par[1]) * (TMath::Exp(-0.5 * ((xVal - par[1]) / par[3]) *
+                                       ((xVal - par[1]) / par[3])))));
+  return fitVal;
+}
+
+// Symmetric gaussian function
+Double_t gaussian(Double_t *x, Double_t *par) {
+  Double_t xVal = x[0];
+  Double_t fitVal = par[0] * TMath::Exp(-0.5 * ((xVal - par[1]) / par[2]) *
+                                        ((xVal - par[1]) / par[2]));
+  return fitVal;
+}
 
 void setFitStyle() {
   gROOT->SetStyle("Plain");
@@ -55,25 +75,25 @@ void waveformAnalysis() {
   // To avoid reloading manually if .so is present
   R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
 
-  double const samplePeriod_ns = 2.0;
+  double const samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
       "DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
   std::string line;
   int row = 0;
 
   // Creating TFile
-  TFile *file = new TFile("waveformAnalysis.root", "RECREATE");
+  TFile *file1 = new TFile("waveformAnalysis.root", "RECREATE");
 
-  // Histograms (mentioned above)
+  // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
-                               "Pulse area vs time since start; Time since "
-                               "start [ns]; Area [ADC #times ns]",
-                               33, 100., 300., 100, 0., 30000.);
+                               "Pulse area vs relative time; Relative time "
+                               "peak [ns]; Area [ADC #times ns]",
+                               40, 100., 300., 100, 0., 30000.);
   TH1F *hNoise = new TH1F("hNoise", "Noise distribution; ADC counts; Counts",
                           30, 8020, 8050);
   TH1F *hPhotoElectrons =
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
-               1000, 0, 6);
+               300, 0, 6);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 2, 50);
 
@@ -106,14 +126,15 @@ void waveformAnalysis() {
     }
 
     // Creating WaveformAnalysis object
-    WaveformAnalysis wf(samples, timestamp, samplePeriod_ns);
+    WaveformAnalysis wf(samples, timestamp, samplePeriod);
 
     // Print waveform properties
-    std::cout << std::fixed << std::setprecision(1);  // Use more precision
-    std::cout << "\n========== Waveform #" << row + 1 << " ==========\n";
-    std::cout << "Timestamp       = " << wf.getTimestamp() << " ns\n";
+    std::cout << std::fixed
+              << std::setprecision(1);  // Round to 1 decimal place
+    std::cout << "\n********** Waveform n. " << row + 1 << " **********\n";
+    std::cout << "Timestamp       = " << wf.getTimeStamp() << " ns\n";
     std::cout << "Baseline        = " << wf.getBaseline() << " ADC counts\n";
-    std::cout << "Sample Period   = " << wf.getSamplePeriod() << " ns\n";
+    std::cout << "Sample period   = " << wf.getSamplePeriod() << " ns\n";
 
     // Get pulse vector from each single waveform
     const auto &pulses = wf.getPulses();
@@ -122,32 +143,34 @@ void waveformAnalysis() {
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
-      std::cout << "  --- Pulse #" << i + 1 << " ---\n";
-      std::cout << "  Overall Start time    = " << p.startTime << " ns\n";
-      std::cout << "  Overall End time      = " << p.endTime << " ns\n";
-      std::cout << "  Overall peak time     = " << p.peakTime << " ns\n";
-      std::cout << "  Start time since start= "
-                << p.startTime - wf.getTimestamp() << " ns\n";
-      std::cout << "  End time since start  = " << p.endTime - wf.getTimestamp()
+      std::cout << std::fixed
+                << std::setprecision(1);  // Round to 1 decimal place
+      std::cout << "  *** Pulse n. " << i + 1 << " ***\n";
+      std::cout << "  Overall start time     = " << p.startTime << " ns\n";
+      std::cout << "  Overall end time       = " << p.endTime << " ns\n";
+      std::cout << "  Overall peak time      = " << p.peakTime << " ns\n";
+      std::cout << "  Relative start time    = "
+                << p.startTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Relative end time      = "
+                << p.endTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Relative peak time     = "
+                << p.peakTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Peak value             = " << p.peakValue << " ADC\n";
+      std::cout << "  Width                  = " << p.endTime - p.startTime
                 << " ns\n";
-      std::cout << "  Peak time since start = "
-                << p.peakTime - wf.getTimestamp() << " ns\n";
-      std::cout << "  Peak value            = " << p.peakValue << " ADC\n";
-      std::cout << "  Width                 = " << p.endTime - p.startTime
-                << " ns\n";
-      std::cout << "  Area                  = " << p.area << " ADC*ns\n";
-      std::cout << "  Area in PE            = " << p.area / 10400. << " PE\n";
+      std::cout << "  Area                   = " << p.area << " ADC*ns\n";
+      std::cout << "  Area in PE             = " << p.area / 10400. << " PE\n";
 
-      // Fill pulse info
-      hAreaVsTime->Fill(p.peakTime - wf.getTimestamp(), p.area);
+      // Fill pulse information
+      hAreaVsTime->Fill(p.peakTime - wf.getTimeStamp(), p.area);
       hWidth->Fill(p.endTime - p.startTime);
 
-      // Convert area to PE (if you know 1 PE ~ X ADC*ns)
-      double areaInPE = p.area / 10400.;  // Example: 1 PE = 10400 ADC*ns
+      // Convert area into PE (assumption is 1 PE = 10400 ADC*ns)
+      double areaInPE = p.area / 10400.;
       hPhotoElectrons->Fill(areaInPE);
     }
 
-    // Fill noise info
+    // Fill noise information
     int const nBaselineSamples{50};
     std::for_each(samples.begin(), samples.begin() + nBaselineSamples,
                   [&](double sample) { hNoise->Fill(sample); });
@@ -157,9 +180,39 @@ void waveformAnalysis() {
   // Fit noise with gaussian function
   hNoise->Fit("gaus");
 
+  // Import user defined function asymmetric gaussians
+  TF1 *fAsymmetricPE = new TF1("fAsymmetricPE", asymGaussians, 0.4, 1.7, 4);
+  fAsymmetricPE->SetLineColor(kRed);
+  fAsymmetricPE->SetLineWidth(4);
+  fAsymmetricPE->SetLineStyle(2);
+  fAsymmetricPE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
+  fAsymmetricPE->SetParameter(0, 0.3);  // Constant
+  fAsymmetricPE->SetParameter(1, 1.);   // #mu
+  fAsymmetricPE->SetParameter(2, 0.5);  // #sigma_{1}
+  fAsymmetricPE->SetParameter(3, 0.5);  // #sigma_{2}
+
+  // Import user defined function symmetric gaussian
+  TF1 *fSymmetricPE = new TF1("fSymmetricPE", gaussian, 0.4, 1.7, 3);
+  fSymmetricPE->SetLineColor(kGreen);
+  fSymmetricPE->SetLineWidth(4);
+  fSymmetricPE->SetLineStyle(2);
+  fSymmetricPE->SetParNames("Constant", "#mu", "#sigma");
+  fSymmetricPE->SetParameter(0, 0.3);  // Constant
+  fSymmetricPE->SetParameter(1, 1.);   // #mu
+  fSymmetricPE->SetParameter(2, 0.5);  // #sigma
+
+  // Normalise  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
+  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
+
+  // Fit PE graph with asymmetric gaussians
+  hPhotoElectrons->Fit(fAsymmetricPE, "R");
+  hPhotoElectrons->Fit(fSymmetricPE, "R+");
+
   // Draw all histograms on canvas
-  TCanvas *c1 = new TCanvas("c1", "Pulse Analysis", 1300, 700);
+  TCanvas *c1 = new TCanvas("c1", "Pulse analysis", 1300, 700);
   c1->Divide(2, 2);
+
+  setFitStyle();
 
   c1->cd(1);
   gPad->SetLogz();
@@ -171,21 +224,23 @@ void waveformAnalysis() {
 
   c1->cd(2);
   // hNoise->GetXaxis()->SetRangeUser(8010, 8050.);
+  hNoise->SetLineWidth(1);
   hNoise->DrawCopy();
 
   c1->cd(3);
   gPad->SetLogy();
   gPad->Update();
-  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());  // Normalise
+  hPhotoElectrons->SetLineWidth(1);
   hPhotoElectrons->DrawCopy();
 
   c1->cd(4);
+  hWidth->SetLineWidth(1);
   hWidth->DrawCopy();
 
   c1->SaveAs("pulse_analysis_results.pdf");
-  file->cd();
+  file1->cd();
   c1->Write();
-  file->Close();
+  file1->Close();
 }
 
 // Plot waveform amplitudes as function of time
@@ -194,10 +249,10 @@ void waveformTotal() {
   R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
 
   // Creating files and canvases
-  TFile *file = new TFile("waveform.root", "RECREATE");
-  TCanvas *c2 = new TCanvas("c2", "Waveform", 1500, 700);
+  TFile *file2 = new TFile("waveform.root", "RECREATE");
+  TCanvas *c2 = new TCanvas("c2", "Waveform analysis", 1500, 700);
 
-  const double samplePeriod_ns = 2.0;
+  const double samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
       "DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
   std::string line;
@@ -205,7 +260,7 @@ void waveformTotal() {
   int row = 0;
   std::vector<TGraph *> graphs;
 
-  // Select random generator for colours
+  // Select random generator seed for colours based on current time
   srand(time(NULL));
 
   // Loop on rows
@@ -222,42 +277,41 @@ void waveformTotal() {
     // Defining loop variables
     std::stringstream ss(line);
     std::string item;
-    int column = 1;
-    double timestamp = 0.;
-    int sample_index = 0;
+    int column{1};
+    double timestamp{};
+    int sampleIndex{};
 
-    std::vector<double> x_vals;                              // Time data
-    std::vector<double> y_vals;                              // Amplitude data
+    std::vector<double> xValues;                             // Relative time
+    std::vector<double> yValues;                             // ADC counts
     std::vector<double> colours{1, 2, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
 
     // Loop on columns
     while (std::getline(ss, item, '\t')) {
-      if (item.empty()) continue;
+      if (item.empty()) {
+        continue;
+      }
 
-      if (column == 3) {
-        timestamp = std::stod(item);
-      } else if (column >= 7) {
-        double sample_value = std::stod(item);
-        double time_ns = sample_index * samplePeriod_ns;
-        x_vals.push_back(time_ns);
-        y_vals.push_back(sample_value);
-        ++sample_index;
+      if (column >= 7) {
+        yValues.push_back(std::stod(item));
+        xValues.push_back(sampleIndex * samplePeriod);
+        ++sampleIndex;
       }
       ++column;
     }
 
-    int RandIndex = rand() % 9;  // generates a random number between 0 and 8
+    // Generate a random number between 0 and 8 (used for colour indices)
+    int randIndex = rand() % 9;
 
-    // Plot each waveform with a graph object
-    TGraph *g = new TGraph(x_vals.size(), x_vals.data(), y_vals.data());
-    g->SetLineColor(colours[RandIndex]);
-    g->SetLineWidth(2);
+    // Plot each waveform using a graph object
+    TGraph *g = new TGraph(xValues.size(), xValues.data(), yValues.data());
+    g->SetLineColor(colours[randIndex]);
+    g->SetLineWidth(1);
     g->SetMarkerColor(kBlack);
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     g->GetXaxis()->SetRangeUser(4., 300.);
     g->GetYaxis()->SetRangeUser(7500., 16000.);
-    g->SetTitle(Form("Waveform %d; Time [ns]; ADC Counts",
+    g->SetTitle(Form("Waveform %d; Time [ns]; ADC counts",
                      row + 1));  // Inserting placeholder
     graphs.push_back(g);
     ++row;
@@ -267,7 +321,7 @@ void waveformTotal() {
 
   // Draw all graphs
   c2->cd();
-  for (size_t i = 0; i < graphs.size(); i++) {
+  for (size_t i = 0; i < graphs.size(); ++i) {
     if (i == 0) {
       graphs[i]->Draw("ALP");
     } else {
@@ -277,9 +331,9 @@ void waveformTotal() {
 
   // Save canvas
   c2->BuildLegend(.70, .7, .9, .9, "Legend");
-  file->cd();
+  file2->cd();
   c2->Write();
-  file->Close();
+  file2->Close();
 
   // Print canvas
   c2->SaveAs("waveform_plot.png");
