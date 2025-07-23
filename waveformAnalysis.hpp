@@ -21,34 +21,33 @@ class WaveformAnalysis {
   // Getters for waveform member data
 
   std::vector<double> const &getSamples() const;
-  double getTimestamp() const;
+  double getTimeStamp() const;
   double getSamplePeriod() const;
   double getBaseline() const;
   std::vector<Pulse> const &getPulses() const;
 
   // Analyse a waveform by extracting its noise and its pulses
-  void analyse();
+  void analyseWaveform();
 
   // Make the average of first 50 samples of a waveform
-  void computeBaseline(int nBaselineSamples = 50);
+  void baseline(int nInitialSamples = 50);
 
   // Compute RMS to find waveform's noise
-  double computeRMS(int nBaselineSamples = 50);
+  double RMS(int nInitialSamples = 50);
 
   // Detect pulses
-  void findAndIntegratePulse(double tresholdFactor = 30.0,
-                             double tolerance = 20, int minWidth = 20,
-                             int maxWidth = 20, int minSeparation = 10);
+  void findPulses(double threshold = 30., double tolerance = 20.,
+                  int minWidth = 20, int maxWidth = 20, int minSep = 10);
 
   // Find area of 1 pulse
   Pulse integratePulse(int pulseStart, int pulseEnd);
 
  private:
-  std::vector<double> fSamples{};  // Vector of samples forming the waveform
-  double fTimestamp{};             // Overall timestamp of the waveform
+  std::vector<double> fSamples{};  // Vector of samples generating the waveform
+  double fTimeStamp{};             // Overall timestamp of the waveform
   double fSamplePeriod{};          // Sampling period
   double fBaseline{};              // Baseline of the waveform
-  std::vector<Pulse> fPulses{};    // Vector of pulses forming the waveform
+  std::vector<Pulse> fPulses{};    // Vector of pulses composing the waveform
 };
 
 #endif
