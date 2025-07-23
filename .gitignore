@@ -25,6 +25,7 @@
 *.la
 *.a
 *.lib
+*.pcm
 
 # Executables
 *.exe
@@ -37,7 +38,8 @@
 # ROOT files
 *.root
 
-# Text files
+# Text files and PDFs
 *.txt
+*.pdf
 
 # Directories
