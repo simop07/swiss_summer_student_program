@@ -96,7 +96,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   fSymmetric2PE->SetParameter(2, 0.5);  // #sigma
 
   // Import user defined function asymmetric gaussians for 3 PE
-  TF1 *fAsymmetric3PE = new TF1("fAsymmetric3PE", asymGaussians, 2.8, 3.6, 4);
+  TF1 *fAsymmetric3PE = new TF1("fAsymmetric3PE", asymGaussians, 2.8, 3.55, 4);
   fAsymmetric3PE->SetLineColor(kViolet);
   fAsymmetric3PE->SetLineWidth(4);
   fAsymmetric3PE->SetLineStyle(2);
@@ -104,18 +104,18 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
                               "#sigma^{3}_{2}");
   fAsymmetric3PE->SetParameter(0, 0.01);  // Constant
   fAsymmetric3PE->SetParameter(1, 3.1);   // #mu
-  fAsymmetric3PE->SetParameter(2, 0.5);   // #sigma_{1}
-  fAsymmetric3PE->SetParameter(3, 0.5);   // #sigma_{2}
+  fAsymmetric3PE->SetParameter(2, 2.0);   // #sigma_{1}
+  fAsymmetric3PE->SetParameter(3, 2.0);   // #sigma_{2}
 
   // Import user defined function symmetric gaussian for 3 PE
-  TF1 *fSymmetric3PE = new TF1("fSymmetric3PE", "gaus", 2.8, 3.6);
-  fSymmetric3PE->SetLineColor(kMagenta);
+  TF1 *fSymmetric3PE = new TF1("fSymmetric3PE", "gaus", 2.8, 3.55);
+  fSymmetric3PE->SetLineColor(kRed);
   fSymmetric3PE->SetLineWidth(4);
   fSymmetric3PE->SetLineStyle(2);
   fSymmetric3PE->SetParNames("N^{3}", "#mu^{3}", "#sigma^{3}");
   fSymmetric3PE->SetParameter(0, 0.01);  // Constant
   fSymmetric3PE->SetParameter(1, 3.1);   // #mu
-  fSymmetric3PE->SetParameter(2, 0.5);   // #sigma
+  fSymmetric3PE->SetParameter(2, 2.0);   // #sigma
 
   // Define expo function for noise fit
   TF1 *fExpo = new TF1("fExpo", "expo", 0., 6.);
@@ -207,7 +207,7 @@ void waveformAnalysis() {
                           30, 8020, 8050);
   TH1F *hPhotoElectrons =
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
-               200, 0, 6);
+               150, 0, 6);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 2, 50);
 
@@ -246,13 +246,13 @@ void waveformAnalysis() {
     std::cout << std::fixed
               << std::setprecision(1);  // Round to 1 decimal place
     std::cout << "\n********** Waveform n. " << row + 1 << " **********\n";
-    std::cout << "Timestamp       = " << wf.getTimeStamp() << " ns\n";
-    std::cout << "Baseline        = " << wf.getBaseline() << " ADC counts\n";
-    std::cout << "Sample period   = " << wf.getSamplePeriod() << " ns\n";
+    std::cout << "Timestamp        = " << wf.getTimeStamp() << " ns\n";
+    std::cout << "Baseline         = " << wf.getBaseline() << " ADC counts\n";
+    std::cout << "Sample period    = " << wf.getSamplePeriod() << " ns\n";
 
     // Get pulse vector from each single waveform
     const auto &pulses = wf.getPulses();
-    std::cout << "Number of Pulses= " << pulses.size() << "\n";
+    std::cout << "Number of Pulses = " << pulses.size() << "\n";
 
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
@@ -260,20 +260,20 @@ void waveformAnalysis() {
       std::cout << std::fixed
                 << std::setprecision(1);  // Round to 1 decimal place
       std::cout << "  *** Pulse n. " << i + 1 << " ***\n";
-      std::cout << "  Overall start time     = " << p.startTime << " ns\n";
-      std::cout << "  Overall end time       = " << p.endTime << " ns\n";
-      std::cout << "  Overall peak time      = " << p.peakTime << " ns\n";
-      std::cout << "  Relative start time    = "
-                << p.startTime - wf.getTimeStamp() << " ns\n";
-      std::cout << "  Relative end time      = "
-                << p.endTime - wf.getTimeStamp() << " ns\n";
-      std::cout << "  Relative peak time     = "
-                << p.peakTime - wf.getTimeStamp() << " ns\n";
-      std::cout << "  Peak value             = " << p.peakValue << " ADC\n";
-      std::cout << "  Width                  = " << p.endTime - p.startTime
+      std::cout << "  Overall start time  = " << p.startTime << " ns\n";
+      std::cout << "  Overall end time    = " << p.endTime << " ns\n";
+      std::cout << "  Overall peak time   = " << p.peakTime << " ns\n";
+      std::cout << "  Relative start time = " << p.startTime - wf.getTimeStamp()
                 << " ns\n";
-      std::cout << "  Area                   = " << p.area << " ADC*ns\n";
-      std::cout << "  Area in PE             = " << p.area / 11000. << " PE\n";
+      std::cout << "  Relative end time   = " << p.endTime - wf.getTimeStamp()
+                << " ns\n";
+      std::cout << "  Relative peak time  = " << p.peakTime - wf.getTimeStamp()
+                << " ns\n";
+      std::cout << "  Peak value          = " << p.peakValue << " ADC\n";
+      std::cout << "  Width               = " << p.endTime - p.startTime
+                << " ns\n";
+      std::cout << "  Area                = " << p.area << " ADC*ns\n";
+      std::cout << "  Area in PE          = " << p.area / 11000. << " PE\n";
 
       // Fill pulse information
       hAreaVsTime->Fill(p.peakTime - wf.getTimeStamp(), p.area);
