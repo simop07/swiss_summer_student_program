@@ -46,10 +46,55 @@ Double_t asymGaussians(Double_t *x, Double_t *par) {
   return fitVal;
 }
 
-// Asymmetric gaussian function
+// Asymmetric gaussian functions
+
 Double_t asym2GaussiansExpo(Double_t *x, Double_t *par) {
+  // par[0] = N^{1}
+  // par[1] = #mu^{1}
+  // par[2] = #sigma^{1}_{1}
+  // par[3] = #sigma^{1}_{2}
+  // par[4] = N^{2}
+  // par[5] = #mu^{2}
+  // par[6] = #sigma^{2}_{1}
+  // par[7] = #sigma^{2}_{2}
+  // par[8] = Constant
+  // par[9] = Slope
+  // par[10] = Background
+
   return asymGaussians(x, &par[0]) + asymGaussians(x, &par[4]) +
          TMath::Exp(par[8] + par[9] * x[0]) + par[10];
+}
+
+Double_t asym2GaussiansExpoConstrained(Double_t *x, Double_t *par) {
+  // par[0] = N^{1}
+  // par[1] = #mu^{1}
+  // par[2] = #sigma^{1}_{1}
+  // par[3] = #sigma^{1}_{2}
+  // par[4] = N^{2}
+  // par[5] = #sigma^{2}_{1}
+  // par[6] = #sigma^{2}_{2}
+  // par[7] = Constant
+  // par[8] = Slope
+  // par[9] = Background
+
+  return asymGaussians(x, new Double_t[4]{par[0], par[1], par[2], par[3]}) +
+         asymGaussians(x, new Double_t[4]{par[4], 2 * par[1], par[5], par[6]}) +
+         TMath::Exp(par[7] + par[8] * x[0]) + par[9];
+}
+
+Double_t asym2GaussiansExpoConstrainedSameSigma(Double_t *x, Double_t *par) {
+  // par[0] = N^{1}
+  // par[1] = #mu^{1}
+  // par[2] = #sigma^{1}_{1}
+  // par[3] = #sigma^{1}_{2}
+  // par[4] = N^{2}
+  // par[5] = Constant
+  // par[6] = Slope
+  // par[7] = Background
+
+  return asymGaussians(x, new Double_t[4]{par[0], par[1], par[2], par[3]}) +
+         asymGaussians(x, new Double_t[4]{par[4], 2 * par[1], par[2], par[3]}) +
+         TMath::Exp(par[5] + par[6] * x[0]) + par[7];
 }
 
 // Group functions for fitting PE histo
@@ -61,10 +106,10 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   fAsymmetric1PE->SetLineStyle(2);
   fAsymmetric1PE->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
                               "#sigma^{1}_{2}");
-  fAsymmetric1PE->SetParameter(0, 0.3);  // Constant
-  fAsymmetric1PE->SetParameter(1, 1.);   // #mu
-  fAsymmetric1PE->SetParameter(2, 0.5);  // #sigma_{1}
-  fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma_{2}
+  fAsymmetric1PE->SetParameter(0, 0.3);  // N^{1}
+  fAsymmetric1PE->SetParameter(1, 1.);   // #mu^{1}
+  fAsymmetric1PE->SetParameter(2, 0.5);  // #sigma^{1}_{1}
+  fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma^{1}_{2}
 
   // Import user defined function asymmetric gaussians for 2 PE
   TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.6, 4);
@@ -73,10 +118,10 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   fAsymmetric2PE->SetLineStyle(2);
   fAsymmetric2PE->SetParNames("N^{2}", "#mu^{2}", "#sigma^{2}_{1}",
                               "#sigma^{2}_{2}");
-  fAsymmetric2PE->SetParameter(0, 0.1);  // Constant
-  fAsymmetric2PE->SetParameter(1, 2.2);  // #mu
-  fAsymmetric2PE->SetParameter(2, 1);    // #sigma_{1}
-  fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma_{2}
+  fAsymmetric2PE->SetParameter(0, 0.1);  // N^{2}
+  fAsymmetric2PE->SetParameter(1, 2.2);  // #mu^{2}
+  fAsymmetric2PE->SetParameter(2, 1);    // #sigma^{2}_{1}
+  fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma^{2}_{2}
 
   // Define expo function for noise fit
   TF1 *fExpo = new TF1("fExpo", "expo", 0., 4.2);
@@ -92,8 +137,8 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
 
-  // Define parameter array for total function
-  double par[11];
+  // Define parameter array for total functions
+  Double_t par1[11];
 
   // Normalise  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
   hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
@@ -101,8 +146,8 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Fit PE graphs
 
   // 1PE
-  hPhotoElectrons->Fit(fAsymmetric1PE, "R");
-  fAsymmetric1PE->GetParameters(&par[0]);
+  hPhotoElectrons->Fit(fAsymmetric1PE, "RN");
+  fAsymmetric1PE->GetParameters(&par1[0]);
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT 1 PE peak ****\n\nP value       "
                "      = "
@@ -112,8 +157,8 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
             << "\n\n";
 
   // 2PE
-  hPhotoElectrons->Fit(fAsymmetric2PE, "R+");
-  fAsymmetric2PE->GetParameters(&par[4]);
+  hPhotoElectrons->Fit(fAsymmetric2PE, "RN");
+  fAsymmetric2PE->GetParameters(&par1[4]);
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT 2 PE peak ****\n\nP value       "
                "      = "
@@ -123,8 +168,8 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
             << "\n\n";
 
   // Exponential noise
-  hPhotoElectrons->Fit(fExpo, "+", "", 0., 0.2);
-  fExpo->GetParameters(&par[8]);
+  hPhotoElectrons->Fit(fExpo, "N", "", 0., 0.2);
+  fExpo->GetParameters(&par1[8]);
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT EXPO NOISE ****\n\nP value       "
                "      = "
@@ -132,9 +177,10 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   std::cout << "Reduced chi squared = "
             << fExpo->GetChisquare() / fExpo->GetNDF() << "\n\n";
 
-  // Total function fit
-  par[10] = 0.001;
-  fTotal->SetParameters(par);
+  // Total function fit NOT CONSTRAINED
+
+  par1[10] = 0.001;
+  fTotal->SetParameters(par1);
   fTotal->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}", "#sigma^{1}_{2}",
                       "N^{2}", "#mu^{2}", "#sigma^{2}_{1}", "#sigma^{2}_{2}",
                       "Constant", "Slope");
@@ -142,9 +188,10 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   TFitResultPtr fitResult = hPhotoElectrons->Fit(fTotal, "S R+");
 
   // Get results
-  std::cout << "\n\n**** FIT RESULT TOTAL INDPENDENT #mu ****\n\nP value       "
-               "      = "
-            << fTotal->GetProb() << "\n";
+  std::cout
+      << "\n\n**** FIT RESULT TOTAL NOT CONSTRAINED #mu ****\n\nP value       "
+         "      = "
+      << fTotal->GetProb() << "\n";
   std::cout << "Reduced chi squared = "
             << fTotal->GetChisquare() / fTotal->GetNDF() << "\n\n";
   TMatrixD covMatrix = fitResult->GetCorrelationMatrix();
@@ -153,6 +200,75 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   covMatrix.Print();
   std::cout << "\n*** Print correlation matrix ***\n" << std::endl;
   corMatrix.Print();
+
+  // Total function fit CONSTRAINED
+
+  // Define total function as sum of 1 PE + 2 PE
+  TF1 *fTotalConstrained =
+      new TF1("fTotalConstrained", asym2GaussiansExpoConstrained, 0., 4.2, 10);
+  fTotalConstrained->SetLineColor(kOrange + 2);
+  fTotalConstrained->SetLineWidth(4);
+  fTotalConstrained->SetLineStyle(2);
+
+  fTotalConstrained->SetParameters(par1[0], par1[1], par1[2], par1[3], par1[4],
+                                   par1[6], par1[7], par1[8], par1[9],
+                                   par1[10]);
+  fTotalConstrained->SetParNames(
+      "N^{1}", "#mu^{1}", "#sigma^{1}_{1}", "#sigma^{1}_{2}", "N^{2}",
+      "#sigma^{2}_{1}", "#sigma^{2}_{2}", "Constant", "Slope", "Background");
+  TFitResultPtr fitResultConstrained =
+      hPhotoElectrons->Fit(fTotalConstrained, "S R+");
+
+  // Get results
+  std::cout
+      << "\n\n**** FIT RESULT TOTAL CONSTRAINED #mu ****\n\nP value       "
+         "      = "
+      << fTotalConstrained->GetProb() << "\n";
+  std::cout << "Reduced chi squared = "
+            << fTotalConstrained->GetChisquare() / fTotalConstrained->GetNDF()
+            << "\n\n";
+  TMatrixD covMatrixConstrained = fitResultConstrained->GetCorrelationMatrix();
+  TMatrixD corMatrixConstrained = fitResultConstrained->GetCovarianceMatrix();
+  std::cout << "\n*** Print covariance matrix ***\n" << std::endl;
+  covMatrixConstrained.Print();
+  std::cout << "\n*** Print correlation matrix ***\n" << std::endl;
+  corMatrixConstrained.Print();
+
+  // Total function fit CONSTRAINED SAME SIGMAS
+
+  // Define total function as sum of 1 PE + 2 PE
+  TF1 *fTotalConstrainedSameSigmas =
+      new TF1("fTotalConstrainedSameSigmas",
+              asym2GaussiansExpoConstrainedSameSigma, 0., 4.2, 8);
+  fTotalConstrainedSameSigmas->SetLineColor(kRed);
+  fTotalConstrainedSameSigmas->SetLineWidth(4);
+  fTotalConstrainedSameSigmas->SetLineStyle(2);
+
+  fTotalConstrainedSameSigmas->SetParameters(
+      par1[0], par1[1], par1[2], par1[3], par1[4], par1[8], par1[9], par1[10]);
+  fTotalConstrainedSameSigmas->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
+                                           "#sigma^{1}_{2}", "N^{2}",
+                                           "Constant", "Slope", "Background");
+  TFitResultPtr fitResultConstrainedSameSigma =
+      hPhotoElectrons->Fit(fTotalConstrainedSameSigmas, "S R+");
+
+  // Get results
+  std::cout << "\n\n**** FIT RESULT TOTAL CONSTRAINED SAME SIGMA #mu ****\n\nP "
+               "value       "
+               "      = "
+            << fTotalConstrainedSameSigmas->GetProb() << "\n";
+  std::cout << "Reduced chi squared = "
+            << fTotalConstrainedSameSigmas->GetChisquare() /
+                   fTotalConstrainedSameSigmas->GetNDF()
+            << "\n\n";
+  TMatrixD covMatrixConstrainedSameSigma =
+      fitResultConstrainedSameSigma->GetCorrelationMatrix();
+  TMatrixD corMatrixConstrainedSameSigma =
+      fitResultConstrainedSameSigma->GetCovarianceMatrix();
+  std::cout << "\n*** Print covariance matrix ***\n" << std::endl;
+  covMatrixConstrainedSameSigma.Print();
+  std::cout << "\n*** Print correlation matrix ***\n" << std::endl;
+  corMatrixConstrainedSameSigma.Print();
 }
 
 void setFitStyle() {
@@ -239,7 +355,7 @@ void waveformAnalysis() {
 
     // Print waveform properties
     std::cout << std::fixed
-              << std::setprecision(1);  // Round to 1 decimal place
+              << std::setprecision(2);  // Round to 2 decimal place
     std::cout << "\n********** Waveform n. " << row + 1 << " **********\n";
     std::cout << "Timestamp        = " << wf.getTimeStamp() << " ns\n";
     std::cout << "Baseline         = " << wf.getBaseline() << " ADC counts\n";
@@ -252,8 +368,6 @@ void waveformAnalysis() {
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
-      std::cout << std::fixed
-                << std::setprecision(1);  // Round to 1 decimal place
       std::cout << "  *** Pulse n. " << i + 1 << " ***\n";
       std::cout << "  Overall start time  = " << p.startTime << " ns\n";
       std::cout << "  Overall end time    = " << p.endTime << " ns\n";
@@ -285,6 +399,9 @@ void waveformAnalysis() {
                   [&](double sample) { hNoise->Fill(sample); });
     ++row;
   }
+
+  // Round fit printing to 5 decimal place
+  std::cout << std::fixed << std::setprecision(5);
 
   // Fit noise with gaussian function
   hNoise->Fit("gaus");
@@ -390,7 +507,7 @@ void waveformTotal() {
     TGraph *g = new TGraph(xValues.size(), xValues.data(), yValues.data());
     g->SetLineColor(colours[randIndex]);
     g->SetLineWidth(1);
-    g->SetMarkerColor(kBlack);
+    g->SetMarkerColor(kGreen + 2);
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     g->GetXaxis()->SetRangeUser(4., 300.);
