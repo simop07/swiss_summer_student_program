@@ -28,6 +28,11 @@ constexpr int nMaxAnalysedRows{9961};  // maximum rows included (9961)
 
 // Asymmetric gaussian function
 Double_t asymGaussians(Double_t *x, Double_t *par) {
+  // par[0] = N
+  // par[1] = #mu
+  // par[2] = #sigma_{1}
+  // par[3] = #sigma_{2}
+
   Double_t xVal = x[0];
   Double_t fitVal =
       par[0] *
@@ -38,46 +43,54 @@ Double_t asymGaussians(Double_t *x, Double_t *par) {
   return fitVal;
 }
 
+// Asymmetric gaussian function
+Double_t asym3GaussiansExpo(Double_t *x, Double_t *par) {
+  return asymGaussians(x, &par[0]) + asymGaussians(x, &par[4]) +
+         asymGaussians(x, &par[8]) + TMath::Exp(par[12] + par[13] * x[0]);
+}
+
 // Group functions for fitting PE histo
 void fitPEHisto(TH1F *hPhotoElectrons) {
   // Import user defined function asymmetric gaussians for 1 PE
-  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.4, 1.7, 4);
+  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.4, 1.8, 4);
   fAsymmetric1PE->SetLineColor(kRed);
   fAsymmetric1PE->SetLineWidth(4);
   fAsymmetric1PE->SetLineStyle(2);
-  fAsymmetric1PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
+  fAsymmetric1PE->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
+                              "#sigma^{1}_{2}");
   fAsymmetric1PE->SetParameter(0, 0.3);  // Constant
   fAsymmetric1PE->SetParameter(1, 1.);   // #mu
   fAsymmetric1PE->SetParameter(2, 0.5);  // #sigma_{1}
   fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma_{2}
 
   // Import user defined function symmetric gaussian for 1 PE
-  TF1 *fSymmetric1PE = new TF1("fSymmetric1PE", "gaus", 0.4, 1.7);
+  TF1 *fSymmetric1PE = new TF1("fSymmetric1PE", "gaus", 0.4, 1.8);
   fSymmetric1PE->SetLineColor(kGreen);
   fSymmetric1PE->SetLineWidth(4);
   fSymmetric1PE->SetLineStyle(2);
-  fSymmetric1PE->SetParNames("Constant", "#mu", "#sigma");
+  fSymmetric1PE->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}");
   fSymmetric1PE->SetParameter(0, 0.3);  // Constant
   fSymmetric1PE->SetParameter(1, 1.);   // #mu
   fSymmetric1PE->SetParameter(2, 0.5);  // #sigma
 
   // Import user defined function asymmetric gaussians for 2 PE
-  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.6, 4);
+  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.8, 4);
   fAsymmetric2PE->SetLineColor(kCyan);
   fAsymmetric2PE->SetLineWidth(4);
   fAsymmetric2PE->SetLineStyle(2);
-  fAsymmetric2PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
+  fAsymmetric2PE->SetParNames("N^{2}", "#mu^{2}", "#sigma^{2}_{1}",
+                              "#sigma^{2}_{2}");
   fAsymmetric2PE->SetParameter(0, 0.1);  // Constant
   fAsymmetric2PE->SetParameter(1, 2.2);  // #mu
   fAsymmetric2PE->SetParameter(2, 0.5);  // #sigma_{1}
   fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma_{2}
 
   // Import user defined function symmetric gaussian for 2 PE
-  TF1 *fSymmetric2PE = new TF1("fSymmetric2PE", "gaus", 1.8, 2.6);
+  TF1 *fSymmetric2PE = new TF1("fSymmetric2PE", "gaus", 1.8, 2.8);
   fSymmetric2PE->SetLineColor(kYellow);
   fSymmetric2PE->SetLineWidth(4);
   fSymmetric2PE->SetLineStyle(2);
-  fSymmetric2PE->SetParNames("Constant", "#mu", "#sigma");
+  fSymmetric2PE->SetParNames("N^{2}", "#mu^{2}", "#sigma^{2}");
   fSymmetric2PE->SetParameter(0, 0.1);  // Constant
   fSymmetric2PE->SetParameter(1, 2.2);  // #mu
   fSymmetric2PE->SetParameter(2, 0.5);  // #sigma
@@ -87,32 +100,64 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   fAsymmetric3PE->SetLineColor(kViolet);
   fAsymmetric3PE->SetLineWidth(4);
   fAsymmetric3PE->SetLineStyle(2);
-  fAsymmetric3PE->SetParNames("Constant", "#mu", "#sigma_{1}", "#sigma_{2}");
+  fAsymmetric3PE->SetParNames("N^{3}", "#mu^{3}", "#sigma^{3}_{1}",
+                              "#sigma^{3}_{2}");
   fAsymmetric3PE->SetParameter(0, 0.01);  // Constant
   fAsymmetric3PE->SetParameter(1, 3.1);   // #mu
   fAsymmetric3PE->SetParameter(2, 0.5);   // #sigma_{1}
   fAsymmetric3PE->SetParameter(3, 0.5);   // #sigma_{2}
 
   // Import user defined function symmetric gaussian for 3 PE
-  TF1 *fSymmetric3PE = new TF1("fSymmetric3PE", "gaus", 1.8, 2.6);
-  fSymmetric3PE->SetLineColor(kRedBlue);
+  TF1 *fSymmetric3PE = new TF1("fSymmetric3PE", "gaus", 2.8, 3.6);
+  fSymmetric3PE->SetLineColor(kMagenta);
   fSymmetric3PE->SetLineWidth(4);
   fSymmetric3PE->SetLineStyle(2);
-  fSymmetric3PE->SetParNames("Constant", "#mu", "#sigma");
+  fSymmetric3PE->SetParNames("N^{3}", "#mu^{3}", "#sigma^{3}");
   fSymmetric3PE->SetParameter(0, 0.01);  // Constant
   fSymmetric3PE->SetParameter(1, 3.1);   // #mu
   fSymmetric3PE->SetParameter(2, 0.5);   // #sigma
+
+  // Define expo function for noise fit
+  TF1 *fExpo = new TF1("fExpo", "expo", 0., 6.);
+  fExpo->SetLineColor(kGreen + 2);
+  fExpo->SetLineWidth(4);
+  fExpo->SetLineStyle(2);
+
+  // Define total function as sum of 1 PE + 2 PE + 3PE
+  TF1 *fTotal = new TF1("fTotal", asym3GaussiansExpo, 0., 6., 14);
+  fTotal->SetLineColor(kBlack);
+  fTotal->SetLineWidth(4);
+  fTotal->SetLineStyle(2);
+
+  // Define parameter array for total function
+  double par[14];
 
   // Normalise  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
   hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
 
   // Fit PE graph with both symmetric and asymmetric gaussians
   hPhotoElectrons->Fit(fAsymmetric1PE, "R");
+  fAsymmetric1PE->GetParameters(&par[0]);
   hPhotoElectrons->Fit(fSymmetric1PE, "R+");
   hPhotoElectrons->Fit(fAsymmetric2PE, "R+");
+  fAsymmetric2PE->GetParameters(&par[4]);
   hPhotoElectrons->Fit(fSymmetric2PE, "R+");
   hPhotoElectrons->Fit(fAsymmetric3PE, "R+");
+  fAsymmetric3PE->GetParameters(&par[8]);
   hPhotoElectrons->Fit(fSymmetric3PE, "R+");
+  hPhotoElectrons->Fit(fExpo, "R+");
+  fExpo->GetParameters(&par[12]);
+
+  // Total function fit
+  fTotal->SetParameters(par);
+  fTotal->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}", "#sigma^{1}_{2}",
+                      "N^{2}", "#mu^{2}", "#sigma^{2}_{1}", "#sigma^{2}_{2}",
+                      "N^{3}", "#mu^{3}");
+  fTotal->SetParName(10, "#sigma^{3}_{1}");
+  fTotal->SetParName(11, "#sigma^{3}_{2}");
+  fTotal->SetParName(12, "Constant");
+  fTotal->SetParName(13, "Slope");
+  hPhotoElectrons->Fit(fTotal, "R+");
 }
 
 void setFitStyle() {
