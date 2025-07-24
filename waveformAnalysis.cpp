@@ -121,7 +121,7 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
   }
 
   // Print waveform's properties
-  std::cout << std::fixed << std::setprecision(1);  // Use 1 decimal digit
+  std::cout << std::fixed << std::setprecision(2);  // Use 2 decimal digit
   std::cout << "\n\n*** PROPERTIES OF THE FOLLOWING WF ***\n";
   std::cout << "RMS value for noise             = " << rms << '\n';
   std::cout << "Threshold for pulse detection   = " << pulseThreshold << '\n';
