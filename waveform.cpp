@@ -133,7 +133,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0., 4.2, 11);
-  fTotal->SetLineColor(kBlack);
+  fTotal->SetLineColor(kGreen + 2);
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
 
