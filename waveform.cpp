@@ -26,8 +26,8 @@
 #include "waveformAnalysis.hpp"
 
 // Define global constants
-constexpr int nMinAnalysedRows{0};  // minimum index of analysed rows excluded
-constexpr int nMaxAnalysedRows{9961};  // maximum rows included (9961)
+constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
+constexpr int nMaxAnalysedRows{9961};  // Maximum rows INCLUDED (9961)
 
 // Asymmetric gaussian function
 Double_t asymGaussians(Double_t *x, Double_t *par) {
@@ -204,71 +204,68 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Total function fit CONSTRAINED
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotalConstrained =
-      new TF1("fTotalConstrained", asym2GaussiansExpoConstrained, 0., 4.2, 10);
-  fTotalConstrained->SetLineColor(kOrange + 2);
-  fTotalConstrained->SetLineWidth(4);
-  fTotalConstrained->SetLineStyle(2);
+  TF1 *fTotalConst =
+      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0., 4.2, 10);
+  fTotalConst->SetLineColor(kOrange + 2);
+  fTotalConst->SetLineWidth(4);
+  fTotalConst->SetLineStyle(2);
 
-  fTotalConstrained->SetParameters(par1[0], par1[1], par1[2], par1[3], par1[4],
-                                   par1[6], par1[7], par1[8], par1[9],
-                                   par1[10]);
-  fTotalConstrained->SetParNames(
-      "N^{1}", "#mu^{1}", "#sigma^{1}_{1}", "#sigma^{1}_{2}", "N^{2}",
-      "#sigma^{2}_{1}", "#sigma^{2}_{2}", "Constant", "Slope", "Background");
-  TFitResultPtr fitResultConstrained =
-      hPhotoElectrons->Fit(fTotalConstrained, "S R+");
+  fTotalConst->SetParameters(par1[0], par1[1], par1[2], par1[3], par1[4],
+                             par1[6], par1[7], par1[8], par1[9], par1[10]);
+  fTotalConst->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
+                           "#sigma^{1}_{2}", "N^{2}", "#sigma^{2}_{1}",
+                           "#sigma^{2}_{2}", "Constant", "Slope", "Background");
+  TFitResultPtr fitResultConst = hPhotoElectrons->Fit(fTotalConst, "S R+");
 
   // Get results
   std::cout
       << "\n\n**** FIT RESULT TOTAL CONSTRAINED #mu ****\n\nP value       "
          "      = "
-      << fTotalConstrained->GetProb() << "\n";
+      << fTotalConst->GetProb() << "\n";
   std::cout << "Reduced chi squared = "
-            << fTotalConstrained->GetChisquare() / fTotalConstrained->GetNDF()
-            << "\n\n";
-  TMatrixD covMatrixConstrained = fitResultConstrained->GetCorrelationMatrix();
-  TMatrixD corMatrixConstrained = fitResultConstrained->GetCovarianceMatrix();
+            << fTotalConst->GetChisquare() / fTotalConst->GetNDF() << "\n\n";
+  TMatrixD covMatrixConst = fitResultConst->GetCorrelationMatrix();
+  TMatrixD corMatrixConst = fitResultConst->GetCovarianceMatrix();
   std::cout << "\n*** Print covariance matrix ***\n" << std::endl;
-  covMatrixConstrained.Print();
+  covMatrixConst.Print();
   std::cout << "\n*** Print correlation matrix ***\n" << std::endl;
-  corMatrixConstrained.Print();
+  corMatrixConst.Print();
 
   // Total function fit CONSTRAINED SAME SIGMAS
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotalConstrainedSameSigmas =
-      new TF1("fTotalConstrainedSameSigmas",
-              asym2GaussiansExpoConstrainedSameSigma, 0., 4.2, 8);
-  fTotalConstrainedSameSigmas->SetLineColor(kRed);
-  fTotalConstrainedSameSigmas->SetLineWidth(4);
-  fTotalConstrainedSameSigmas->SetLineStyle(2);
+  TF1 *fTotalConstSameSigmas =
+      new TF1("fTotalConstSameSigmas", asym2GaussiansExpoConstrainedSameSigma,
+              0., 4.2, 8);
+  fTotalConstSameSigmas->SetLineColor(kRed);
+  fTotalConstSameSigmas->SetLineWidth(4);
+  fTotalConstSameSigmas->SetLineStyle(2);
 
-  fTotalConstrainedSameSigmas->SetParameters(
-      par1[0], par1[1], par1[2], par1[3], par1[4], par1[8], par1[9], par1[10]);
-  fTotalConstrainedSameSigmas->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
-                                           "#sigma^{1}_{2}", "N^{2}",
-                                           "Constant", "Slope", "Background");
-  TFitResultPtr fitResultConstrainedSameSigma =
-      hPhotoElectrons->Fit(fTotalConstrainedSameSigmas, "S R+");
+  fTotalConstSameSigmas->SetParameters(par1[0], par1[1], par1[2], par1[3],
+                                       par1[4], par1[8], par1[9], par1[10]);
+  fTotalConstSameSigmas->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
+                                     "#sigma^{1}_{2}", "N^{2}", "Constant",
+                                     "Slope", "Background");
+  TFitResultPtr fitResultConstSameSigma =
+      hPhotoElectrons->Fit(fTotalConstSameSigmas, "S R+");
 
   // Get results
   std::cout << "\n\n**** FIT RESULT TOTAL CONSTRAINED SAME SIGMA #mu ****\n\nP "
                "value       "
                "      = "
-            << fTotalConstrainedSameSigmas->GetProb() << "\n";
+            << fTotalConstSameSigmas->GetProb() << "\n";
   std::cout << "Reduced chi squared = "
-            << fTotalConstrainedSameSigmas->GetChisquare() /
-                   fTotalConstrainedSameSigmas->GetNDF()
+            << fTotalConstSameSigmas->GetChisquare() /
+                   fTotalConstSameSigmas->GetNDF()
             << "\n\n";
-  TMatrixD covMatrixConstrainedSameSigma =
-      fitResultConstrainedSameSigma->GetCorrelationMatrix();
-  TMatrixD corMatrixConstrainedSameSigma =
-      fitResultConstrainedSameSigma->GetCovarianceMatrix();
+  TMatrixD covMatrixConstSameSigma =
+      fitResultConstSameSigma->GetCorrelationMatrix();
+  TMatrixD corMatrixConstSameSigma =
+      fitResultConstSameSigma->GetCovarianceMatrix();
   std::cout << "\n*** Print covariance matrix ***\n" << std::endl;
-  covMatrixConstrainedSameSigma.Print();
+  covMatrixConstSameSigma.Print();
   std::cout << "\n*** Print correlation matrix ***\n" << std::endl;
-  corMatrixConstrainedSameSigma.Print();
+  corMatrixConstSameSigma.Print();
 }
 
 void setFitStyle() {
