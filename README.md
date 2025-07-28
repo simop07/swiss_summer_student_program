@@ -11,4 +11,13 @@ The aim of my project is to analyse the reflectance and absorption of light in P
 
 To efficiently collect the scintillation light produced by particles interacting with liquid xenon, VUV reflectors are required. While PTFE is excellent for this purpose, it is desired to decrease its overall amount in order to minimise the radiogenic background produced by its inherent impurity, without loosing light collection efficiency. Hence, the complete knowledge of the scintillation light transmitted in PTFE reveals fundamental, expecially in low-background experiments.
 
-The first part of my project is devoted to measure the reflectance and absorption of light in PTFEs by measuring the scintillation light detected by PMTs when light is emitted from a blue LED. To analyse the signals measured by the PMTs, a waveform and pulse analysis is performed through a software based on ROOT framework.
+The first part of my project is devoted to measure the reflectance and absorption of light in PTFEs by measuring the scintillation light detected by PMTs when light is emitted from a blue LED. To analyse the signals measured by the PMTs, a waveform and pulse analysis is performed through a software based on `ROOT` framework and `C++`.
+
+### Pulse analysis
+To perform pulse analysis, two lines of development are followed depending on the used logic:
+- [aveformAnalysisPos.cpp](waveformAnalysisPos.cpp), pulses with positive logic;
+- [waveformAnalysisNeg.cpp](waveformAnalysisNeg.cpp), for pulses with negative logic.
+
+In addition, two main source files are presented depending on the used data:
+- [waveform.cpp](waveform.cpp), for digitised data;
+- [waveformOsc.cpp](waveformOsc.cpp), for analog data from the oscilloscope.
