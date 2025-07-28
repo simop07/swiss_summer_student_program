@@ -1,4 +1,4 @@
-// To compile in SHELL: "analysis.cpp `root-config --cflags --libs`"
+// To compile in SHELL: "waveformOsc.cpp `root-config --cflags --libs`"
 #include <time.h>
 
 #include <algorithm>
