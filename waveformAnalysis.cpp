@@ -66,20 +66,18 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
   // Used to find the higher value of the interval for pulseStart and pulseEnd
   double const upLimit = fBaseline + tolerance * rms;
 
-  bool inPulse{false};  // Am I in pulse?
   int pulseStart{};
   int pulseEnd{};
 
   // Min separation between pulseEnd of previous pulse and next pulse peak
   int prevPulseEnd = -minSep;
 
-  for (int i{}; i < static_cast<int>(fSamples.size()) - 2; ++i) {
-    bool foundStart{false};  // Have I found startPulse?
+  for (int i{1}; i < static_cast<int>(fSamples.size()) - 2; ++i) {
     // Detection of pulse's maximum value
-    if (!inPulse && fSamples[i] > pulseThreshold &&
-        i - prevPulseEnd >= minSep && fSamples[i] > fSamples[i - 1] &&
-        fSamples[i] > fSamples[i + 1]) {
-      inPulse = true;
+    if (fSamples[i] > pulseThreshold && i - prevPulseEnd >= minSep &&
+        fSamples[i] > fSamples[i - 1] && fSamples[i] > fSamples[i + 1]) {
+      bool foundStart{false};  // Have I found startPulse?
+      bool foundEnd{false};    // Have I found endPulse?
 
       // Try to find startPulse near baseline before the peak
       for (int j{i - 1}; j >= std::max(0, i - minWidth); --j) {
@@ -89,18 +87,20 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
           break;
         }
       }
-    }
 
-    if (inPulse) {
-      // Try to find endPulse near baseline after the peak
-      bool foundEnd{false};  // Have I found endPulse?
-      for (int j{i + 1};
-           j <= std::min(static_cast<int>(fSamples.size()) - 1, i + maxWidth);
-           ++j) {
-        if (fSamples[j] > lowLimit && fSamples[j] < upLimit) {
-          foundEnd = true;
-          pulseEnd = j;
-          break;
+      // Try to find endPulse near baseline after the peak if Start is found
+      if (foundStart) {
+        for (int j{i + 1};
+             j <= std::min(static_cast<int>(fSamples.size()) - 1, i + maxWidth);
+             ++j) {
+          if (fSamples[j] > lowLimit && fSamples[j] < upLimit) {
+            foundEnd = true;
+            pulseEnd = j;
+            break;
+          } else if (j == static_cast<int>(fSamples.size()) - 1) {
+            foundEnd = true;
+            pulseEnd = j;
+          }
         }
       }
 
@@ -109,17 +109,7 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
         fPulses.push_back(integratePulse(pulseStart, pulseEnd));
         prevPulseEnd = pulseEnd;
       }
-      inPulse = false;
     }
-  }
-
-  // Limit case where we are still in pulse at the end of the waveform
-  if (inPulse) {
-    // The endPulse becomes the last element of samples vector
-    pulseEnd = static_cast<int>(fSamples.size()) - 1;
-
-    // Build this pulse whatsoever
-    fPulses.push_back(integratePulse(pulseStart, pulseEnd));
   }
 
   // Print waveform's properties
