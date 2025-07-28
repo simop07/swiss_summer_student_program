@@ -15,9 +15,11 @@ The first part of my project is devoted to measure the reflectance and absorptio
 
 ### Pulse analysis
 To perform pulse analysis, two lines of development are followed depending on the used logic:
-- [aveformAnalysisPos.cpp](waveformAnalysisPos.cpp), pulses with positive logic;
+- [waveformAnalysisPos.cpp](waveformAnalysisPos.cpp), pulses with positive logic;
 - [waveformAnalysisNeg.cpp](waveformAnalysisNeg.cpp), for pulses with negative logic.
 
 In addition, two main source files are presented depending on the used data:
 - [waveform.cpp](waveform.cpp), for digitised data;
 - [waveformOsc.cpp](waveformOsc.cpp), for analog data from the oscilloscope.
+
+Source file [merge.cpp](merge.cpp) is just used to merge multiple waveforms (one per .scv or .xlsx file) into one single .txt file.
