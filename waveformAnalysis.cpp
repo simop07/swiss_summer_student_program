@@ -74,6 +74,7 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
   int prevPulseEnd = -minSep;
 
   for (int i{}; i < static_cast<int>(fSamples.size()) - 2; ++i) {
+    bool foundStart{false};  // Have I found startPulse?
     // Detection of pulse's maximum value
     if (!inPulse && fSamples[i] > pulseThreshold &&
         i - prevPulseEnd >= minSep && fSamples[i] > fSamples[i - 1] &&
@@ -81,8 +82,7 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
       inPulse = true;
 
       // Try to find startPulse near baseline before the peak
-      bool foundStart{false};  // Have I found startPulse?
-      for (int j{i}; j >= std::max(0, i - minWidth); --j) {
+      for (int j{i - 1}; j >= std::max(0, i - minWidth); --j) {
         if (fSamples[j] > lowLimit && fSamples[j] < upLimit) {
           foundStart = true;
           pulseStart = j;
@@ -94,7 +94,7 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
     if (inPulse) {
       // Try to find endPulse near baseline after the peak
       bool foundEnd{false};  // Have I found endPulse?
-      for (int j{i};
+      for (int j{i + 1};
            j <= std::min(static_cast<int>(fSamples.size()) - 1, i + maxWidth);
            ++j) {
         if (fSamples[j] > lowLimit && fSamples[j] < upLimit) {
@@ -105,8 +105,10 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
       }
 
       // Build pulse and save it into a vector
-      fPulses.push_back(integratePulse(pulseStart, pulseEnd));
-      prevPulseEnd = pulseEnd;
+      if (foundStart && foundEnd && pulseStart < pulseEnd) {
+        fPulses.push_back(integratePulse(pulseStart, pulseEnd));
+        prevPulseEnd = pulseEnd;
+      }
       inPulse = false;
     }
   }
@@ -146,11 +148,12 @@ Pulse WaveformAnalysis::integratePulse(int pulseStart, int pulseEnd) {
     pulseArea += fSamples[i] - fBaseline;
   }
 
-  // Right dimensions of area are in ADC*ns -> multiply by samplePeriod
+  // Right dimensions of area are in counts*time -> multiply by samplePeriod
   pulseArea *= fSamplePeriod;
 
   // Create pulse object
   return Pulse{fTimeStamp + pulseStart * fSamplePeriod,
                fTimeStamp + pulseEnd * fSamplePeriod,
-               fTimeStamp + maxPulseIndex * fSamplePeriod, maxPulse, pulseArea};
+               fTimeStamp + maxPulseIndex * fSamplePeriod, maxPulse,
+               std::abs(pulseArea)};
 }
