@@ -1,5 +1,5 @@
-#ifndef WAVEFORMANALYSIS_HPP
-#define WAVEFORMANALYSIS_HPP
+#ifndef WAVEFORMANALYSISPOS_HPP
+#define WAVEFORMANALYSISPOS_HPP
 
 #include <vector>
 
@@ -13,10 +13,10 @@ struct Pulse {
 };
 
 // Waveform class allows to perform waveform analysis
-class WaveformAnalysis {
+class WaveformAnalysisPos {
  public:
-  WaveformAnalysis(std::vector<double> const &s = {}, double ts = {},
-                   double sp = {});
+  WaveformAnalysisPos(std::vector<double> const &s = {}, double ts = {},
+                      double sp = {});
 
   // Getters for waveform member data
 

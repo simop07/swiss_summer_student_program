@@ -1,36 +1,37 @@
-#include "waveformAnalysis.hpp"
-
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
 
-WaveformAnalysis::WaveformAnalysis(std::vector<double> const &s, double ts,
-                                   double sp)
+#include "waveformAnalysisPos.hpp"
+
+WaveformAnalysisPos::WaveformAnalysisPos(std::vector<double> const &s,
+                                         double ts, double sp)
     : fSamples{s}, fTimeStamp{ts}, fSamplePeriod{sp} {
-  WaveformAnalysis::analyseWaveform();  // When a waveform is found, analyse it
+  WaveformAnalysisPos::analyseWaveform();  // When a waveform is found, analyse
+                                           // it
 }
 
-std::vector<double> const &WaveformAnalysis::getSamples() const {
+std::vector<double> const &WaveformAnalysisPos::getSamples() const {
   return fSamples;
 }
 
-double WaveformAnalysis::getTimeStamp() const { return fTimeStamp; }
+double WaveformAnalysisPos::getTimeStamp() const { return fTimeStamp; }
 
-double WaveformAnalysis::getSamplePeriod() const { return fSamplePeriod; }
+double WaveformAnalysisPos::getSamplePeriod() const { return fSamplePeriod; }
 
-double WaveformAnalysis::getBaseline() const { return fBaseline; }
+double WaveformAnalysisPos::getBaseline() const { return fBaseline; }
 
-std::vector<Pulse> const &WaveformAnalysis::getPulses() const {
+std::vector<Pulse> const &WaveformAnalysisPos::getPulses() const {
   return fPulses;
 }
 
-void WaveformAnalysis::analyseWaveform() {
-  WaveformAnalysis::baseline();
-  WaveformAnalysis::findPulses();
+void WaveformAnalysisPos::analyseWaveform() {
+  WaveformAnalysisPos::baseline();
+  WaveformAnalysisPos::findPulses();
 }
 
-void WaveformAnalysis::baseline(int nInitialSamples) {
+void WaveformAnalysisPos::baseline(int nInitialSamples) {
   // Sum the first nInitialSamples values and make their average
   auto sumSamples =
       std::accumulate(fSamples.begin(), fSamples.begin() + nInitialSamples, 0.);
@@ -39,7 +40,7 @@ void WaveformAnalysis::baseline(int nInitialSamples) {
   fBaseline = sumSamples / nInitialSamples;
 }
 
-double WaveformAnalysis::RMS(int nInitialSamples) {
+double WaveformAnalysisPos::RMS(int nInitialSamples) {
   double averageBaseline{fBaseline};
   double sumRMS{};
   for (int i{}; i < nInitialSamples; ++i) {
@@ -52,8 +53,8 @@ double WaveformAnalysis::RMS(int nInitialSamples) {
   return std::sqrt(sumRMS / nInitialSamples);
 }
 
-void WaveformAnalysis::findPulses(double threshold, double tolerance,
-                                  int minWidth, int maxWidth, int minSep) {
+void WaveformAnalysisPos::findPulses(double threshold, double tolerance,
+                                     int minWidth, int maxWidth, int minSep) {
   // Compute RMS on waveforms' baseline
   double const rms = RMS(50);
 
@@ -122,7 +123,7 @@ void WaveformAnalysis::findPulses(double threshold, double tolerance,
 }
 
 // Find area of 1 pulse
-Pulse WaveformAnalysis::integratePulse(int pulseStart, int pulseEnd) {
+Pulse WaveformAnalysisPos::integratePulse(int pulseStart, int pulseEnd) {
   int maxPulseIndex = pulseStart;          // Index where maximum is verified
   double maxPulse = fSamples[pulseStart];  // Maximum value of the pulse
   double pulseArea{};

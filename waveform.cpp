@@ -23,7 +23,7 @@
 #include "TPad.h"
 #include "TROOT.h"
 #include "TStyle.h"
-#include "waveformAnalysis.hpp"
+#include "waveformAnalysisPos.hpp"
 
 // Define global constants
 constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
@@ -348,7 +348,7 @@ void waveformAnalysis() {
     }
 
     // Creating WaveformAnalysis object
-    WaveformAnalysis wf(samples, timestamp, samplePeriod);
+    WaveformAnalysisPos wf(samples, timestamp, samplePeriod);
 
     // Print waveform properties
     std::cout << std::fixed
