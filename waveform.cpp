@@ -1,4 +1,4 @@
-// To compile in SHELL: "waveform.cpp `root-config --cflags --libs`"
+// To compile in SHELL: "analysis.cpp `root-config --cflags --libs`"
 #include <time.h>
 
 #include <algorithm>
@@ -295,7 +295,7 @@ void setFitStyle() {
 // and pulseWidth histos
 void waveformAnalysis() {
   // To avoid reloading manually if .so is present
-  R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
+  R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
   double const samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
@@ -444,7 +444,7 @@ void waveformAnalysis() {
 // Plot waveform amplitudes as function of time
 void waveformTotal() {
   // To avoid reloading manually if .so is present
-  R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
+  R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
   // Creating files and canvases
   TFile *file2 = new TFile("waveform.root", "RECREATE");

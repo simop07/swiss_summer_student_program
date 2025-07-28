@@ -36,8 +36,8 @@ class WaveformAnalysisNeg {
   double RMS(int nInitialSamples = 1100);
 
   // Detect pulses
-  void findPulses(double threshold = 20., double tolerance = 10.,
-                  int minWidth = 20, int maxWidth = 20, int minSep = 10);
+  void findPulses(double threshold = 20., double tolerance = 3.,
+                  int minWidth = 30, int maxWidth = 30, int minSep = 10);
 
   // Find area of 1 pulse
   Pulse integratePulse(int pulseStart, int pulseEnd);

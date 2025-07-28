@@ -1,9 +1,9 @@
+#include "waveformAnalysisNeg.hpp"
+
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
-
-#include "waveformAnalysisNeg.hpp"
 
 WaveformAnalysisNeg::WaveformAnalysisNeg(std::vector<double> const &s,
                                          double ts, double sp)

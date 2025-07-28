@@ -1,4 +1,4 @@
-// To compile in SHELL: "waveformOsc.cpp `root-config --cflags --libs`"
+// To compile in SHELL: "analysis.cpp `root-config --cflags --libs`"
 #include <time.h>
 
 #include <algorithm>
@@ -29,7 +29,8 @@
 constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
 constexpr int nMaxAnalysedRows{1021};  // Maximum rows INCLUDED (1021)
 
-// Asymmetric gaussian function
+// Asymmetric gaussian functions
+
 Double_t asymGaussians(Double_t *x, Double_t *par) {
   // par[0] = N
   // par[1] = #mu
@@ -46,9 +47,7 @@ Double_t asymGaussians(Double_t *x, Double_t *par) {
   return fitVal;
 }
 
-// Asymmetric gaussian functions
-
-Double_t asym2GaussiansExpo(Double_t *x, Double_t *par) {
+Double_t asym2Gaussians(Double_t *x, Double_t *par) {
   // par[0] = N^{1}
   // par[1] = #mu^{1}
   // par[2] = #sigma^{1}_{1}
@@ -57,15 +56,12 @@ Double_t asym2GaussiansExpo(Double_t *x, Double_t *par) {
   // par[5] = #mu^{2}
   // par[6] = #sigma^{2}_{1}
   // par[7] = #sigma^{2}_{2}
-  // par[8] = Constant
-  // par[9] = Slope
-  // par[10] = Background
+  // par[8] = Background
 
-  return asymGaussians(x, &par[0]) + asymGaussians(x, &par[4]) +
-         TMath::Exp(par[8] + par[9] * x[0]) + par[10];
+  return asymGaussians(x, &par[0]) + asymGaussians(x, &par[4]) + par[8];
 }
 
-Double_t asym2GaussiansExpoConstrained(Double_t *x, Double_t *par) {
+Double_t asym2GaussiansConstrained(Double_t *x, Double_t *par) {
   // par[0] = N^{1}
   // par[1] = #mu^{1}
   // par[2] = #sigma^{1}_{1}
@@ -73,34 +69,30 @@ Double_t asym2GaussiansExpoConstrained(Double_t *x, Double_t *par) {
   // par[4] = N^{2}
   // par[5] = #sigma^{2}_{1}
   // par[6] = #sigma^{2}_{2}
-  // par[7] = Constant
-  // par[8] = Slope
-  // par[9] = Background
+  // par[7] = Background
 
   return asymGaussians(x, new Double_t[4]{par[0], par[1], par[2], par[3]}) +
          asymGaussians(x, new Double_t[4]{par[4], 2 * par[1], par[5], par[6]}) +
-         TMath::Exp(par[7] + par[8] * x[0]) + par[9];
+         par[7];
 }
 
-Double_t asym2GaussiansExpoConstrainedSameSigma(Double_t *x, Double_t *par) {
+Double_t asym2GaussiansConstrainedSameSigma(Double_t *x, Double_t *par) {
   // par[0] = N^{1}
   // par[1] = #mu^{1}
   // par[2] = #sigma^{1}_{1}
   // par[3] = #sigma^{1}_{2}
   // par[4] = N^{2}
-  // par[5] = Constant
-  // par[6] = Slope
-  // par[7] = Background
+  // par[5] = Background
 
   return asymGaussians(x, new Double_t[4]{par[0], par[1], par[2], par[3]}) +
          asymGaussians(x, new Double_t[4]{par[4], 2 * par[1], par[2], par[3]}) +
-         TMath::Exp(par[5] + par[6] * x[0]) + par[7];
+         par[5];
 }
 
 // Group functions for fitting PE histo
 void fitPEHisto(TH1F *hPhotoElectrons) {
   // Import user defined function asymmetric gaussians for 1 PE
-  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 1.8, 4);
+  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 2., 4);
   fAsymmetric1PE->SetLineColor(kRed);
   fAsymmetric1PE->SetLineWidth(4);
   fAsymmetric1PE->SetLineStyle(2);
@@ -112,33 +104,25 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma^{1}_{2}
 
   // Import user defined function asymmetric gaussians for 2 PE
-  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.6, 4);
+  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 2., 2.6, 4);
   fAsymmetric2PE->SetLineColor(kOrange + 2);
   fAsymmetric2PE->SetLineWidth(4);
   fAsymmetric2PE->SetLineStyle(2);
   fAsymmetric2PE->SetParNames("N^{2}", "#mu^{2}", "#sigma^{2}_{1}",
                               "#sigma^{2}_{2}");
   fAsymmetric2PE->SetParameter(0, 0.1);  // N^{2}
-  fAsymmetric2PE->SetParameter(1, 2.2);  // #mu^{2}
+  fAsymmetric2PE->SetParameter(1, 2.);   // #mu^{2}
   fAsymmetric2PE->SetParameter(2, 1);    // #sigma^{2}_{1}
   fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma^{2}_{2}
 
-  // Define expo function for noise fit
-  TF1 *fExpo = new TF1("fExpo", "expo", 0., 4.2);
-  fExpo->SetLineColor(kGreen + 2);
-  fExpo->SetLineWidth(4);
-  fExpo->SetLineStyle(2);
-  fExpo->SetParameter(0, -0.4);  // Constant
-  fExpo->SetParameter(1, -1.2);  // Slope
-
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0., 4.2, 11);
+  TF1 *fTotal = new TF1("fTotal", asym2Gaussians, 0., 4.2, 9);
   fTotal->SetLineColor(kGreen + 2);
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
 
   // Define parameter array for total functions
-  Double_t par1[11];
+  Double_t par1[9];
 
   // Normalise  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
   hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
@@ -167,24 +151,13 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
             << fAsymmetric2PE->GetChisquare() / fAsymmetric2PE->GetNDF()
             << "\n\n";
 
-  // Exponential noise
-  hPhotoElectrons->Fit(fExpo, "N", "", 0., 0.2);
-  fExpo->GetParameters(&par1[8]);
-  // Print pvalue and reduced chi squared
-  std::cout << "\n\n**** FIT RESULT EXPO NOISE ****\n\nP value       "
-               "      = "
-            << fExpo->GetProb() << "\n";
-  std::cout << "Reduced chi squared = "
-            << fExpo->GetChisquare() / fExpo->GetNDF() << "\n\n";
-
   // Total function fit NOT CONSTRAINED
 
-  par1[10] = 0.001;
+  par1[8] = 0.005;
   fTotal->SetParameters(par1);
   fTotal->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}", "#sigma^{1}_{2}",
                       "N^{2}", "#mu^{2}", "#sigma^{2}_{1}", "#sigma^{2}_{2}",
-                      "Constant", "Slope");
-  fTotal->SetParName(10, "Background");
+                      "Background");
   TFitResultPtr fitResult = hPhotoElectrons->Fit(fTotal, "S R+");
 
   // Get results
@@ -205,16 +178,16 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConst =
-      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0., 4.2, 10);
+      new TF1("fTotalConst", asym2GaussiansConstrained, 0., 4.2, 8);
   fTotalConst->SetLineColor(kOrange + 2);
   fTotalConst->SetLineWidth(4);
   fTotalConst->SetLineStyle(2);
 
   fTotalConst->SetParameters(par1[0], par1[1], par1[2], par1[3], par1[4],
-                             par1[6], par1[7], par1[8], par1[9], par1[10]);
+                             par1[6], par1[7], par1[8]);
   fTotalConst->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
                            "#sigma^{1}_{2}", "N^{2}", "#sigma^{2}_{1}",
-                           "#sigma^{2}_{2}", "Constant", "Slope", "Background");
+                           "#sigma^{2}_{2}", "Background");
   TFitResultPtr fitResultConst = hPhotoElectrons->Fit(fTotalConst, "S R+");
 
   // Get results
@@ -234,18 +207,16 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Total function fit CONSTRAINED SAME SIGMAS
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotalConstSameSigmas =
-      new TF1("fTotalConstSameSigmas", asym2GaussiansExpoConstrainedSameSigma,
-              0., 4.2, 8);
+  TF1 *fTotalConstSameSigmas = new TF1(
+      "fTotalConstSameSigmas", asym2GaussiansConstrainedSameSigma, 0., 4.2, 6);
   fTotalConstSameSigmas->SetLineColor(kRed);
   fTotalConstSameSigmas->SetLineWidth(4);
   fTotalConstSameSigmas->SetLineStyle(2);
 
   fTotalConstSameSigmas->SetParameters(par1[0], par1[1], par1[2], par1[3],
-                                       par1[4], par1[8], par1[9], par1[10]);
+                                       par1[4], par1[8]);
   fTotalConstSameSigmas->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
-                                     "#sigma^{1}_{2}", "N^{2}", "Constant",
-                                     "Slope", "Background");
+                                     "#sigma^{1}_{2}", "N^{2}", "Background");
   TFitResultPtr fitResultConstSameSigma =
       hPhotoElectrons->Fit(fTotalConstSameSigmas, "S R+");
 
@@ -295,7 +266,7 @@ void setFitStyle() {
 // and pulseWidth histos
 void waveformAnalysis() {
   // To avoid reloading manually if .so is present
-  R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
+  R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   double const samplePeriod = 0.005e-1;  // In [\mus]
   std::ifstream infile("4Layers.txt");
@@ -311,7 +282,7 @@ void waveformAnalysis() {
                                "peak [#mus]; Area [mV #times ns]",
                                60, 0.4, 2.1, 60, 0., 100.);
   TH1F *hNoise = new TH1F("hNoise", "Noise distribution; Voltage [mV]; Counts",
-                          15, -0.6, 0.6);
+                          17, -0.6, 0.6);
   TH1F *hPhotoElectrons =
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
                80, 0, 3.5);
@@ -378,14 +349,14 @@ void waveformAnalysis() {
       std::cout << "  Width               = "
                 << (p.endTime - p.startTime) * 1000 << " ns\n";
       std::cout << "  Area                = " << p.area * 1000 << " mV*ns\n";
-      std::cout << "  Area in PE          = " << p.area * 1000 / 25. << " PE\n";
+      std::cout << "  Area in PE          = " << p.area * 1000 / 24. << " PE\n";
 
       // Fill pulse information
       hAreaVsTime->Fill(p.peakTime - wf.getTimeStamp(), p.area * 1000);
       hWidth->Fill((p.endTime - p.startTime) * 1000);  // In [ns]
 
       // Convert area into PE (current assumption is 1 PE = 11000 ADC*ns)
-      double areaInPE = p.area * 1000 / 25.;
+      double areaInPE = p.area * 1000 / 24.;
       hPhotoElectrons->Fill(areaInPE);
     }
 
@@ -398,6 +369,11 @@ void waveformAnalysis() {
 
   // Round fit printing to 10 decimal place
   std::cout << std::fixed << std::setprecision(10);
+
+  // FITTING FUNCTIONS SPACE
+  std::cout << "\n\n\n************************************\n";
+  std::cout << "****** FIITING FUNCTION SPACE ******\n";
+  std::cout << "************************************\n\n\n";
 
   // Fit noise with gaussian function
   hNoise->Fit("gaus");
@@ -443,7 +419,7 @@ void waveformAnalysis() {
 // Plot waveform amplitudes as function of time
 void waveformTotal() {
   // To avoid reloading manually if .so is present
-  R__LOAD_LIBRARY(waveformAnalysis_cpp.so);
+  R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   // Creating files and canvases
   TFile *file2 = new TFile("waveform.root", "RECREATE");
