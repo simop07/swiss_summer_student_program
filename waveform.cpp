@@ -98,6 +98,7 @@ Double_t asym2GaussiansExpoConstrainedSameSigma(Double_t *x, Double_t *par) {
 }
 
 // Group functions for fitting PE histo
+
 void fitPEHisto(TH1F *hPhotoElectrons) {
   // Import user defined function asymmetric gaussians for 1 PE
   TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 1.8, 4);
@@ -291,8 +292,8 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
-// This function analyses the waveform by building areaVStime, Noise, PE counts
-// and pulseWidth histos
+// This function analyses the waveform by building areaVStime, Noise, PE
+// counts and pulseWidth histos
 void waveformAnalysis() {
   // To avoid reloading manually if .so is present
   R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
@@ -318,6 +319,46 @@ void waveformAnalysis() {
                150, 0, 6);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 2, 50);
+
+  // Plotting parameters
+  int const nPulseParam{5};
+  Parameter pulsePar[nPulseParam] = {{"Width [ns]", 2., 50.},
+                                     {"Area [ADC #times ns]", 0., 30000.},
+                                     {"Area [PE]", 0, 6},
+                                     {"Relative peak time [ns]", 100., 300.},
+                                     {"Noise RMS [ADC]", 8020, 8050}};
+  int const nBins{50};
+  TH1F *hPulsePar[nPulseParam];
+  TH2F *h2PulsePar[nPulseParam][nPulseParam];
+  TGraph *gPulsePar[nPulseParam][nPulseParam];
+
+  // Initialisation loop for plotting parameters
+  // par_i labels the rows and par_j labels the columns
+  for (int par_i = 0; par_i < nPulseParam; ++par_i) {
+    hPulsePar[par_i] =
+        new TH1F(Form("h1PulsePar_%d", par_i),
+                 Form("%s; %s; Counts", pulsePar[par_i].label.c_str(),
+                      pulsePar[par_i].label.c_str()),
+                 nBins, pulsePar[par_i].min, pulsePar[par_i].max);
+    for (int par_j = 0; par_j < nPulseParam; ++par_j) {
+      if (par_i < par_j) {
+        gPulsePar[par_i][par_j] = new TGraph();
+        gPulsePar[par_i][par_j]->SetTitle(
+            Form("%s vs %s;%s;%s", pulsePar[par_j].label.c_str(),
+                 pulsePar[par_i].label.c_str(), pulsePar[par_i].label.c_str(),
+                 pulsePar[par_j].label.c_str()));
+
+      } else if (par_i > par_j) {
+        h2PulsePar[par_i][par_j] = new TH2F(
+            Form("h2PulsePar_%d_%d", par_i, par_j),
+            Form("%s vs %s;%s;%s", pulsePar[par_j].label.c_str(),
+                 pulsePar[par_i].label.c_str(), pulsePar[par_i].label.c_str(),
+                 pulsePar[par_j].label.c_str()),
+            nBins, pulsePar[par_i].min, pulsePar[par_i].max, nBins,
+            pulsePar[par_j].min, pulsePar[par_j].max);
+      }
+    }
+  }
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -362,6 +403,11 @@ void waveformAnalysis() {
     const auto &pulses = wf.getPulses();
     std::cout << "Number of Pulses = " << pulses.size() << "\n";
 
+    // Fill noise information
+    int const nBaselineSamples{50};
+    std::for_each(samples.begin(), samples.begin() + nBaselineSamples,
+                  [&](double sample) { hNoise->Fill(sample); });
+
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
@@ -388,12 +434,28 @@ void waveformAnalysis() {
       // Convert area into PE (current assumption is 1 PE = 11000 ADC*ns)
       double areaInPE = p.area / 11000.;
       hPhotoElectrons->Fill(areaInPE);
-    }
 
-    // Fill noise information
-    int const nBaselineSamples{50};
-    std::for_each(samples.begin(), samples.begin() + nBaselineSamples,
-                  [&](double sample) { hNoise->Fill(sample); });
+      // Plot all parameters against each other
+
+      // Gather params of interest from each pulse and noise from waveform
+      double parValues[nPulseParam] = {
+          p.endTime - p.startTime, p.area, p.area / 11000,
+          p.peakTime - wf.getTimeStamp(), wf.getBaseline()};
+      for (int par_i = 0; par_i < nPulseParam; ++par_i) {
+        hPulsePar[par_i]->Fill(parValues[par_i]);
+
+        for (int par_j = 0; par_j < nPulseParam; ++par_j) {
+          if (par_i < par_j) {
+            {
+              gPulsePar[par_i][par_j]->AddPoint(parValues[par_i],
+                                                parValues[par_j]);
+            }
+          } else if (par_i > par_j) {
+            h2PulsePar[par_i][par_j]->Fill(parValues[par_i], parValues[par_j]);
+          }
+        }
+      }
+    }
     ++row;
   }
 
@@ -435,9 +497,30 @@ void waveformAnalysis() {
   hWidth->SetLineWidth(1);
   hWidth->DrawCopy();
 
+  // Draw parameters on canvas
+  TCanvas *c3 = new TCanvas("c3", "Parameter plots", 1300, 700);
+  c3->Divide(nPulseParam, nPulseParam);
+  for (int par_i = 0; par_i < nPulseParam; ++par_i) {
+    for (int par_j = 0; par_j < nPulseParam; ++par_j) {
+      int canvasIndex{par_i * nPulseParam + par_j + 1};
+      c3->cd(canvasIndex);
+
+      if (par_i < par_j) {
+        gPulsePar[par_i][par_j]->Draw("AP");
+      } else if (par_i > par_j) {
+        h2PulsePar[par_i][par_j]->DrawCopy("");
+      } else if (par_i == par_j) {
+        hPulsePar[par_i]->DrawCopy("");
+      }
+    }
+  }
+
   c1->SaveAs("pulse_analysis_results.pdf");
+  c3->SaveAs("params_analysis.pdf");
+
   file1->cd();
   c1->Write();
+  c3->Write();
   file1->Close();
 }
 
@@ -577,9 +660,8 @@ int main() {
 // fSymmetric3PE->SetParameter(2, 2.0);   // #sigma
 
 // Import user defined function asymmetric gaussians for 3 PE
-// TF1 *fAsymmetric3PE = new TF1("fAsymmetric3PE", asymGaussians, 2.8, 3.55, 4);
-// fAsymmetric3PE->SetLineColor(kViolet);
-// fAsymmetric3PE->SetLineWidth(4);
+// TF1 *fAsymmetric3PE = new TF1("fAsymmetric3PE", asymGaussians, 2.8, 3.55,
+// 4); fAsymmetric3PE->SetLineColor(kViolet); fAsymmetric3PE->SetLineWidth(4);
 // fAsymmetric3PE->SetLineStyle(2);
 // fAsymmetric3PE->SetParNames("N^{3}", "#mu^{3}", "#sigma^{3}_{1}",
 //                             "#sigma^{3}_{2}");
