@@ -3,6 +3,12 @@
 
 #include <vector>
 
+struct Parameter {
+  std::string label{};  // Parameter's name
+  double min{};         // Min of range
+  double max{};         // Max of range
+};
+
 // Pulse struct allows to define the properties of pulses in a waveform
 struct Pulse {
   double startTime{};  // Overall start time of the pulse
