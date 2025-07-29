@@ -1,9 +1,9 @@
+#include "waveformAnalysisPos.hpp"
+
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
-
-#include "waveformAnalysisPos.hpp"
 
 WaveformAnalysisPos::WaveformAnalysisPos(std::vector<double> const &s,
                                          double ts, double sp)
