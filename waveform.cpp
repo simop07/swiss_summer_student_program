@@ -285,6 +285,7 @@ void setFitStyle() {
   gStyle->SetTitleBorderSize(0);
   gStyle->SetTitleXOffset(1.2f);
   gStyle->SetTitleYOffset(1.1f);
+  gStyle->SetLineScalePS(1);
   // gStyle->SetPadTopMargin(-9.);
   // gStyle->SetPadRightMargin(-9.);
   // gStyle->SetPadBottomMargin(-9.);
@@ -327,7 +328,7 @@ void waveformAnalysis() {
                                      {"Area [PE]", 0, 6},
                                      {"Relative peak time [ns]", 100., 300.},
                                      {"Noise RMS [ADC]", 8020, 8050}};
-  int const nBins{50};
+  int const nBins{200};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
   TGraph *gPulsePar[nPulseParam][nPulseParam];
@@ -341,21 +342,21 @@ void waveformAnalysis() {
                       pulsePar[par_i].label.c_str()),
                  nBins, pulsePar[par_i].min, pulsePar[par_i].max);
     for (int par_j = 0; par_j < nPulseParam; ++par_j) {
-      if (par_i < par_j) {
+      if (par_i > par_j) {
         gPulsePar[par_i][par_j] = new TGraph();
         gPulsePar[par_i][par_j]->SetTitle(
-            Form("%s vs %s;%s;%s", pulsePar[par_j].label.c_str(),
-                 pulsePar[par_i].label.c_str(), pulsePar[par_i].label.c_str(),
-                 pulsePar[par_j].label.c_str()));
+            Form("%s vs %s;%s;%s", pulsePar[par_i].label.c_str(),
+                 pulsePar[par_j].label.c_str(), pulsePar[par_j].label.c_str(),
+                 pulsePar[par_i].label.c_str()));
 
-      } else if (par_i > par_j) {
+      } else if (par_i < par_j) {
         h2PulsePar[par_i][par_j] = new TH2F(
             Form("h2PulsePar_%d_%d", par_i, par_j),
-            Form("%s vs %s;%s;%s", pulsePar[par_j].label.c_str(),
-                 pulsePar[par_i].label.c_str(), pulsePar[par_i].label.c_str(),
-                 pulsePar[par_j].label.c_str()),
-            nBins, pulsePar[par_i].min, pulsePar[par_i].max, nBins,
-            pulsePar[par_j].min, pulsePar[par_j].max);
+            Form("%s vs %s;%s;%s", pulsePar[par_i].label.c_str(),
+                 pulsePar[par_j].label.c_str(), pulsePar[par_j].label.c_str(),
+                 pulsePar[par_i].label.c_str()),
+            nBins, pulsePar[par_j].min, pulsePar[par_j].max, nBins,
+            pulsePar[par_i].min, pulsePar[par_i].max);
       }
     }
   }
@@ -445,13 +446,13 @@ void waveformAnalysis() {
         hPulsePar[par_i]->Fill(parValues[par_i]);
 
         for (int par_j = 0; par_j < nPulseParam; ++par_j) {
-          if (par_i < par_j) {
+          if (par_i > par_j) {
             {
-              gPulsePar[par_i][par_j]->AddPoint(parValues[par_i],
-                                                parValues[par_j]);
+              gPulsePar[par_i][par_j]->AddPoint(parValues[par_j],
+                                                parValues[par_i]);
             }
-          } else if (par_i > par_j) {
-            h2PulsePar[par_i][par_j]->Fill(parValues[par_i], parValues[par_j]);
+          } else if (par_i < par_j) {
+            h2PulsePar[par_i][par_j]->Fill(parValues[par_j], parValues[par_i]);
           }
         }
       }
@@ -505,10 +506,15 @@ void waveformAnalysis() {
       int canvasIndex{par_i * nPulseParam + par_j + 1};
       c3->cd(canvasIndex);
 
-      if (par_i < par_j) {
+      if (par_i > par_j) {
+        gPulsePar[par_i][par_j]->SetMarkerStyle(20);
+        gPulsePar[par_i][par_j]->SetMarkerSize(0.2f);
+        gPulsePar[par_i][par_j]->SetMarkerColor(kRed);
         gPulsePar[par_i][par_j]->Draw("AP");
-      } else if (par_i > par_j) {
-        h2PulsePar[par_i][par_j]->DrawCopy("");
+      } else if (par_i < par_j) {
+        gPad->SetLogz();
+        gPad->Update();
+        h2PulsePar[par_i][par_j]->DrawCopy("COLZ");
       } else if (par_i == par_j) {
         hPulsePar[par_i]->DrawCopy("");
       }
