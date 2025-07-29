@@ -351,15 +351,33 @@ void waveformAnalysis() {
     // Loop over columns
     while (std::getline(ss, item, '\t')) {
       if (item.empty()) continue;
-      if (column == 3)
+      if (column == 3) {
         timestamp = std::stod(item) * 1e6;
-      else if (column >= 7)
+      } else if (column >= 7) {
         samples.push_back(std::stod(item) * 1e3);
+      }
       ++column;
+    }
+
+    // Selection condition on the "maximum" voltage
+    double const maxVoltage{-13.9333};
+    double const tolerance{0.01};
+    auto it = std::find_if(samples.begin(), samples.end(), [&](double val) {
+      return ((val - maxVoltage) < tolerance);
+    });
+    if (it != samples.end()) {
+      continue;
     }
 
     // Creating WaveformAnalysis object
     WaveformAnalysisNeg wf(samples, timestamp, samplePeriod);
+
+    // Selection conditions
+    // auto it = std::find(samples.begin(), samples.end(), -13.9333);
+    // auto samplesEnd = samples.end();
+    // if (it == samplesEnd) {
+    //   continue;
+    // }
 
     // Print waveform properties
     std::cout << std::fixed
@@ -559,6 +577,16 @@ void waveformTotal() {
       ++column;
     }
 
+    // Selection condition on the "maximum" voltage
+    double const maxVoltage{-13.9333};
+    double const tolerance{0.01};
+    auto it = std::find_if(yValues.begin(), yValues.end(), [&](double val) {
+      return ((val - maxVoltage) < tolerance);
+    });
+    if (it != yValues.end()) {
+      continue;
+    }
+
     // Generate a random number between 0 and 8 (used for colour indices)
     int randIndex = rand() % 9;
 
@@ -570,7 +598,7 @@ void waveformTotal() {
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     // g->GetXaxis()->SetRangeUser(-0.5e-6, 2.1e-6);
-    // g->GetYaxis()->SetRangeUser(7500., 16000.);
+    g->GetYaxis()->SetRangeUser(-15., 1.);
     g->SetTitle(Form("Waveform %d; Time [#mus]; Voltage [mV]",
                      row + 1));  // Inserting placeholder
     graphs.push_back(g);
