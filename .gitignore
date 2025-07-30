@@ -38,9 +38,14 @@
 # ROOT files
 *.root
 
-# Text files and PDFs
+# Text files, PDFs and images
 *.txt
 *.pdf
+*.png
+*.svg
 
 # Directories
 data/
+
+# Miscellaneous
+nikolasCode.cpp
