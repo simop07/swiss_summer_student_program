@@ -46,6 +46,8 @@
 
 # Directories
 data/
+rootFiles/
+plots/
 
 # Miscellaneous
 nikolasCode.cpp

@@ -306,7 +306,7 @@ void waveformAnalysis() {
   int row = 0;
 
   // Creating TFile
-  TFile *file1 = new TFile("waveformAnalysis.root", "RECREATE");
+  TFile *file1 = new TFile("./rootFiles/waveformAnalysis.root", "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
@@ -550,8 +550,8 @@ void waveformAnalysis() {
     }
   }
 
-  c1->SaveAs("pulse_analysis_results.pdf");
-  c3->SaveAs("params_analysis.pdf");
+  c1->SaveAs("./plots/pulse_analysis_results.pdf");
+  c3->SaveAs("./plots/params_analysis.pdf");
 
   file1->cd();
   c1->Write();
@@ -565,7 +565,7 @@ void waveformTotal() {
   R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
   // Creating files and canvases
-  TFile *file2 = new TFile("waveform.root", "RECREATE");
+  TFile *file2 = new TFile("./rootFiles/waveform.root", "RECREATE");
   TCanvas *c2 = new TCanvas("c2", "Waveform analysis", 1500, 700);
 
   const double samplePeriod = 2.0;  // In [ns]
@@ -652,7 +652,7 @@ void waveformTotal() {
   file2->Close();
 
   // Print canvas
-  c2->SaveAs("waveform_plot.png");
+  c2->SaveAs("./plots/waveform_plot.png");
 }
 
 int main() {

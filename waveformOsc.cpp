@@ -270,12 +270,13 @@ void waveformAnalysis() {
   R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   double const samplePeriod = 0.005e-1;  // In [\mus]
-  std::ifstream infile("4Layers.txt");
+  std::ifstream infile("./data/4Layers.txt");
   std::string line;
   int row = 0;
 
   // Creating TFile
-  TFile *file1 = new TFile("waveformAnalysisOsc.root", "RECREATE");
+  TFile *file1 =
+      new TFile("./data/rootFiles/waveformAnalysisOsc.root", "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
@@ -513,8 +514,8 @@ void waveformAnalysis() {
     }
   }
 
-  c1->SaveAs("pulse_analysis_results_osc.pdf");
-  c3->SaveAs("params_analysis_osc.pdf");
+  c1->SaveAs("./plots/pulse_analysis_results_osc.pdf");
+  c3->SaveAs("./plots/params_analysis_osc.pdf");
 
   file1->cd();
   c1->Write();
@@ -528,11 +529,11 @@ void waveformTotal() {
   R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   // Creating files and canvases
-  TFile *file2 = new TFile("waveformOsc.root", "RECREATE");
+  TFile *file2 = new TFile("./data/rootFiles/waveformOsc.root", "RECREATE");
   TCanvas *c2 = new TCanvas("c2", "Waveform analysis", 1500, 700);
 
   const double samplePeriod = 0.005e-1;  // In [\mus]
-  std::ifstream infile("4Layers.txt");
+  std::ifstream infile("./data/4Layers.txt");
   std::string line;
 
   int row = 0;
@@ -624,7 +625,7 @@ void waveformTotal() {
   file2->Close();
 
   // Print canvas
-  c2->SaveAs("waveform_plot_osc.png");
+  c2->SaveAs("./plots/waveform_plot_osc.png");
 }
 
 int main() {
