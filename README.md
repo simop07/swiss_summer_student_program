@@ -25,3 +25,6 @@ In addition, two main source files are presented depending on the used data:
 - [waveformOsc.cpp](waveformOsc.cpp), for analog data from the oscilloscope.
 
 The aim of pulse analysis is to extrapolate several parameters of interest which will leter be used to find the reflectance and transmittance of light in PTFEs.
+
+### [waveformOsc.cpp](waveformOsc.cpp) miscellaneous information
+At the moment I've made just one selection of data by removing waveform reaching "maximum" peak value ($-13.9333$ $mV$).
