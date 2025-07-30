@@ -301,7 +301,7 @@ void waveformAnalysis() {
 
   double const samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
-      "DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
+      "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
   std::string line;
   int row = 0;
 
@@ -319,16 +319,24 @@ void waveformAnalysis() {
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
                150, 0, 6);
   TH1F *hWidth =
-      new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 2, 50);
+      new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 20, 2, 50);
 
   // Plotting parameters
-  int const nPulseParam{5};
-  Parameter pulsePar[nPulseParam] = {{"Width [ns]", 2., 50.},
-                                     {"Area [ADC #times ns]", 0., 30000.},
-                                     {"Area [PE]", 0, 6},
-                                     {"Relative peak time [ns]", 100., 300.},
-                                     {"Noise RMS [ADC]", 8020, 8050}};
-  int const nBins{200};
+  int const nPulseParam{12};
+  Parameter pulsePar[nPulseParam] = {
+      {"Width [ns]", 2., 50.},
+      {"Area [ADC #times ns]", 0., 30000.},
+      {"Area [PE]", 0, 6},
+      {"Relative peak time [ns]", 100., 300.},
+      {"Noise RMS [ADC]", 8034, 8040},
+      {"Peak amplitude [ADC]", 7900, 15500},
+      {"Height over width [ADC/ns]", 0., 2000},
+      {"Peak fraction position", 0., 1.},
+      {"Area over full time width [ADC]", 0., 2000.},
+      {"Rise time [ns]", 0., 15.},
+      {"FWHM [ns]", 2., 50.},
+      {"Fractional area time [ns]", 2., 50.}};
+  int const nBins{20};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
   TGraph *gPulsePar[nPulseParam][nPulseParam];
@@ -412,6 +420,12 @@ void waveformAnalysis() {
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
+      // Params of interest
+      double heightOverWidth{p.peakValue / (p.endTime - p.startTime)};
+      double peakFractionPos{(p.peakTime - p.startTime) /
+                             (p.endTime - p.startTime)};
+      double areaOverFullTime{p.area / ((p.endTime - p.startTime))};
+
       std::cout << "  *** Pulse n. " << i + 1 << " ***\n";
       std::cout << "  Overall start time  = " << p.startTime << " ns\n";
       std::cout << "  Overall end time    = " << p.endTime << " ns\n";
@@ -425,6 +439,12 @@ void waveformAnalysis() {
       std::cout << "  Peak value          = " << p.peakValue << " ADC\n";
       std::cout << "  Width               = " << p.endTime - p.startTime
                 << " ns\n";
+      std::cout << "  Rise time           = " << p.riseTime << " ns\n";
+      std::cout << "  FWHM                = " << p.FWHMTime << " ns\n";
+      std::cout << "  Fract area time     = " << p.areaFractionTime << " ns\n";
+      std::cout << "  Height over width   = " << heightOverWidth << " ADC/ns\n";
+      std::cout << "  Peak fraction pos.  = " << peakFractionPos << '\n';
+      std::cout << "  Area / full width   = " << areaOverFullTime << " ADC\n";
       std::cout << "  Area                = " << p.area << " ADC*ns\n";
       std::cout << "  Area in PE          = " << p.area / 11000. << " PE\n";
 
@@ -439,9 +459,18 @@ void waveformAnalysis() {
       // Plot all parameters against each other
 
       // Gather params of interest from each pulse and noise from waveform
-      double parValues[nPulseParam] = {
-          p.endTime - p.startTime, p.area, p.area / 11000,
-          p.peakTime - wf.getTimeStamp(), wf.getBaseline()};
+      double parValues[nPulseParam] = {p.endTime - p.startTime,
+                                       p.area,
+                                       p.area / 11000,
+                                       p.peakTime - wf.getTimeStamp(),
+                                       wf.getBaseline(),
+                                       p.peakValue,
+                                       heightOverWidth,
+                                       peakFractionPos,
+                                       areaOverFullTime,
+                                       p.riseTime,
+                                       p.FWHMTime,
+                                       p.areaFractionTime};
       for (int par_i = 0; par_i < nPulseParam; ++par_i) {
         hPulsePar[par_i]->Fill(parValues[par_i]);
 
@@ -508,7 +537,7 @@ void waveformAnalysis() {
 
       if (par_i > par_j) {
         gPulsePar[par_i][par_j]->SetMarkerStyle(20);
-        gPulsePar[par_i][par_j]->SetMarkerSize(0.2f);
+        gPulsePar[par_i][par_j]->SetMarkerSize(0.1f);
         gPulsePar[par_i][par_j]->SetMarkerColor(kRed);
         gPulsePar[par_i][par_j]->Draw("AP");
       } else if (par_i < par_j) {
@@ -541,7 +570,7 @@ void waveformTotal() {
 
   const double samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
-      "DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
+      "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
   std::string line;
 
   int row = 0;
@@ -593,7 +622,7 @@ void waveformTotal() {
     TGraph *g = new TGraph(xValues.size(), xValues.data(), yValues.data());
     g->SetLineColor(colours[randIndex]);
     g->SetLineWidth(1);
-    g->SetMarkerColor(kGreen + 2);
+    g->SetMarkerColor(kBlack);
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     g->GetXaxis()->SetRangeUser(4., 300.);
