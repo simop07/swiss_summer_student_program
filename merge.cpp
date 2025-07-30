@@ -8,7 +8,7 @@ constexpr int nMaxAnalysedRows{4008};  // Maximum rows EXCLUDED
 
 void mergeCsv() {
   // Create file to write on
-  std::ofstream outputFile{"4Layers.txt"};
+  std::ofstream outputFile{"./data/4Layers.txt"};
 
   // Read input files
   std::string fileRoot{"./data/4Layers/C1SCOPE#"};
