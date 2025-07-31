@@ -151,6 +151,9 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
   auto itRiseEndIndex = std::distance(fSamples.begin(), itRiseEnd);
   double riseTime =
       static_cast<double>(itRiseEndIndex - itRiseBeginIndex) * fSamplePeriod;
+  if (riseTime < fSamplePeriod) {
+    riseTime = fSamplePeriod;
+  }
 
   // Compute FWHM
   auto itFWHMBegin = std::find_if(
@@ -165,6 +168,9 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
   auto itFWHMEndIndex = std::distance(fSamples.begin(), itFWHMEnd);
   double FWHMTime =
       static_cast<double>(itFWHMEndIndex - itFWHMBeginIndex) * fSamplePeriod;
+  if (FWHMTime < fSamplePeriod) {
+    FWHMTime = fSamplePeriod;
+  }
 
   // Compute sum of samples within a pulse
   auto sumSamples = std::accumulate(fSamples.begin() + pulseStart,
