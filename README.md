@@ -14,7 +14,9 @@ To efficiently collect the scintillation light produced by particles interacting
 The first part of my project is devoted to measure the reflectance and absorption of light in PTFEs by measuring the scintillation light detected by PMTs when light is emitted from a blue LED. To analyse the signals measured by the PMTs, a waveform and pulse analysis is performed through a software based on `ROOT` framework and `C++`.
 
 ### Pulse analysis
-Source file [merge.cpp](merge.cpp) is just used to merge multiple waveforms (one per .scv or .xlsx file) into one single .txt file.
+- [merge.cpp](merge.cpp) is just used to merge multiple waveforms (one per .scv or .xlsx file) into one single .txt file.
+
+- [compare.cpp](compare.cpp) is used to compare 1D histos retrieved from the analysis.
 
 To perform pulse analysis, two lines of development are followed depending on the used logic:
 - [waveformAnalysisPos.cpp](waveformAnalysisPos.cpp), pulses with positive logic;
