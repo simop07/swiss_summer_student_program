@@ -334,9 +334,9 @@ void waveformAnalysis() {
       {"Peak fraction position", 0., 1.},
       {"Area over full time width [ADC]", 0., 2000.},
       {"Rise time [ns]", 0., 20.},
-      {"FWHM [ns]", 2., 20.},
-      {"Fractional area time [ns]", 2., 35.}};
-  int const nBins{20};
+      {"FWHM [ns]", 0., 20.},
+      {"90% area time [ns]", 0., 35.}};
+  int const nBins{15};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
   TGraph *gPulsePar[nPulseParam][nPulseParam];
