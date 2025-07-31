@@ -299,11 +299,11 @@ void waveformAnalysis() {
       {"Relative peak time [#mus]", 0.4, 2.1},
       {"Noise RMS [mV]", -0.2, 0.2},
       {"Peak amplitude [mV]", 0., 15.},
-      {"Height over width [mV/ns]", 0., 5.},
+      {"Height over width [mV/ns]", 0., 3.},
       {"Peak fraction position", 0., 0.6},
       {"Area over full time width [mV]", 0., 10.},
-      {"Rise time [ns]", 0., 12.},
-      {"FWHM [ns]", 2., 12.},
+      {"Rise time [ns]", 0., 8.},
+      {"FWHM [ns]", 2., 8.},
       {"Fractional area time [ns]", 2., 25.}};
   int const nBins{20};
   TH1F *hPulsePar[nPulseParam];
