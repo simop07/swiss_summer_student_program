@@ -132,28 +132,33 @@ Pulse WaveformAnalysisPos::integratePulse(int pulseStart, int pulseEnd) {
   // Find index corresponding to the maximum
   auto maxPulseIndex = std::distance(fSamples.begin(), itMax);
 
+  // Define peak to peak value
+  double peakToPeak{std::abs(*itMax - fBaseline)};
+
   // Compute rise time
   auto itRiseBegin = std::find_if(
       fSamples.begin() + pulseStart, std::next(fSamples.begin() + pulseEnd),
-      [&](double sample) { return sample >= 0.1 * (*itMax); });
+      [&](double sample) { return sample >= (0.1 * peakToPeak + fBaseline); });
   auto itRiseEnd = std::find_if(
       fSamples.begin() + pulseStart, std::next(fSamples.begin() + pulseEnd),
-      [&](double sample) { return sample >= 0.9 * (*itMax); });
+      [&](double sample) { return sample >= (0.9 * peakToPeak + fBaseline); });
   // Find indices corresponding to rise time
   auto itRiseBeginIndex = std::distance(fSamples.begin(), itRiseBegin);
   auto itRiseEndIndex = std::distance(fSamples.begin(), itRiseEnd);
-  double riseTime = static_cast<double>(itRiseEndIndex - itRiseBeginIndex);
+  double riseTime =
+      static_cast<double>(itRiseEndIndex - itRiseBeginIndex) * fSamplePeriod;
 
   // Compute FWHM
-  auto itFWHMBegin =
-      std::find_if(fSamples.begin() + pulseStart, std::next(itMax),
-                   [&](double sample) { return sample >= 0.5 * (*itMax); });
-  auto itFWHMEnd =
-      std::find_if(itMax, std::next(fSamples.begin() + pulseEnd),
-                   [&](double sample) { return sample <= 0.5 * (*itMax); });
+  auto itFWHMBegin = std::find_if(
+      fSamples.begin() + pulseStart, std::next(itMax),
+      [&](double sample) { return sample >= (0.5 * peakToPeak + fBaseline); });
+  auto itFWHMEnd = std::find_if(
+      itMax, std::next(fSamples.begin() + pulseEnd),
+      [&](double sample) { return sample <= (0.5 * peakToPeak + fBaseline); });
   auto itFWHMBeginIndex = std::distance(fSamples.begin(), itFWHMBegin);
   auto itFWHMEndIndex = std::distance(fSamples.begin(), itFWHMEnd);
-  double FWHMTime = static_cast<double>(itFWHMEndIndex - itFWHMBeginIndex);
+  double FWHMTime =
+      static_cast<double>(itFWHMEndIndex - itFWHMBeginIndex) * fSamplePeriod;
 
   // Compute sum of samples within a pulse
   auto sumSamples = std::accumulate(fSamples.begin() + pulseStart,

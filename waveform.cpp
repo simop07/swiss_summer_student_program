@@ -333,7 +333,7 @@ void waveformAnalysis() {
       {"Height over width [ADC/ns]", 0., 2000},
       {"Peak fraction position", 0., 1.},
       {"Area over full time width [ADC]", 0., 2000.},
-      {"Rise time [ns]", 0., 15.},
+      {"Rise time [ns]", 0., 30.},
       {"FWHM [ns]", 2., 50.},
       {"Fractional area time [ns]", 2., 50.}};
   int const nBins{20};
