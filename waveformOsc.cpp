@@ -532,6 +532,8 @@ void waveformAnalysis() {
         h2PulsePar[par_i][par_j]->DrawCopy("COLZ");
       } else if (par_i == par_j) {
         hPulsePar[par_i]->DrawCopy("");
+        file1->cd();
+        hPulsePar[par_i]->Write();
       }
     }
   }

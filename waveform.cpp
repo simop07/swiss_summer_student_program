@@ -27,7 +27,7 @@
 
 // Define global constants
 constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
-constexpr int nMaxAnalysedRows{9961};  // Maximum rows INCLUDED (9961)
+constexpr int nMaxAnalysedRows{9949};  // Maximum rows INCLUDED (9961)
 
 // Asymmetric gaussian function
 Double_t asymGaussians(Double_t *x, Double_t *par) {
@@ -301,12 +301,12 @@ void waveformAnalysis() {
 
   double const samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
-      "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
+      "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_4_2.txt");
   std::string line;
   int row = 0;
 
   // Creating TFile
-  TFile *file1 = new TFile("./rootFiles/waveformAnalysis.root", "RECREATE");
+  TFile *file1 = new TFile("./rootFiles/waveformAnalysis2.root", "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
@@ -546,6 +546,8 @@ void waveformAnalysis() {
         h2PulsePar[par_i][par_j]->DrawCopy("COLZ");
       } else if (par_i == par_j) {
         hPulsePar[par_i]->DrawCopy("");
+        file1->cd();
+        hPulsePar[par_i]->Write();
       }
     }
   }
