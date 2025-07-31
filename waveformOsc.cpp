@@ -275,8 +275,7 @@ void waveformAnalysis() {
   int row = 0;
 
   // Creating TFile
-  TFile *file1 =
-      new TFile("./data/rootFiles/waveformAnalysisOsc.root", "RECREATE");
+  TFile *file1 = new TFile("./rootFiles/waveformAnalysisOsc.root", "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
@@ -292,13 +291,21 @@ void waveformAnalysis() {
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 1., 30.);
 
   // Plotting parameters
-  int const nPulseParam{5};
-  Parameter pulsePar[nPulseParam] = {{"Width [ns]", 1., 30.},
-                                     {"Area [mV #times ns]", 0., 100.},
-                                     {"Area [PE]", 0, 3.5},
-                                     {"Relative peak time [#mus]", 0.4, 2.1},
-                                     {"Noise RMS [mV]", -0.6, 0.6}};
-  int const nBins{200};
+  int const nPulseParam{12};
+  Parameter pulsePar[nPulseParam] = {
+      {"Width [ns]", 1., 30.},
+      {"Area [mV #times ns]", 0., 100.},
+      {"Area [PE]", 0, 3.5},
+      {"Relative peak time [#mus]", 0.4, 2.1},
+      {"Noise RMS [mV]", -0.2, 0.2},
+      {"Peak amplitude [mV]", 0., 15.},
+      {"Height over width [mV/ns]", 0., 5.},
+      {"Peak fraction position", 0., 0.6},
+      {"Area over full time width [mV]", 0., 10.},
+      {"Rise time [ns]", 0., 12.},
+      {"FWHM [ns]", 2., 12.},
+      {"Fractional area time [ns]", 2., 25.}};
+  int const nBins{20};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
   TGraph *gPulsePar[nPulseParam][nPulseParam];
@@ -373,13 +380,6 @@ void waveformAnalysis() {
     // Creating WaveformAnalysis object
     WaveformAnalysisNeg wf(samples, timestamp, samplePeriod);
 
-    // Selection conditions
-    // auto it = std::find(samples.begin(), samples.end(), -13.9333);
-    // auto samplesEnd = samples.end();
-    // if (it == samplesEnd) {
-    //   continue;
-    // }
-
     // Print waveform properties
     std::cout << std::fixed
               << std::setprecision(10);  // Round to 10 decimal place
@@ -400,6 +400,12 @@ void waveformAnalysis() {
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
+      // Params of interest
+      double heightOverWidth{p.peakValue / ((p.endTime - p.startTime) * 1000)};
+      double peakFractionPos{(p.peakTime - p.startTime) /
+                             (p.endTime - p.startTime)};
+      double areaOverFullTime{p.area / ((p.endTime - p.startTime))};
+
       std::cout << "  *** Pulse n. " << i + 1 << " ***\n";
       std::cout << "  Overall start time  = " << p.startTime << " #mus\n";
       std::cout << "  Overall end time    = " << p.endTime << " #mus\n";
@@ -413,6 +419,13 @@ void waveformAnalysis() {
       std::cout << "  Peak value          = " << p.peakValue << " mV\n";
       std::cout << "  Width               = "
                 << (p.endTime - p.startTime) * 1000 << " ns\n";
+      std::cout << "  Rise time           = " << p.riseTime * 1000 << " ns\n";
+      std::cout << "  FWHM                = " << p.FWHMTime * 1000 << " ns\n";
+      std::cout << "  Fract area time     = " << p.areaFractionTime * 1000
+                << " ns\n";
+      std::cout << "  Height over width   = " << heightOverWidth << " mV/ns\n";
+      std::cout << "  Peak fraction pos.  = " << peakFractionPos << '\n';
+      std::cout << "  Area / full width   = " << areaOverFullTime << " mV\n";
       std::cout << "  Area                = " << p.area * 1000 << " mV*ns\n";
       std::cout << "  Area in PE          = " << p.area * 1000 / 24. << " PE\n";
 
@@ -427,9 +440,18 @@ void waveformAnalysis() {
       // Plot all parameters against each other
 
       // Gather params of interest from each pulse and noise from waveform
-      double parValues[nPulseParam] = {
-          (p.endTime - p.startTime) * 1000, p.area * 1000, p.area * 1000 / 24.,
-          p.peakTime - wf.getTimeStamp(), wf.getBaseline()};
+      double parValues[nPulseParam] = {(p.endTime - p.startTime) * 1000,
+                                       p.area * 1000,
+                                       p.area * 1000 / 24.,
+                                       p.peakTime - wf.getTimeStamp(),
+                                       wf.getBaseline(),
+                                       p.peakValue,
+                                       heightOverWidth,
+                                       peakFractionPos,
+                                       areaOverFullTime,
+                                       p.riseTime * 1000,
+                                       p.FWHMTime * 1000,
+                                       p.areaFractionTime * 1000};
       for (int par_i = 0; par_i < nPulseParam; ++par_i) {
         hPulsePar[par_i]->Fill(parValues[par_i]);
 
@@ -529,7 +551,7 @@ void waveformTotal() {
   R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   // Creating files and canvases
-  TFile *file2 = new TFile("./data/rootFiles/waveformOsc.root", "RECREATE");
+  TFile *file2 = new TFile("./rootFiles/waveformOsc.root", "RECREATE");
   TCanvas *c2 = new TCanvas("c2", "Waveform analysis", 1500, 700);
 
   const double samplePeriod = 0.005e-1;  // In [\mus]

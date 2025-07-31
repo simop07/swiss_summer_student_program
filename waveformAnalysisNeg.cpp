@@ -1,5 +1,6 @@
 #include "waveformAnalysisNeg.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -124,27 +125,97 @@ void WaveformAnalysisNeg::findPulses(double threshold, double tolerance,
 
 // Find area of 1 pulse
 Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
-  int maxPulseIndex = pulseStart;          // Index where maximum is verified
-  double maxPulse = fSamples[pulseStart];  // Maximum value of the pulse
-  double pulseArea{};
+  // Find pulse maximum
+  auto itMax = std::min_element(fSamples.begin() + pulseStart,
+                                std::next(fSamples.begin() + pulseEnd));
 
-  // Find maximum value of the pulse
+  // Find index corresponding to the maximum
+  auto maxPulseIndex = std::distance(fSamples.begin(), itMax);
+
+  // Define peak to peak value
+  double peakToPeak{std::abs(*itMax - fBaseline)};
+
+  // Compute rise time
+  auto itRiseBegin = std::find_if(
+      fSamples.begin() + pulseStart, std::next(fSamples.begin() + pulseEnd),
+      [&](double sample) {
+        return std::abs(sample) >= (0.1 * peakToPeak + std::abs(fBaseline));
+      });
+  auto itRiseEnd = std::find_if(
+      fSamples.begin() + pulseStart, std::next(fSamples.begin() + pulseEnd),
+      [&](double sample) {
+        return std::abs(sample) >= (0.9 * peakToPeak + std::abs(fBaseline));
+      });
+  // Find indices corresponding to rise time
+  auto itRiseBeginIndex = std::distance(fSamples.begin(), itRiseBegin);
+  auto itRiseEndIndex = std::distance(fSamples.begin(), itRiseEnd);
+  double riseTime =
+      static_cast<double>(itRiseEndIndex - itRiseBeginIndex) * fSamplePeriod;
+
+  // Compute FWHM
+  auto itFWHMBegin = std::find_if(
+      fSamples.begin() + pulseStart, std::next(itMax), [&](double sample) {
+        return std::abs(sample) >= (0.5 * peakToPeak + std::abs(fBaseline));
+      });
+  auto itFWHMEnd = std::find_if(
+      itMax, std::next(fSamples.begin() + pulseEnd), [&](double sample) {
+        return std::abs(sample) <= (0.5 * peakToPeak + std::abs(fBaseline));
+      });
+  auto itFWHMBeginIndex = std::distance(fSamples.begin(), itFWHMBegin);
+  auto itFWHMEndIndex = std::distance(fSamples.begin(), itFWHMEnd);
+  double FWHMTime =
+      static_cast<double>(itFWHMEndIndex - itFWHMBeginIndex) * fSamplePeriod;
+
+  // Compute sum of samples within a pulse
+  auto sumSamples = std::accumulate(fSamples.begin() + pulseStart,
+                                    std::next(fSamples.begin() + pulseEnd), 0.);
+
+  // Compute sample average within a pulse
+  auto avg = sumSamples / (pulseEnd - pulseStart + 1);
+
+  // Subtract baseline in order to compute effective area
+  auto pulseArea = sumSamples - (pulseEnd - pulseStart + 1) * fBaseline;
+
+  // Find pulse which is closest to average
+  int closestToAvgIndex = pulseStart;
+  double minimalDifference = std::abs(fSamples[pulseStart] - avg);
   for (int i = pulseStart; i <= pulseEnd; ++i) {
-    auto currentVal = fSamples[i];
-    if (currentVal < maxPulse) {
-      maxPulse = currentVal;
-      maxPulseIndex = i;
+    double currentVal = fSamples[i];
+    auto diff = std::abs(currentVal - avg);
+    if (diff < minimalDifference) {
+      closestToAvgIndex = i;
+      minimalDifference = diff;
     }
-    // Remove baseline to get correct area
-    pulseArea += fSamples[i] - fBaseline;
   }
 
-  // Right dimensions of area are in ADC*time -> multiply by samplePeriod
+  // Compute fractional area time (time width at which 90% of pulse area is
+  // found, starting at the average point of the pulse)
+  double pulseAreaPartial{};
+  int rightTimeIndex{closestToAvgIndex};
+  int leftTimeIndex{closestToAvgIndex - 1};
+  while (std::abs(pulseAreaPartial) <= 0.9 * std::abs(pulseArea)) {
+    if (rightTimeIndex <= pulseEnd) {
+      pulseAreaPartial += (fSamples[rightTimeIndex] - fBaseline);
+      ++rightTimeIndex;
+    }
+    if (leftTimeIndex >= pulseStart) {
+      pulseAreaPartial += (fSamples[leftTimeIndex] - fBaseline);
+      --leftTimeIndex;
+    }
+  }
+  double fractionalAreaTime =
+      (rightTimeIndex - leftTimeIndex - 1) * fSamplePeriod;
+
+  // Using correct conversion for area
   pulseArea *= fSamplePeriod;
 
   // Create pulse object
   return Pulse{fTimeStamp + pulseStart * fSamplePeriod,
                fTimeStamp + pulseEnd * fSamplePeriod,
-               fTimeStamp + maxPulseIndex * fSamplePeriod, maxPulse,
+               fTimeStamp + maxPulseIndex * fSamplePeriod,
+               std::abs(*itMax),
+               riseTime,
+               FWHMTime,
+               fractionalAreaTime,
                std::abs(pulseArea)};
 }

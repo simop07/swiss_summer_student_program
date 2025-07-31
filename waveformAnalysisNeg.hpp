@@ -11,11 +11,14 @@ struct Parameter {
 
 // Pulse struct allows to define the properties of pulses in a waveform
 struct Pulse {
-  double startTime{};  // Overall start time of the pulse
-  double endTime{};    // Overall end time of the pulse
-  double peakTime{};   // Overall time at which peak takes place
-  double peakValue{};  // Value of the pulse's peak in ADC
-  double area{};       // Area of pulse
+  double startTime{};         // Overall start time of the pulse
+  double endTime{};           // Overall end time of the pulse
+  double peakTime{};          // Overall time at which peak takes place
+  double peakValue{};         // Value of the pulse's peak in ADC
+  double riseTime{};          // Time it takes to go from 10% to 90%
+  double FWHMTime{};          // Time correspondent with the FWHM of the peak
+  double areaFractionTime{};  // Fractional area time
+  double area{};              // Area of pulse
 };
 
 // Waveform class allows to perform waveform analysis
