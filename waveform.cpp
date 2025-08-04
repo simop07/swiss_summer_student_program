@@ -299,6 +299,10 @@ void waveformAnalysis() {
   // To avoid reloading manually if .so is present
   R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
+  // Area conversion factor (current assumption is 1 PE = 11000 ADC*ns)
+  double const areaConvFactor{11000.};
+
+  // Variables used later
   double const samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
       "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
@@ -377,8 +381,13 @@ void waveformAnalysis() {
     }
   }
 
-  // Pulse counter
+  // Variable for analysis in trigger region in 1 single file
   int pulseCounter{};
+  int pulseCounterRegion{};
+  double totArea{};
+  double numPE{};
+  double const triggerStart{120.};
+  double const triggerEnd{200.};
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -433,6 +442,14 @@ void waveformAnalysis() {
       const auto &p = pulses[i];
       ++pulseCounter;
 
+      // Find area in region of interest
+      if ((p.startTime - wf.getTimeStamp()) >= triggerStart &&
+          (p.endTime - wf.getTimeStamp()) <= triggerEnd) {
+        totArea += p.area;
+        ++pulseCounterRegion;
+      }
+      numPE = totArea / areaConvFactor;
+
       // Params of interest
       double heightOverWidth{p.peakValue / (p.endTime - p.startTime)};
       double peakFractionPos{(p.peakTime - p.startTime) /
@@ -467,8 +484,8 @@ void waveformAnalysis() {
       std::cout << "  Area / full width            = " << areaOverFullTime
                 << " ADC\n";
       std::cout << "  Area                         = " << p.area << " ADC*ns\n";
-      std::cout << "  Area in PE                   = " << p.area / 11000.
-                << " PE\n";
+      std::cout << "  Area in PE                   = "
+                << p.area / areaConvFactor << " PE\n";
 
       // Generate a random number between 0 and 8 (used for colour indices)
       int randIndex = rand() % 9;
@@ -506,8 +523,8 @@ void waveformAnalysis() {
       hAreaVsTime->Fill(p.peakTime - wf.getTimeStamp(), p.area);
       hWidth->Fill(p.endTime - p.startTime);
 
-      // Convert area into PE (current assumption is 1 PE = 11000 ADC*ns)
-      double areaInPE = p.area / 11000.;
+      // Convert area into PE
+      double areaInPE = p.area / areaConvFactor;
       hPhotoElectrons->Fill(areaInPE);
 
       // Plot all parameters against each other
@@ -515,7 +532,7 @@ void waveformAnalysis() {
       // Gather params of interest from each pulse and noise from waveform
       double parValues[nPulseParam] = {p.endTime - p.startTime,
                                        p.area,
-                                       p.area / 11000,
+                                       p.area / areaConvFactor,
                                        p.peakTime - wf.getTimeStamp(),
                                        wf.getBaseline(),
                                        p.peakValue,
@@ -543,8 +560,22 @@ void waveformAnalysis() {
     ++row;
   }
 
+  // Print information for total area
+  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
+               "PHOTOELECTRONS in region "
+            << '[' << triggerStart << ',' << triggerEnd << "] ns ***\n";
+  std::cout << " Total area              = " << totArea << " [ADC*ns]\n";
+  std::cout << " Total number of PE      = " << numPE << "\n";
+  std::cout << "Pulses in region / total = " << pulseCounterRegion << " / "
+            << pulseCounter << '\n';
+
   // Round fit printing to 5 decimal place
   std::cout << std::fixed << std::setprecision(5);
+
+  // FITTING FUNCTIONS SPACE
+  std::cout << "\n\n\n************************************\n";
+  std::cout << "****** FITTING FUNCTION SPACE ******\n";
+  std::cout << "************************************\n\n\n";
 
   // Fit noise with gaussian function
   hNoise->Fit("gaus");

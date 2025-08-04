@@ -269,6 +269,9 @@ void waveformAnalysis() {
   // To avoid reloading manually if .so is present
   R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
+  // Area conversion factor (current assumption is 1 PE = 24 mV*ns)
+  double const areaConvFactor{24.};
+
   double const samplePeriod = 0.005e-1;  // In [\mus]
   std::ifstream infile("./data/4Layers.txt");
   std::string line;
@@ -348,6 +351,11 @@ void waveformAnalysis() {
 
   // Pulse counter
   int pulseCounter{};
+  int pulseCounterRegion{};
+  double totArea{};
+  double numPE{};
+  double const triggerStart{0.7};
+  double const triggerEnd{1.1};
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -413,6 +421,14 @@ void waveformAnalysis() {
       const auto &p = pulses[i];
       ++pulseCounter;
 
+      // Find area in region of interest
+      if ((p.startTime - wf.getTimeStamp()) >= triggerStart &&
+          (p.endTime - wf.getTimeStamp()) <= triggerEnd) {
+        totArea += (p.area * 1000.);
+        ++pulseCounterRegion;
+      }
+      numPE = totArea / areaConvFactor;
+
       // Params of interest
       double heightOverWidth{p.peakValue / ((p.endTime - p.startTime) * 1000)};
       double peakFractionPos{(p.peakTime - p.startTime) /
@@ -453,8 +469,8 @@ void waveformAnalysis() {
                 << " mV\n";
       std::cout << "  Area                        = " << p.area * 1000
                 << " mV*ns\n";
-      std::cout << "  Area in PE                  = " << p.area * 1000 / 24.
-                << " PE\n";
+      std::cout << "  Area in PE                  = "
+                << p.area * 1000 / areaConvFactor << " PE\n";
 
       // Generate a random number between 0 and 8 (used for colour indices)
       int randIndex = rand() % 9;
@@ -493,8 +509,8 @@ void waveformAnalysis() {
       hAreaVsTime->Fill(p.peakTime - wf.getTimeStamp(), p.area * 1000);
       hWidth->Fill((p.endTime - p.startTime) * 1000);  // In [ns]
 
-      // Convert area into PE (current assumption is 1 PE = 11000 ADC*ns)
-      double areaInPE = p.area * 1000 / 24.;
+      // Convert area into PE
+      double areaInPE = p.area * 1000 / areaConvFactor;
       hPhotoElectrons->Fill(areaInPE);
 
       // Plot all parameters against each other
@@ -502,7 +518,7 @@ void waveformAnalysis() {
       // Gather params of interest from each pulse and noise from waveform
       double parValues[nPulseParam] = {(p.endTime - p.startTime) * 1000,
                                        p.area * 1000,
-                                       p.area * 1000 / 24.,
+                                       p.area * 1000 / areaConvFactor,
                                        p.peakTime - wf.getTimeStamp(),
                                        wf.getBaseline(),
                                        p.peakValue,
@@ -530,12 +546,21 @@ void waveformAnalysis() {
     ++row;
   }
 
+  // Print information for total area
+  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
+               "PHOTOELECTRONS in region "
+            << '[' << triggerStart << ',' << triggerEnd << "] #mus ***\n";
+  std::cout << " Total area         = " << totArea << " [mV*ns]\n";
+  std::cout << " Total number of PE = " << numPE << "\n\n";
+  std::cout << "Pulses in region / total = " << pulseCounterRegion << " / "
+            << pulseCounter << '\n';
+
   // Round fit printing to 10 decimal place
   std::cout << std::fixed << std::setprecision(10);
 
   // FITTING FUNCTIONS SPACE
   std::cout << "\n\n\n************************************\n";
-  std::cout << "****** FIITING FUNCTION SPACE ******\n";
+  std::cout << "****** FITTING FUNCTION SPACE ******\n";
   std::cout << "************************************\n\n\n";
 
   // Fit noise with gaussian function
