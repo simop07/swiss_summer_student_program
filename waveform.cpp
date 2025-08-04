@@ -27,7 +27,7 @@
 
 // Define global constants
 constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
-constexpr int nMaxAnalysedRows{9949};  // Maximum rows INCLUDED (9961)
+constexpr int nMaxAnalysedRows{9961};  // Maximum rows INCLUDED (9961)
 
 // Asymmetric gaussian function
 Double_t asymGaussians(Double_t *x, Double_t *par) {
@@ -152,7 +152,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT 1 PE peak ****\n\nP value       "
                "      = "
-            << fAsymmetric1PE->GetProb() << "\n";
+            << fAsymmetric1PE->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fAsymmetric1PE->GetChisquare() / fAsymmetric1PE->GetNDF()
             << "\n\n";
@@ -163,7 +163,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT 2 PE peak ****\n\nP value       "
                "      = "
-            << fAsymmetric2PE->GetProb() << "\n";
+            << fAsymmetric2PE->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fAsymmetric2PE->GetChisquare() / fAsymmetric2PE->GetNDF()
             << "\n\n";
@@ -174,7 +174,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT EXPO NOISE ****\n\nP value       "
                "      = "
-            << fExpo->GetProb() << "\n";
+            << fExpo->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fExpo->GetChisquare() / fExpo->GetNDF() << "\n\n";
 
@@ -192,7 +192,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   std::cout
       << "\n\n**** FIT RESULT TOTAL NOT CONSTRAINED #mu ****\n\nP value       "
          "      = "
-      << fTotal->GetProb() << "\n";
+      << fTotal->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fTotal->GetChisquare() / fTotal->GetNDF() << "\n\n";
   TMatrixD covMatrix = fitResult->GetCorrelationMatrix();
@@ -222,7 +222,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   std::cout
       << "\n\n**** FIT RESULT TOTAL CONSTRAINED #mu ****\n\nP value       "
          "      = "
-      << fTotalConst->GetProb() << "\n";
+      << fTotalConst->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fTotalConst->GetChisquare() / fTotalConst->GetNDF() << "\n\n";
   TMatrixD covMatrixConst = fitResultConst->GetCorrelationMatrix();
@@ -254,7 +254,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   std::cout << "\n\n**** FIT RESULT TOTAL CONSTRAINED SAME SIGMA #mu ****\n\nP "
                "value       "
                "      = "
-            << fTotalConstSameSigmas->GetProb() << "\n";
+            << fTotalConstSameSigmas->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fTotalConstSameSigmas->GetChisquare() /
                    fTotalConstSameSigmas->GetNDF()
@@ -301,12 +301,20 @@ void waveformAnalysis() {
 
   double const samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
-      "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_4_2.txt");
+      "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
   std::string line;
+  std::vector<double> colours{1, 2, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
+  TMultiGraph *mg = new TMultiGraph();
+  TMultiGraph *mgSuperimposed = new TMultiGraph();
+  std::vector<TGraph *> graphs{};
+  std::vector<TGraph *> graphsSuperimposed{};
   int row = 0;
 
+  // Select random generator seed for colours based on current time
+  srand(time(NULL));
+
   // Creating TFile
-  TFile *file1 = new TFile("./rootFiles/waveformAnalysis2.root", "RECREATE");
+  TFile *file1 = new TFile("./rootFiles/waveformAnalysis.root", "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
@@ -369,6 +377,9 @@ void waveformAnalysis() {
     }
   }
 
+  // Pulse counter
+  int pulseCounter{};
+
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
     // Control over analysed rows
@@ -410,7 +421,7 @@ void waveformAnalysis() {
 
     // Get pulse vector from each single waveform
     const auto &pulses = wf.getPulses();
-    std::cout << "Number of Pulses = " << pulses.size() << "\n";
+    std::cout << "Number of Pulses = " << pulses.size() << '\n';
 
     // Fill noise information
     int const nBaselineSamples{50};
@@ -420,6 +431,8 @@ void waveformAnalysis() {
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
+      ++pulseCounter;
+
       // Params of interest
       double heightOverWidth{p.peakValue / (p.endTime - p.startTime)};
       double peakFractionPos{(p.peakTime - p.startTime) /
@@ -447,6 +460,38 @@ void waveformAnalysis() {
       std::cout << "  Area / full width   = " << areaOverFullTime << " ADC\n";
       std::cout << "  Area                = " << p.area << " ADC*ns\n";
       std::cout << "  Area in PE          = " << p.area / 11000. << " PE\n";
+
+      // Generate a random number between 0 and 8 (used for colour indices)
+      int randIndex = rand() % 9;
+
+      // Create vector to superimpose pulses
+      std::vector<double> superimposedTimes = p.times;
+      double shift{superimposedTimes[0]};
+      for (int timeId{}; timeId < superimposedTimes.size(); ++timeId) {
+        superimposedTimes[timeId] -= shift;
+      }
+
+      // Plot each pulse using a graph object.
+      TGraph *g = new TGraph(p.times.size(), p.times.data(), p.values.data());
+      g->SetLineColor(colours[randIndex]);
+      g->SetLineWidth(1);
+      g->SetMarkerColor(kBlack);
+      g->SetMarkerStyle(20);
+      g->SetMarkerSize(1);
+      g->SetTitle(Form("Pulse %d; Time [ns]; ADC counts", pulseCounter));
+      graphs.push_back(g);
+
+      // Superimpose pulses from riseTime
+      TGraph *gSuperimposed = new TGraph(
+          superimposedTimes.size(), superimposedTimes.data(), p.values.data());
+      gSuperimposed->SetLineColor(colours[randIndex]);
+      gSuperimposed->SetLineWidth(1);
+      gSuperimposed->SetMarkerColor(kBlack);
+      gSuperimposed->SetMarkerStyle(20);
+      gSuperimposed->SetMarkerSize(1);
+      gSuperimposed->SetTitle(
+          Form("Pulse %d; Time [ns]; ADC counts", pulseCounter));
+      graphsSuperimposed.push_back(gSuperimposed);
 
       // Fill pulse information
       hAreaVsTime->Fill(p.peakTime - wf.getTimeStamp(), p.area);
@@ -552,12 +597,43 @@ void waveformAnalysis() {
     }
   }
 
+  // Create canvas to display all pulses of one file
+  TCanvas *cPulses = new TCanvas("cPulses", "Pulses", 1500, 700);
+
+  // Draw all pulses on multigraph object
+  for (size_t i = 0; i < graphs.size(); ++i) {
+    mg->Add(graphs[i]);
+  }
+  cPulses->cd();
+  mg->Draw("ALP");
+  mg->SetTitle("Pulses");
+  mg->GetXaxis()->SetTitle("Time since \"trigger\" [ns]");
+  mg->GetYaxis()->SetTitle("ADC Counts");
+
+  // Create canvas to superimpose all pulses of one file
+  TCanvas *cPulsesSuperimp =
+      new TCanvas("cPulsesSuperimp", "Superimposed pulses", 1500, 700);
+
+  // Draw all pulses on multigraph object
+  for (size_t i = 0; i < graphsSuperimposed.size(); ++i) {
+    mgSuperimposed->Add(graphsSuperimposed[i]);
+  }
+  cPulsesSuperimp->cd();
+  mgSuperimposed->Draw("ALP");
+  mgSuperimposed->SetTitle("Pulses");
+  mgSuperimposed->GetXaxis()->SetTitle("Time since startPulse [ns]");
+  mgSuperimposed->GetYaxis()->SetTitle("ADC Counts");
+
   c1->SaveAs("./plots/pulse_analysis_results.pdf");
   c3->SaveAs("./plots/params_analysis.pdf");
+  cPulses->SaveAs("./plots/pulses.pdf");
+  cPulsesSuperimp->SaveAs("./plots/pulsesSuperimposed.pdf");
 
   file1->cd();
   c1->Write();
   c3->Write();
+  cPulses->Write();
+  cPulsesSuperimp->Write();
   file1->Close();
 }
 
@@ -627,8 +703,6 @@ void waveformTotal() {
     g->SetMarkerColor(kBlack);
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
-    g->GetXaxis()->SetRangeUser(4., 300.);
-    g->GetYaxis()->SetRangeUser(7500., 16000.);
     g->SetTitle(Form("Waveform %d; Time [ns]; ADC counts",
                      row + 1));  // Inserting placeholder
     graphs.push_back(g);
