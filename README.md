@@ -28,5 +28,7 @@ In addition, two main source files are presented depending on the used data:
 
 The aim of pulse analysis is to extrapolate several parameters of interest which will leter be used to find the reflectance and transmittance of light in PTFEs. You can see the definition of parameters of interest directly in [waveform.cpp](waveform.cpp) and [waveformOsc.cpp](waveformOsc.cpp).
 
+Graphs in [pulses.pdf](plots/pulses.pdf) and [pulses_osc.pdf](plots/pulses_osc.pdf) show pulses as functions of time since "trigger" time.
+
 ### [waveformOsc.cpp](waveformOsc.cpp) miscellaneous information
 At the moment I've made just one selection of data by removing waveform reaching "maximum" peak value ($-13.9333$ $mV$).
