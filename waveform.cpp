@@ -440,26 +440,35 @@ void waveformAnalysis() {
       double areaOverFullTime{p.area / ((p.endTime - p.startTime))};
 
       std::cout << "  *** Pulse n. " << i + 1 << " ***\n";
-      std::cout << "  Overall start time  = " << p.startTime << " ns\n";
-      std::cout << "  Overall end time    = " << p.endTime << " ns\n";
-      std::cout << "  Overall peak time   = " << p.peakTime << " ns\n";
-      std::cout << "  Relative start time = " << p.startTime - wf.getTimeStamp()
+      std::cout << "  Overall start time           = " << p.startTime
                 << " ns\n";
-      std::cout << "  Relative end time   = " << p.endTime - wf.getTimeStamp()
+      std::cout << "  Overall end time             = " << p.endTime << " ns\n";
+      std::cout << "  Overall peak time            = " << p.peakTime << " ns\n";
+      std::cout << "  Relative start time          = "
+                << p.startTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Relative end time            = "
+                << p.endTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Relative peak time           = "
+                << p.peakTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Peak time since startPulse   = "
+                << p.peakTime - wf.getTimeStamp() - p.times[0] << " ns\n";
+      std::cout << "  Peak value                   = " << p.peakValue
+                << " ADC\n";
+      std::cout << "  Width                        = "
+                << p.endTime - p.startTime << " ns\n";
+      std::cout << "  Rise time                    = " << p.riseTime << " ns\n";
+      std::cout << "  FWHM                         = " << p.FWHMTime << " ns\n";
+      std::cout << "  90% area time                = " << p.areaFractionTime
                 << " ns\n";
-      std::cout << "  Relative peak time  = " << p.peakTime - wf.getTimeStamp()
-                << " ns\n";
-      std::cout << "  Peak value          = " << p.peakValue << " ADC\n";
-      std::cout << "  Width               = " << p.endTime - p.startTime
-                << " ns\n";
-      std::cout << "  Rise time           = " << p.riseTime << " ns\n";
-      std::cout << "  FWHM                = " << p.FWHMTime << " ns\n";
-      std::cout << "  Fract area time     = " << p.areaFractionTime << " ns\n";
-      std::cout << "  Height over width   = " << heightOverWidth << " ADC/ns\n";
-      std::cout << "  Peak fraction pos.  = " << peakFractionPos << '\n';
-      std::cout << "  Area / full width   = " << areaOverFullTime << " ADC\n";
-      std::cout << "  Area                = " << p.area << " ADC*ns\n";
-      std::cout << "  Area in PE          = " << p.area / 11000. << " PE\n";
+      std::cout << "  Height over width            = " << heightOverWidth
+                << " ADC/ns\n";
+      std::cout << "  Peak fraction pos.           = " << peakFractionPos
+                << '\n';
+      std::cout << "  Area / full width            = " << areaOverFullTime
+                << " ADC\n";
+      std::cout << "  Area                         = " << p.area << " ADC*ns\n";
+      std::cout << "  Area in PE                   = " << p.area / 11000.
+                << " PE\n";
 
       // Generate a random number between 0 and 8 (used for colour indices)
       int randIndex = rand() % 9;
@@ -471,7 +480,7 @@ void waveformAnalysis() {
         superimposedTimes[timeId] -= shift;
       }
 
-      // Plot each pulse using a graph object.
+      // Plot each pulse using a graph object
       TGraph *g = new TGraph(p.times.size(), p.times.data(), p.values.data());
       g->SetLineColor(colours[randIndex]);
       g->SetLineWidth(1);
@@ -620,7 +629,7 @@ void waveformAnalysis() {
   }
   cPulsesSuperimp->cd();
   mgSuperimposed->Draw("ALP");
-  mgSuperimposed->SetTitle("Pulses");
+  mgSuperimposed->SetTitle("Superimposed pulses");
   mgSuperimposed->GetXaxis()->SetTitle("Time since startPulse [ns]");
   mgSuperimposed->GetYaxis()->SetTitle("ADC Counts");
 
