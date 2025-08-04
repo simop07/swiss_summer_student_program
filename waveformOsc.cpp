@@ -135,7 +135,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT 1 PE peak ****\n\nP value       "
                "      = "
-            << fAsymmetric1PE->GetProb() << "\n";
+            << fAsymmetric1PE->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fAsymmetric1PE->GetChisquare() / fAsymmetric1PE->GetNDF()
             << "\n\n";
@@ -146,7 +146,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   // Print pvalue and reduced chi squared
   std::cout << "\n\n**** FIT RESULT 2 PE peak ****\n\nP value       "
                "      = "
-            << fAsymmetric2PE->GetProb() << "\n";
+            << fAsymmetric2PE->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fAsymmetric2PE->GetChisquare() / fAsymmetric2PE->GetNDF()
             << "\n\n";
@@ -164,7 +164,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   std::cout
       << "\n\n**** FIT RESULT TOTAL NOT CONSTRAINED #mu ****\n\nP value       "
          "      = "
-      << fTotal->GetProb() << "\n";
+      << fTotal->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fTotal->GetChisquare() / fTotal->GetNDF() << "\n\n";
   TMatrixD covMatrix = fitResult->GetCorrelationMatrix();
@@ -194,7 +194,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   std::cout
       << "\n\n**** FIT RESULT TOTAL CONSTRAINED #mu ****\n\nP value       "
          "      = "
-      << fTotalConst->GetProb() << "\n";
+      << fTotalConst->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fTotalConst->GetChisquare() / fTotalConst->GetNDF() << "\n\n";
   TMatrixD covMatrixConst = fitResultConst->GetCorrelationMatrix();
@@ -224,7 +224,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
   std::cout << "\n\n**** FIT RESULT TOTAL CONSTRAINED SAME SIGMA #mu ****\n\nP "
                "value       "
                "      = "
-            << fTotalConstSameSigmas->GetProb() << "\n";
+            << fTotalConstSameSigmas->GetProb() << '\n';
   std::cout << "Reduced chi squared = "
             << fTotalConstSameSigmas->GetChisquare() /
                    fTotalConstSameSigmas->GetNDF()
@@ -272,7 +272,15 @@ void waveformAnalysis() {
   double const samplePeriod = 0.005e-1;  // In [\mus]
   std::ifstream infile("./data/4Layers.txt");
   std::string line;
+  std::vector<double> colours{1, 2, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
+  TMultiGraph *mg = new TMultiGraph();
+  TMultiGraph *mgSuperimposed = new TMultiGraph();
+  std::vector<TGraph *> graphs{};
+  std::vector<TGraph *> graphsSuperimposed{};
   int row = 0;
+
+  // Select random generator seed for colours based on current time
+  srand(time(NULL));
 
   // Creating TFile
   TFile *file1 = new TFile("./rootFiles/waveformAnalysisOsc.root", "RECREATE");
@@ -338,6 +346,9 @@ void waveformAnalysis() {
     }
   }
 
+  // Pulse counter
+  int pulseCounter{};
+
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
     // Control over analysed rows
@@ -390,7 +401,7 @@ void waveformAnalysis() {
 
     // Get pulse vector from each single waveform
     const auto &pulses = wf.getPulses();
-    std::cout << "Number of Pulses = " << pulses.size() << "\n";
+    std::cout << "Number of Pulses = " << pulses.size() << '\n';
 
     // Fill noise information
     int const nBaselineSamples{1100};
@@ -400,6 +411,8 @@ void waveformAnalysis() {
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
+      ++pulseCounter;
+
       // Params of interest
       double heightOverWidth{p.peakValue / ((p.endTime - p.startTime) * 1000)};
       double peakFractionPos{(p.peakTime - p.startTime) /
@@ -407,27 +420,74 @@ void waveformAnalysis() {
       double areaOverFullTime{p.area / ((p.endTime - p.startTime))};
 
       std::cout << "  *** Pulse n. " << i + 1 << " ***\n";
-      std::cout << "  Overall start time  = " << p.startTime << " #mus\n";
-      std::cout << "  Overall end time    = " << p.endTime << " #mus\n";
-      std::cout << "  Overall peak time   = " << p.peakTime << " #mus\n";
-      std::cout << "  Relative start time = " << p.startTime - wf.getTimeStamp()
+      std::cout << "  Overall start time           = " << p.startTime
                 << " #mus\n";
-      std::cout << "  Relative end time   = " << p.endTime - wf.getTimeStamp()
+      std::cout << "  Overall end time             = " << p.endTime
                 << " #mus\n";
-      std::cout << "  Relative peak time  = " << p.peakTime - wf.getTimeStamp()
+      std::cout << "  Overall peak time            = " << p.peakTime
                 << " #mus\n";
-      std::cout << "  Peak value          = " << p.peakValue << " mV\n";
-      std::cout << "  Width               = "
-                << (p.endTime - p.startTime) * 1000 << " ns\n";
-      std::cout << "  Rise time           = " << p.riseTime * 1000 << " ns\n";
-      std::cout << "  FWHM                = " << p.FWHMTime * 1000 << " ns\n";
-      std::cout << "  Fract area time     = " << p.areaFractionTime * 1000
+      std::cout << "  Relative start time          = "
+                << p.startTime - wf.getTimeStamp() << " #mus\n";
+      std::cout << "  Relative end time            = "
+                << p.endTime - wf.getTimeStamp() << " #mus\n";
+      std::cout << "  Relative peak time           = "
+                << p.peakTime - wf.getTimeStamp() << " #mus\n";
+      std::cout << "  Peak time since startPulse   = "
+                << (p.peakTime - wf.getTimeStamp() - p.times[0]) * 1000.
                 << " ns\n";
-      std::cout << "  Height over width   = " << heightOverWidth << " mV/ns\n";
-      std::cout << "  Peak fraction pos.  = " << peakFractionPos << '\n';
-      std::cout << "  Area / full width   = " << areaOverFullTime << " mV\n";
-      std::cout << "  Area                = " << p.area * 1000 << " mV*ns\n";
-      std::cout << "  Area in PE          = " << p.area * 1000 / 24. << " PE\n";
+      std::cout << "  Peak value                   = " << p.peakValue
+                << " mV\n";
+      std::cout << "  Width                       = "
+                << (p.endTime - p.startTime) * 1000 << " ns\n";
+      std::cout << "  Rise time                   = " << p.riseTime * 1000
+                << " ns\n";
+      std::cout << "  FWHM                        = " << p.FWHMTime * 1000
+                << " ns\n";
+      std::cout << "  90% area time               = "
+                << p.areaFractionTime * 1000 << " ns\n";
+      std::cout << "  Height over width           = " << heightOverWidth
+                << " mV/ns\n";
+      std::cout << "  Peak fraction pos.          = " << peakFractionPos
+                << '\n';
+      std::cout << "  Area / full width           = " << areaOverFullTime
+                << " mV\n";
+      std::cout << "  Area                        = " << p.area * 1000
+                << " mV*ns\n";
+      std::cout << "  Area in PE                  = " << p.area * 1000 / 24.
+                << " PE\n";
+
+      // Generate a random number between 0 and 8 (used for colour indices)
+      int randIndex = rand() % 9;
+
+      // Create vector to superimpose pulses
+      std::vector<double> superimposedTimes = p.times;
+      double shift{superimposedTimes[0]};
+      for (int timeId{}; timeId < superimposedTimes.size(); ++timeId) {
+        superimposedTimes[timeId] -= shift;
+        superimposedTimes[timeId] *= 1000.;  // To obtain time in [ns]
+      }
+
+      // Plot each pulse using a graph object
+      TGraph *g = new TGraph(p.times.size(), p.times.data(), p.values.data());
+      g->SetLineColor(colours[randIndex]);
+      g->SetLineWidth(1);
+      g->SetMarkerColor(kBlack);
+      g->SetMarkerStyle(20);
+      g->SetMarkerSize(1);
+      g->SetTitle(Form("Pulse %d; Time [ns]; ADC counts", pulseCounter));
+      graphs.push_back(g);
+
+      // Superimpose pulses from riseTime
+      TGraph *gSuperimposed = new TGraph(
+          superimposedTimes.size(), superimposedTimes.data(), p.values.data());
+      gSuperimposed->SetLineColor(colours[randIndex]);
+      gSuperimposed->SetLineWidth(1);
+      gSuperimposed->SetMarkerColor(kBlack);
+      gSuperimposed->SetMarkerStyle(20);
+      gSuperimposed->SetMarkerSize(1);
+      gSuperimposed->SetTitle(
+          Form("Pulse %d; Time [ns]; ADC counts", pulseCounter));
+      graphsSuperimposed.push_back(gSuperimposed);
 
       // Fill pulse information
       hAreaVsTime->Fill(p.peakTime - wf.getTimeStamp(), p.area * 1000);
@@ -538,12 +598,43 @@ void waveformAnalysis() {
     }
   }
 
+  // Create canvas to display all pulses of one file
+  TCanvas *cPulses = new TCanvas("cPulses", "Pulses", 1500, 700);
+
+  // Draw all pulses on multigraph object
+  for (size_t i = 0; i < graphs.size(); ++i) {
+    mg->Add(graphs[i]);
+  }
+  cPulses->cd();
+  mg->Draw("ALP");
+  mg->SetTitle("Pulses");
+  mg->GetXaxis()->SetTitle("Time since \"trigger\" [#mu]");
+  mg->GetYaxis()->SetTitle("ADC Counts");
+
+  // Create canvas to superimpose all pulses of one file
+  TCanvas *cPulsesSuperimp =
+      new TCanvas("cPulsesSuperimp", "Superimposed pulses", 1500, 700);
+
+  // Draw all pulses on multigraph object
+  for (size_t i = 0; i < graphsSuperimposed.size(); ++i) {
+    mgSuperimposed->Add(graphsSuperimposed[i]);
+  }
+  cPulsesSuperimp->cd();
+  mgSuperimposed->Draw("ALP");
+  mgSuperimposed->SetTitle("Superimposed pulses");
+  mgSuperimposed->GetXaxis()->SetTitle("Time since startPulse [ns]");
+  mgSuperimposed->GetYaxis()->SetTitle("Voltage [mV]");
+
   c1->SaveAs("./plots/pulse_analysis_results_osc.pdf");
   c3->SaveAs("./plots/params_analysis_osc.pdf");
+  cPulses->SaveAs("./plots/pulses_osc.pdf");
+  cPulsesSuperimp->SaveAs("./plots/pulsesSuperimposed_osc.pdf");
 
   file1->cd();
   c1->Write();
   c3->Write();
+  cPulses->Write();
+  cPulsesSuperimp->Write();
   file1->Close();
 }
 
