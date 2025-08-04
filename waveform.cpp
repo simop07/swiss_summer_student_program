@@ -307,7 +307,7 @@ void waveformAnalysis() {
   std::ifstream infile(
       "./data/DataR_CH0@DT5730S_59483_250321_led_on_no_cover_3_2.txt");
   std::string line;
-  std::vector<double> colours{1, 2, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
+  std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
   TMultiGraph *mg = new TMultiGraph();
   TMultiGraph *mgSuperimposed = new TMultiGraph();
   std::vector<TGraph *> graphs{};
@@ -443,8 +443,8 @@ void waveformAnalysis() {
       ++pulseCounter;
 
       // Find area in region of interest
-      if ((p.startTime - wf.getTimeStamp()) >= triggerStart &&
-          (p.endTime - wf.getTimeStamp()) <= triggerEnd) {
+      if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
+          (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
         totArea += p.area;
         ++pulseCounterRegion;
       }
@@ -487,8 +487,8 @@ void waveformAnalysis() {
       std::cout << "  Area in PE                   = "
                 << p.area / areaConvFactor << " PE\n";
 
-      // Generate a random number between 0 and 8 (used for colour indices)
-      int randIndex = rand() % 9;
+      // Generate a random number between 0 and 7 (used for colour indices)
+      int randIndex = rand() % 8;
 
       // Create vector to superimpose pulses
       std::vector<double> superimposedTimes = p.times;
@@ -499,7 +499,12 @@ void waveformAnalysis() {
 
       // Plot each pulse using a graph object
       TGraph *g = new TGraph(p.times.size(), p.times.data(), p.values.data());
-      g->SetLineColor(colours[randIndex]);
+      if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
+          (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
+        g->SetLineColor(2);
+      } else {
+        g->SetLineColor(colours[randIndex]);
+      }
       g->SetLineWidth(1);
       g->SetMarkerColor(kBlack);
       g->SetMarkerStyle(20);
@@ -510,7 +515,12 @@ void waveformAnalysis() {
       // Superimpose pulses from riseTime
       TGraph *gSuperimposed = new TGraph(
           superimposedTimes.size(), superimposedTimes.data(), p.values.data());
-      gSuperimposed->SetLineColor(colours[randIndex]);
+      if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
+          (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
+        gSuperimposed->SetLineColor(2);
+      } else {
+        gSuperimposed->SetLineColor(colours[randIndex]);
+      }
       gSuperimposed->SetLineWidth(1);
       gSuperimposed->SetMarkerColor(kBlack);
       gSuperimposed->SetMarkerStyle(20);
@@ -715,9 +725,9 @@ void waveformTotal() {
     double timestamp{};
     int sampleIndex{};
 
-    std::vector<double> xValues;                             // Relative time
-    std::vector<double> yValues;                             // ADC counts
-    std::vector<double> colours{1, 2, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
+    std::vector<double> xValues;                          // Relative time
+    std::vector<double> yValues;                          // ADC counts
+    std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
 
     // Loop on columns
     while (std::getline(ss, item, '\t')) {
@@ -733,8 +743,8 @@ void waveformTotal() {
       ++column;
     }
 
-    // Generate a random number between 0 and 8 (used for colour indices)
-    int randIndex = rand() % 9;
+    // Generate a random number between 0 and 7 (used for colour indices)
+    int randIndex = rand() % 8;
 
     // Plot each waveform using a graph object
     TGraph *g = new TGraph(xValues.size(), xValues.data(), yValues.data());
