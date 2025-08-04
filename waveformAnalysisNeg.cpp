@@ -183,9 +183,15 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
   auto pulseArea = sumSamples - (pulseEnd - pulseStart + 1) * fBaseline;
 
   // Find pulse which is closest to average
+  std::vector<double> values{};
+  std::vector<double> times{};
   int closestToAvgIndex = pulseStart;
   double minimalDifference = std::abs(fSamples[pulseStart] - avg);
   for (int i = pulseStart; i <= pulseEnd; ++i) {
+    // Take advantage of the loop building values and times objects
+    values.push_back(fSamples[i]);
+    times.push_back(i * fSamplePeriod);
+
     double currentVal = fSamples[i];
     auto diff = std::abs(currentVal - avg);
     if (diff < minimalDifference) {
@@ -223,5 +229,7 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
                riseTime,
                FWHMTime,
                fractionalAreaTime,
-               std::abs(pulseArea)};
+               std::abs(pulseArea),
+               values,
+               times};
 }
