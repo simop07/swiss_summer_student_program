@@ -334,9 +334,20 @@ void waveformAnalysis() {
                150, 0, 6);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 20, 2, 50);
+  TH1F *hPETrigger = new TH1F(
+      "hPETrigger", "Trigger region; Area [PE]; Normalized counts", 150, 0, 6);
+  TH1F *hPEPreTrigger =
+      new TH1F("hPEPreTrigger",
+               "Pre trigger region; Area [PE]; Normalized counts", 15, 0, 2);
+  TH1F *hPEPostTrigger1 = new TH1F(
+      "hPEPostTrigger1", "Post trigger region 1; Area [PE]; Normalized counts",
+      15, 0., 1.6);
+  TH1F *hPEPostTrigger2 = new TH1F(
+      "hPEPostTrigger2", "Post trigger region 2; Area [PE]; Normalized counts",
+      15, 0, 2.5);
 
   // Plotting parameters
-  int const nPulseParam{12};
+  int const nPulseParam{14};
   Parameter pulsePar[nPulseParam] = {
       {"Width [ns]", 2., 50.},
       {"Area [ADC #times ns]", 0., 30000.},
@@ -349,7 +360,9 @@ void waveformAnalysis() {
       {"Area over full time width [ADC]", 0., 2000.},
       {"Rise time [ns]", 0., 20.},
       {"FWHM [ns]", 0., 20.},
-      {"90% area time [ns]", 0., 35.}};
+      {"90% area time [ns]", 0., 35.},
+      {"Neg area/overall area", 0., 0.05},
+      {"Neg counts/overall counts", 0., 1.}};
   int const nBins{15};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
@@ -398,7 +411,7 @@ void waveformAnalysis() {
   double totPreTrigArea{};
   double numPreTrigPE{};
   double const preTriggerStart{100.};
-  double const preTriggerEnd{120.};
+  double const preTriggerEnd{130.};
 
   // Variable for analysis in post-trigger region 1 in 1 single file
   int pulseCounterPostTriggerRegion1{};
@@ -465,13 +478,19 @@ void waveformAnalysis() {
     // Print pulse properties
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
-      ++pulseCounter;
 
+      // // Insert selections on pulses
+      // if ((p.area / areaConvFactor) < (1.01477 - 0.59664)) {
+      //   continue;
+      // }
+
+      ++pulseCounter;
       // Find area in trigger region
       if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
         totTrigArea += p.area;
         ++pulseCounterTriggerRegion;
+        hPETrigger->Fill(p.area / areaConvFactor);
       }
 
       // Find area in pre-trigger region
@@ -479,6 +498,7 @@ void waveformAnalysis() {
           (p.peakTime - wf.getTimeStamp()) <= preTriggerEnd) {
         totPreTrigArea += p.area;
         ++pulseCounterPreTriggerRegion;
+        hPEPreTrigger->Fill(p.area / areaConvFactor);
       }
 
       // Find area in post-trigger region 1
@@ -486,6 +506,7 @@ void waveformAnalysis() {
           (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd1) {
         totPostTrigArea1 += p.area;
         ++pulseCounterPostTriggerRegion1;
+        hPEPostTrigger1->Fill(p.area / areaConvFactor);
       }
 
       // Find area in post-trigger region 2
@@ -493,6 +514,7 @@ void waveformAnalysis() {
           (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd2) {
         totPostTrigArea2 += p.area;
         ++pulseCounterPostTriggerRegion2;
+        hPEPostTrigger2->Fill(p.area / areaConvFactor);
       }
 
       // Params of interest
@@ -529,6 +551,9 @@ void waveformAnalysis() {
       std::cout << "  Area / full width            = " << areaOverFullTime
                 << " ADC\n";
       std::cout << "  Area                         = " << p.area << " ADC*ns\n";
+      std::cout << "  Negative/overall area frac   = " << p.negFracArea
+                << " \n";
+      std::cout << "  Negative/overall counts      = " << p.negFrac << " \n";
       std::cout << "  Area in PE                   = "
                 << p.area / areaConvFactor << " PE\n";
 
@@ -557,15 +582,15 @@ void waveformAnalysis() {
       TGraph *g = new TGraph(p.times.size(), p.times.data(), p.values.data());
       if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
-        g->SetLineColor(2);
+        g->SetLineColor(kRed);
       } else if ((p.peakTime - wf.getTimeStamp()) >= preTriggerStart &&
                  (p.peakTime - wf.getTimeStamp()) <= preTriggerEnd) {
-        g->SetLineColor(kBlack);
+        g->SetLineColor(kRed);
       } else if (((p.peakTime - wf.getTimeStamp()) >= postTriggerStart1 &&
                   (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd1) ||
                  ((p.peakTime - wf.getTimeStamp()) >= postTriggerStart2 &&
                   (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd2)) {
-        g->SetLineColor(kRed + 2);
+        g->SetLineColor(kRed);
       } else {
         g->SetLineColor(colours[randIndex]);
       }
@@ -581,15 +606,15 @@ void waveformAnalysis() {
           superimposedTimes.size(), superimposedTimes.data(), p.values.data());
       if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
-        gSuperimposed->SetLineColor(2);
+        gSuperimposed->SetLineColor(kRed);
       } else if ((p.peakTime - wf.getTimeStamp()) >= preTriggerStart &&
                  (p.peakTime - wf.getTimeStamp()) <= preTriggerEnd) {
-        gSuperimposed->SetLineColor(kBlack);
+        gSuperimposed->SetLineColor(kRed);
       } else if (((p.peakTime - wf.getTimeStamp()) >= postTriggerStart1 &&
                   (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd1) ||
                  ((p.peakTime - wf.getTimeStamp()) >= postTriggerStart2 &&
                   (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd2)) {
-        gSuperimposed->SetLineColor(kRed + 2);
+        gSuperimposed->SetLineColor(kRed);
       } else {
         gSuperimposed->SetLineColor(colours[randIndex]);
       }
@@ -623,7 +648,9 @@ void waveformAnalysis() {
                                        areaOverFullTime,
                                        p.riseTime,
                                        p.FWHMTime,
-                                       p.areaFractionTime};
+                                       p.areaFractionTime,
+                                       p.negFracArea,
+                                       p.negFrac};
       for (int par_i = 0; par_i < nPulseParam; ++par_i) {
         hPulsePar[par_i]->Fill(parValues[par_i]);
 
@@ -850,12 +877,51 @@ void waveformAnalysis() {
   cPulseSum->cd();
   gPulseSum->Draw("ALP");
 
+  // Create canvas for areas in PE of region of interest
+  TCanvas *cPEArea = new TCanvas("cPEArea", "Pulse distribution", 1500, 700);
+  cPEArea->Divide(2, 2);
+
+  // Normalise  hPhotoElectrons->Scale(1.0 / hPhotoElectrons->GetMaximum());
+  hPETrigger->Scale(1.0 / hPETrigger->GetMaximum());
+  hPEPreTrigger->Scale(1.0 / hPEPreTrigger->GetMaximum());
+  hPEPostTrigger1->Scale(1.0 / hPEPostTrigger1->GetMaximum());
+  hPEPostTrigger2->Scale(1.0 / hPEPostTrigger2->GetMaximum());
+
+  // Draw areas in PE trigger region
+  cPEArea->cd(1);
+  gPad->SetLogy();
+  gPad->Update();
+  hPETrigger->SetLineWidth(1);
+  hPETrigger->DrawCopy();
+
+  // Draw areas in PE pre trigger region
+  cPEArea->cd(2);
+  gPad->SetLogy();
+  gPad->Update();
+  hPEPreTrigger->SetLineWidth(1);
+  hPEPreTrigger->DrawCopy();
+
+  // Draw areas in PE post trigger region 1
+  cPEArea->cd(3);
+  gPad->SetLogy();
+  gPad->Update();
+  hPEPostTrigger1->SetLineWidth(1);
+  hPEPostTrigger1->DrawCopy();
+
+  // Draw areas in PE post trigger region 2
+  cPEArea->cd(4);
+  gPad->SetLogy();
+  gPad->Update();
+  hPEPostTrigger2->SetLineWidth(1);
+  hPEPostTrigger2->DrawCopy();
+
   // Save canvases
   c1->SaveAs("./plots/pulse_analysis_results.pdf");
   c3->SaveAs("./plots/params_analysis.pdf");
   cPulses->SaveAs("./plots/pulses.pdf");
   cPulsesSuperimp->SaveAs("./plots/pulsesSuperimposed.pdf");
   cPulseSum->SaveAs("./plots/cPulseSum.pdf");
+  cPEArea->SaveAs("./plots/cPEArea.pdf");
 
   // Write objects on file
   file1->cd();
@@ -863,6 +929,7 @@ void waveformAnalysis() {
   c3->Write();
   cPulses->Write();
   cPulsesSuperimp->Write();
+  cPEArea->Write();
   file1->Close();
 }
 
