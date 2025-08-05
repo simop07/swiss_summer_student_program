@@ -484,7 +484,9 @@ void waveformAnalysis() {
       //   continue;
       // }
 
+      // Count total selected pulses
       ++pulseCounter;
+
       // Find area in trigger region
       if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
@@ -551,11 +553,11 @@ void waveformAnalysis() {
       std::cout << "  Area / full width            = " << areaOverFullTime
                 << " ADC\n";
       std::cout << "  Area                         = " << p.area << " ADC*ns\n";
+      std::cout << "  Area in PE                   = "
+                << p.area / areaConvFactor << " PE\n";
       std::cout << "  Negative/overall area frac   = " << p.negFracArea
                 << " \n";
       std::cout << "  Negative/overall counts      = " << p.negFrac << " \n";
-      std::cout << "  Area in PE                   = "
-                << p.area / areaConvFactor << " PE\n";
 
       // Generate a random number between 0 and 7 (used for colour indices)
       int randIndex = rand() % 8;
@@ -916,12 +918,12 @@ void waveformAnalysis() {
   hPEPostTrigger2->DrawCopy();
 
   // Save canvases
-  c1->SaveAs("./plots/pulse_analysis_results.pdf");
-  c3->SaveAs("./plots/params_analysis.pdf");
-  cPulses->SaveAs("./plots/pulses.pdf");
-  cPulsesSuperimp->SaveAs("./plots/pulsesSuperimposed.pdf");
-  cPulseSum->SaveAs("./plots/cPulseSum.pdf");
-  cPEArea->SaveAs("./plots/cPEArea.pdf");
+  c1->SaveAs("./plots/dig/pulse_analysis_results.pdf");
+  c3->SaveAs("./plots/dig/params_analysis.pdf");
+  cPulses->SaveAs("./plots/dig/pulses.pdf");
+  cPulsesSuperimp->SaveAs("./plots/dig/pulsesSuperimposed.pdf");
+  cPulseSum->SaveAs("./plots/dig/cPulseSum.pdf");
+  cPEArea->SaveAs("./plots/dig/cPEArea.pdf");
 
   // Write objects on file
   file1->cd();
@@ -1024,7 +1026,7 @@ void waveformTotal() {
   file2->Close();
 
   // Print canvas
-  c2->SaveAs("./plots/waveform_plot.png");
+  c2->SaveAs("./plots/dig/waveform_plot.png");
 }
 
 int main() {
