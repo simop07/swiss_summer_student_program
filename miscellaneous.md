@@ -154,9 +154,7 @@ Measuring multiple observables simultaneously improves signal discrimination (al
 
 Initially the idea is to detect single photon events – so that the signal we will analyse is narrow (a larger signal will simply be more difficult to interpret (is it simply a delayed pulse of the same PMT event or something due to the reflectance?)). To do so, we need to reduce the width of the pulse as much as possible, and we need to find the limiting condition maximising the Low Level and minimising the High Level. Why?
 Because the total number of photons emitted per pulse by the LED is proportional to the area under the pulse:
-
 $$(V_{high}-V_{low} )*Width$$
-
 Now the question is: why the Low Level should be as high as possible? Operating close to threshold means that the LED only turns on briefly, and often emits just 0 or 1 photons per pulse. If the Low Level is too low, the LED is strongly reverse biased before the pulse  when the pulse hits, the LED has a larger forward bias and emits much more light. In this way the spikes seen in the PMT readout are more similar before and after the thick forest of the readout – even if there's still some discrepancy between before and after the LED pulse. So the best option is putting Low Level at 2.3 V because at 2.3 V the LED is barely on.
 
 Instead, as to the high level, it should be not too low because otherwise the signal to noise ratio will be too low, but it shouldn't be too high because in that case we produce LOTS of photons instead of just one. So we should minimise the High Level.
@@ -173,3 +171,23 @@ Before using the digitiser, I need to do the following:
 - What is happening in the width histogram? Try to understand this by plotting the code which Nicolas has shared with you (most interesting parameters are width vs area and noise vs area)
 - Create the code involving reflectance and transmittance with themselves and as a function of the thickness of PTFE (see notes).
 - Fixing the thickness, plot what happens at different angles (so transmittance and reflectance as a function of the incident angle).
+
+# 05/08/2025
+## [waveformOsc.cpp](waveformOsc.cpp) miscellaneous information
+At the moment I've made just one selection of data by removing waveform reaching "maximum" peak value ($-13.9333$ $mV$).
+
+## [waveform.cpp](waveform.cpp) miscellaneous information
+At the moment I've made - it is commented - just one selection of data by removing pulses whose area in PE is under a certain value.
+
+## Development of the pulse analysis for both [waveformOsc.cpp](waveformOsc.cpp) and [waveform.cpp](waveform.cpp)
+After analysing all possible parameters of the analysis (check the above files to see them more specifically), I need to find a way to separate the noise pulses from the physical ones. To do so, I sum all the pulses and fit a gaussian in the area which I would define "the trigger region". Then, I identify other 3 regions, a pre-trigger region and two post-trigger regions. The two post trigger regions are built in such a way that the first one coincides exactly with the decay of the "sum of pulses" graph, while the other corresponds with the last part of the pulses time.
+
+Subsequently, I found several parameters for each region such as:
+- Pulses region / total (note that a pulse belongs to a region if its peaks belong to that region)
+- Total area (simply the sum of the areas of the pulses belonging to a region)
+- Total number of PE (area scaled with the conversion factor into PE)
+- Number of PE per pulse (total number of PE / number of pulses within a region)
+- Rate (total number of PE / over lifetime)
+Then, the idea is to further clean the graphs adding selections. Selections are used to better discriminate between physical signals and noise signals. The idea is that not only we search for pulses using the threshold cointained in the waveformAnalysis class, but also imposing some constraints on the area. Again, the idea is that a signal is considered physical if its area is above a certain value. The ratio underlying this first selection can be summarised in the following expression (note that the right hand side is usually expressed in ACD counts, while the left hand side is an area!):
+$$\mu_{singlePE}-N\cdot\sigma_1^1\gg\mu_{noise}+M\cdot\sigma_{noise}$$,
+meaning that the right tail of the noise should be much lower than the left tail of the single PE event.
