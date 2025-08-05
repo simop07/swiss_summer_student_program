@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <map>
 #include <numeric>
 #include <sstream>
 #include <vector>
@@ -280,7 +281,7 @@ void waveformAnalysis() {
   TMultiGraph *mgSuperimposed = new TMultiGraph();
   std::vector<TGraph *> graphs{};
   std::vector<TGraph *> graphsSuperimposed{};
-  std::map<int, double> map{};
+  std::map<double, double> map{};
   int row = 0;
 
   // Select random generator seed for colours based on current time
@@ -369,9 +370,9 @@ void waveformAnalysis() {
   double totTrigArea{};
   double numTrigPE{};
 
-  // Below gaussian fit on "Pulse sum" graph is used (2 sigmas)
-  double const triggerStart{0.8};
-  double const triggerEnd{1.};
+  // Below gaussian fit on "Pulse sum" graph is used
+  double const triggerStart{0.6984880867};
+  double const triggerEnd{0.6984880867 + 2 * 0.2644352047};
 
   // Variable for analysis in pre-trigger region in 1 single file
   int pulseCounterPreTriggerRegion{};
@@ -384,14 +385,14 @@ void waveformAnalysis() {
   int pulseCounterPostTriggerRegion1{};
   double totPostTrigArea1{};
   double numPostTrigPE1{};
-  double const postTriggerStart1{1.2};
-  double const postTriggerEnd1{1.4};
+  double const postTriggerStart1{1.25};
+  double const postTriggerEnd1{1.5};
 
   // Variable for analysis in post-trigger region 2 in 1 single file
   int pulseCounterPostTriggerRegion2{};
   double totPostTrigArea2{};
   double numPostTrigPE2{};
-  double const postTriggerStart2{1.6};
+  double const postTriggerStart2{1.65};
   double const postTriggerEnd2{1.9};
 
   // Loop over rows (waveforms)
@@ -470,7 +471,7 @@ void waveformAnalysis() {
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
         totTrigArea += p.area;
         ++pulseCounterTriggerRegion;
-        hPETrigger->Fill(p.area / areaConvFactor);
+        hPETrigger->Fill(p.area * 1000. / areaConvFactor);
       }
 
       // Find area in pre-trigger region
@@ -478,7 +479,7 @@ void waveformAnalysis() {
           (p.peakTime - wf.getTimeStamp()) <= preTriggerEnd) {
         totPreTrigArea += p.area;
         ++pulseCounterPreTriggerRegion;
-        hPEPreTrigger->Fill(p.area / areaConvFactor);
+        hPEPreTrigger->Fill(p.area * 1000. / areaConvFactor);
       }
 
       // Find area in post-trigger region 1
@@ -486,7 +487,7 @@ void waveformAnalysis() {
           (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd1) {
         totPostTrigArea1 += p.area;
         ++pulseCounterPostTriggerRegion1;
-        hPEPostTrigger1->Fill(p.area / areaConvFactor);
+        hPEPostTrigger1->Fill(p.area * 1000. / areaConvFactor);
       }
 
       // Find area in post-trigger region 2
@@ -494,7 +495,7 @@ void waveformAnalysis() {
           (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd2) {
         totPostTrigArea2 += p.area;
         ++pulseCounterPostTriggerRegion2;
-        hPEPostTrigger2->Fill(p.area / areaConvFactor);
+        hPEPostTrigger2->Fill(p.area * 1000. / areaConvFactor);
       }
 
       // Params of interest
@@ -655,11 +656,17 @@ void waveformAnalysis() {
   // Round fit printing to 10 decimal place
   std::cout << std::fixed << std::setprecision(10);
 
+  // Scale areas from mV*#mus to mV*ns
+  totTrigArea = totTrigArea * 1000.;
+  totPreTrigArea = totPreTrigArea * 1000.;
+  totPostTrigArea1 = totPostTrigArea1 * 1000.;
+  totPostTrigArea2 = totPostTrigArea2 * 1000.;
+
   // Correctly define the total number of PE per region
-  numTrigPE = totTrigArea * 1000. / (areaConvFactor);
-  numPreTrigPE = totPreTrigArea * 1000. / (areaConvFactor);
-  numPostTrigPE1 = totPostTrigArea1 * 1000. / (areaConvFactor);
-  numPostTrigPE2 = totPostTrigArea2 * 1000. / (areaConvFactor);
+  numTrigPE = totTrigArea / (areaConvFactor);
+  numPreTrigPE = totPreTrigArea / (areaConvFactor);
+  numPostTrigPE1 = totPostTrigArea1 / (areaConvFactor);
+  numPostTrigPE2 = totPostTrigArea2 / (areaConvFactor);
 
   // Correctly define the average number of PE per pulse
   double numTrigPEPuls = numTrigPE / (pulseCounterTriggerRegion);
@@ -832,12 +839,12 @@ void waveformAnalysis() {
   yValues.reserve(map.size());
   for (auto const &[key, value] : map) {
     xValues.push_back(key);
-    yValues.push_back(value);
+    yValues.push_back(-value);
   }
 
   // Create graph for summing pulses
   TGraph *gPulseSum = new TGraph(map.size(), xValues.data(), yValues.data());
-  gPulseSum->SetTitle("Pulse sum; Time since \"trigger\" [ns]; ADC Counts");
+  gPulseSum->SetTitle("Pulse sum; Time since \"trigger\" [#mus]; Voltage [mV]");
   gPulseSum->SetLineColor(kBlue);
   gPulseSum->SetLineWidth(1);
   gPulseSum->SetMarkerColor(kBlack);
@@ -845,13 +852,13 @@ void waveformAnalysis() {
   gPulseSum->SetMarkerSize(1);
 
   // Create fit function for summed pulses
-  TF1 *fGaus = new TF1("fGaus", "gaus", 120., 220.);
+  TF1 *fGaus = new TF1("fGaus", "gaus", 0.7, 1.2);
   fGaus->SetLineColor(kRed);
   fGaus->SetLineWidth(4);
   fGaus->SetLineStyle(2);
-  fGaus->SetParameter(0, 2e7);   // Amplitude
-  fGaus->SetParameter(1, 180.);  // Mean
-  fGaus->SetParameter(2, 20.);   // Sigma
+  fGaus->SetParameter(0, 120);   // Amplitude
+  fGaus->SetParameter(1, 0.75);  // Mean
+  fGaus->SetParameter(2, 0.1);   // Sigma
   gPulseSum->Fit(fGaus, "M R");
 
   // Draw summed pulses
