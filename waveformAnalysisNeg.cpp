@@ -176,6 +176,20 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
   auto sumSamples = std::accumulate(fSamples.begin() + pulseStart,
                                     std::next(fSamples.begin() + pulseEnd), 0.);
 
+  // Find all positive values contributing to area
+  double posSumSamples{};
+  int posCounter{};
+  std::for_each(fSamples.begin() + pulseStart,
+                std::next(fSamples.begin() + pulseEnd), [&](double posVal) {
+                  if (posVal > fBaseline) {
+                    posSumSamples += std::abs(posVal);
+                    ++posCounter;
+                  }
+                });
+  // Subtract baseline in order to compute effective positive area
+  auto posPulseArea =
+      std::abs(posSumSamples - std::abs(posCounter * fBaseline));
+
   // Compute sample average within a pulse
   auto avg = sumSamples / (pulseEnd - pulseStart + 1);
 
@@ -220,6 +234,8 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
 
   // Using correct conversion for area
   pulseArea *= fSamplePeriod;
+  posPulseArea *= fSamplePeriod;
+  double posFracArea{posPulseArea / pulseArea};
 
   // Create pulse object
   return Pulse{fTimeStamp + pulseStart * fSamplePeriod,
@@ -230,6 +246,9 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
                FWHMTime,
                fractionalAreaTime,
                std::abs(pulseArea),
+               posFracArea,
+               (static_cast<double>(posCounter) /
+                static_cast<double>((pulseEnd - pulseStart + 1))),
                values,
                times};
 }

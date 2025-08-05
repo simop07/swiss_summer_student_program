@@ -19,6 +19,8 @@ struct Pulse {
   double FWHMTime{};             // Time correspondent with the FWHM of the peak
   double areaFractionTime{};     // Fractional area time
   double area{};                 // Area of pulse
+  double posFracArea{};          // Positive / overall area fraction
+  double posFrac{};              // Positive / overall samples
   std::vector<double> values{};  // Values defining the pulse
   std::vector<double> times{};   // Times defining the pulse
 };
