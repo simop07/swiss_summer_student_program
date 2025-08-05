@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <map>
 #include <numeric>
 #include <sstream>
 #include <vector>
@@ -312,6 +313,7 @@ void waveformAnalysis() {
   TMultiGraph *mgSuperimposed = new TMultiGraph();
   std::vector<TGraph *> graphs{};
   std::vector<TGraph *> graphsSuperimposed{};
+  std::map<int, double> map{};
   int row = 0;
 
   // Select random generator seed for colours based on current time
@@ -383,11 +385,34 @@ void waveformAnalysis() {
 
   // Variable for analysis in trigger region in 1 single file
   int pulseCounter{};
-  int pulseCounterRegion{};
-  double totArea{};
-  double numPE{};
-  double const triggerStart{120.};
-  double const triggerEnd{200.};
+  int pulseCounterTriggerRegion{};
+  double totTrigArea{};
+  double numTrigPE{};
+
+  // Below gaussian fit on "Pulse sum" graph is used (2 sigmas)
+  double const triggerStart{179.12236 - 2 * 15.27892};
+  double const triggerEnd{179.12236 + 2 * 15.27892};
+
+  // Variable for analysis in pre-trigger region in 1 single file
+  int pulseCounterPreTriggerRegion{};
+  double totPreTrigArea{};
+  double numPreTrigPE{};
+  double const preTriggerStart{100.};
+  double const preTriggerEnd{120.};
+
+  // Variable for analysis in post-trigger region 1 in 1 single file
+  int pulseCounterPostTriggerRegion1{};
+  double totPostTrigArea1{};
+  double numPostTrigPE1{};
+  double const postTriggerStart1{219.};
+  double const postTriggerEnd1{239.};
+
+  // Variable for analysis in post-trigger region 2 in 1 single file
+  int pulseCounterPostTriggerRegion2{};
+  double totPostTrigArea2{};
+  double numPostTrigPE2{};
+  double const postTriggerStart2{264.};
+  double const postTriggerEnd2{284.};
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -442,13 +467,33 @@ void waveformAnalysis() {
       const auto &p = pulses[i];
       ++pulseCounter;
 
-      // Find area in region of interest
+      // Find area in trigger region
       if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
-        totArea += p.area;
-        ++pulseCounterRegion;
+        totTrigArea += p.area;
+        ++pulseCounterTriggerRegion;
       }
-      numPE = totArea / areaConvFactor;
+
+      // Find area in pre-trigger region
+      if ((p.peakTime - wf.getTimeStamp()) >= preTriggerStart &&
+          (p.peakTime - wf.getTimeStamp()) <= preTriggerEnd) {
+        totPreTrigArea += p.area;
+        ++pulseCounterPreTriggerRegion;
+      }
+
+      // Find area in post-trigger region 1
+      if ((p.peakTime - wf.getTimeStamp()) >= postTriggerStart1 &&
+          (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd1) {
+        totPostTrigArea1 += p.area;
+        ++pulseCounterPostTriggerRegion1;
+      }
+
+      // Find area in post-trigger region 2
+      if ((p.peakTime - wf.getTimeStamp()) >= postTriggerStart2 &&
+          (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd2) {
+        totPostTrigArea2 += p.area;
+        ++pulseCounterPostTriggerRegion2;
+      }
 
       // Params of interest
       double heightOverWidth{p.peakValue / (p.endTime - p.startTime)};
@@ -490,6 +535,17 @@ void waveformAnalysis() {
       // Generate a random number between 0 and 7 (used for colour indices)
       int randIndex = rand() % 8;
 
+      // Generate sum of pulses using a STL map. Here the keys of the map
+      // correspond to the time values of pulses, while values correpond to the
+      // voltage/ADC counts. Contrary to std::vector<T>, std::map<T1,T2>'s
+      // operator[] is more secure: when you have an empty map, with no
+      // specified size, and you access map[X], the map safely creates the
+      // key-value pair (X,0.0) - in this case I put 0.0 because it is the
+      // default initialiser for double values
+      for (int j = 0; j < p.times.size(); ++j) {
+        map[p.times[j]] += p.values[j];
+      }
+
       // Create vector to superimpose pulses
       std::vector<double> superimposedTimes = p.times;
       double shift{superimposedTimes[0]};
@@ -502,6 +558,14 @@ void waveformAnalysis() {
       if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
         g->SetLineColor(2);
+      } else if ((p.peakTime - wf.getTimeStamp()) >= preTriggerStart &&
+                 (p.peakTime - wf.getTimeStamp()) <= preTriggerEnd) {
+        g->SetLineColor(kBlack);
+      } else if (((p.peakTime - wf.getTimeStamp()) >= postTriggerStart1 &&
+                  (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd1) ||
+                 ((p.peakTime - wf.getTimeStamp()) >= postTriggerStart2 &&
+                  (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd2)) {
+        g->SetLineColor(kRed + 2);
       } else {
         g->SetLineColor(colours[randIndex]);
       }
@@ -518,6 +582,14 @@ void waveformAnalysis() {
       if ((p.peakTime - wf.getTimeStamp()) >= triggerStart &&
           (p.peakTime - wf.getTimeStamp()) <= triggerEnd) {
         gSuperimposed->SetLineColor(2);
+      } else if ((p.peakTime - wf.getTimeStamp()) >= preTriggerStart &&
+                 (p.peakTime - wf.getTimeStamp()) <= preTriggerEnd) {
+        gSuperimposed->SetLineColor(kBlack);
+      } else if (((p.peakTime - wf.getTimeStamp()) >= postTriggerStart1 &&
+                  (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd1) ||
+                 ((p.peakTime - wf.getTimeStamp()) >= postTriggerStart2 &&
+                  (p.peakTime - wf.getTimeStamp()) <= postTriggerEnd2)) {
+        gSuperimposed->SetLineColor(kRed + 2);
       } else {
         gSuperimposed->SetLineColor(colours[randIndex]);
       }
@@ -570,17 +642,87 @@ void waveformAnalysis() {
     ++row;
   }
 
-  // Print information for total area
-  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
-               "PHOTOELECTRONS in region "
-            << '[' << triggerStart << ',' << triggerEnd << "] ns ***\n";
-  std::cout << " Total area              = " << totArea << " [ADC*ns]\n";
-  std::cout << " Total number of PE      = " << numPE << "\n";
-  std::cout << "Pulses in region / total = " << pulseCounterRegion << " / "
-            << pulseCounter << '\n';
-
-  // Round fit printing to 5 decimal place
+  // Print information for each region of interest rounding to 5 decimal place
   std::cout << std::fixed << std::setprecision(5);
+
+  // Correctly define the total number of PE per region
+  numTrigPE = totTrigArea / (areaConvFactor);
+  numPreTrigPE = totPreTrigArea / (areaConvFactor);
+  numPostTrigPE1 = totPostTrigArea1 / (areaConvFactor);
+  numPostTrigPE2 = totPostTrigArea2 / (areaConvFactor);
+
+  // Correctly define the average number of PE per pulse
+  double numTrigPEPuls = numTrigPE / (pulseCounterTriggerRegion);
+  double numPreTrigPEPuls = numPreTrigPE / (pulseCounterPreTriggerRegion);
+  double numPostTrigPE1Puls = numPostTrigPE1 / (pulseCounterPostTriggerRegion1);
+  double numPostTrigPE2Puls = numPostTrigPE2 / (pulseCounterPostTriggerRegion2);
+
+  // Define rates per region
+  double rateTrig = numTrigPE / (triggerEnd - triggerStart);
+  double ratePreTrig = numPreTrigPE / (preTriggerEnd - preTriggerStart);
+  double ratePostTrig1 = numPostTrigPE1 / (postTriggerEnd1 - postTriggerStart1);
+  double ratePostTrig2 = numPostTrigPE2 / (postTriggerEnd2 - postTriggerStart2);
+
+  // Printing region information
+
+  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
+               "PHOTOELECTRONS IN PRE-TRIGGER REGION "
+            << '[' << preTriggerStart << ',' << preTriggerEnd << "] ns ***\n";
+  std::cout << " Pulses region / total  = " << pulseCounterPreTriggerRegion
+            << " / " << pulseCounter << " = "
+            << (static_cast<double>(pulseCounterPreTriggerRegion) /
+                static_cast<double>(pulseCounter))
+            << '\n';
+  std::cout << " Total area             = " << totPreTrigArea << " [ADC*ns]\n";
+  std::cout << " Total number of PE     = " << numPreTrigPE << " PE\n";
+  std::cout << " Number of PE per pulse = " << numPreTrigPEPuls
+            << " PE/pulse\n";
+  std::cout << " Rate                   = " << ratePreTrig << " PE/ns\n";
+
+  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
+               "PHOTOELECTRONS IN TRIGGER REGION "
+            << '[' << triggerStart << ',' << triggerEnd << "] ns ***\n";
+  std::cout << " Pulses region / total  = " << pulseCounterTriggerRegion
+            << " / " << pulseCounter << " = "
+            << (static_cast<double>(pulseCounterTriggerRegion) /
+                static_cast<double>(pulseCounter))
+            << '\n';
+  std::cout << " Total area             = " << totTrigArea << " [ADC*ns]\n";
+  std::cout << " Total number of PE     = " << numTrigPE << " PE\n";
+  std::cout << " Number of PE per pulse = " << numTrigPEPuls << " PE/pulse\n";
+  std::cout << " Rate                   = " << rateTrig << " PE/ns\n";
+
+  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
+               "PHOTOELECTRONS IN POST-TRIGGER REGION 1 "
+            << '[' << postTriggerStart1 << ',' << postTriggerEnd1
+            << "] ns ***\n";
+  std::cout << " Pulses region / total  = " << pulseCounterPostTriggerRegion1
+            << " / " << pulseCounter << " = "
+            << (static_cast<double>(pulseCounterPostTriggerRegion1) /
+                static_cast<double>(pulseCounter))
+            << '\n';
+  std::cout << " Total area             = " << totPostTrigArea1
+            << " [ADC*ns]\n";
+  std::cout << " Total number of PE     = " << numPostTrigPE1 << " PE\n";
+  std::cout << " Number of PE per pulse = " << numPostTrigPE1Puls
+            << " PE/pulse\n";
+  std::cout << " Rate                   = " << ratePostTrig1 << " PE/ns\n";
+
+  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
+               "PHOTOELECTRONS IN POST-TRIGGER REGION 2 "
+            << '[' << postTriggerStart2 << ',' << postTriggerEnd2
+            << "] ns ***\n";
+  std::cout << " Pulses region / total  = " << pulseCounterPostTriggerRegion2
+            << " / " << pulseCounter << " = "
+            << (static_cast<double>(pulseCounterPostTriggerRegion2) /
+                static_cast<double>(pulseCounter))
+            << '\n';
+  std::cout << " Total area             = " << totPostTrigArea2
+            << " [ADC*ns]\n";
+  std::cout << " Total number of PE     = " << numPostTrigPE2 << " PE\n";
+  std::cout << " Number of PE per pulse = " << numPostTrigPE2Puls
+            << " PE/pulse\n";
+  std::cout << " Rate                   = " << ratePostTrig2 << " PE/ns\n";
 
   // FITTING FUNCTIONS SPACE
   std::cout << "\n\n\n************************************\n";
@@ -674,11 +816,48 @@ void waveformAnalysis() {
   mgSuperimposed->GetXaxis()->SetTitle("Time since startPulse [ns]");
   mgSuperimposed->GetYaxis()->SetTitle("ADC Counts");
 
+  // Create canvas for summing pulses
+  TCanvas *cPulseSum = new TCanvas("cPulseSum", "Pulse sum", 1500, 700);
+  std::vector<double> xValues{};
+  std::vector<double> yValues{};
+  xValues.reserve(map.size());
+  yValues.reserve(map.size());
+  for (auto const &[key, value] : map) {
+    xValues.push_back(key);
+    yValues.push_back(value);
+  }
+
+  // Create graph for summing pulses
+  TGraph *gPulseSum = new TGraph(map.size(), xValues.data(), yValues.data());
+  gPulseSum->SetTitle("Pulse sum; Time since \"trigger\" [ns]; ADC Counts");
+  gPulseSum->SetLineColor(kBlue);
+  gPulseSum->SetLineWidth(1);
+  gPulseSum->SetMarkerColor(kBlack);
+  gPulseSum->SetMarkerStyle(20);
+  gPulseSum->SetMarkerSize(1);
+
+  // Create fit function for summed pulses
+  TF1 *fGaus = new TF1("fGaus", "gaus", 120., 220.);
+  fGaus->SetLineColor(kRed);
+  fGaus->SetLineWidth(4);
+  fGaus->SetLineStyle(2);
+  fGaus->SetParameter(0, 2e7);   // Amplitude
+  fGaus->SetParameter(1, 180.);  // Mean
+  fGaus->SetParameter(2, 20.);   // Sigma
+  gPulseSum->Fit(fGaus, "M R");
+
+  // Draw summed pulses
+  cPulseSum->cd();
+  gPulseSum->Draw("ALP");
+
+  // Save canvases
   c1->SaveAs("./plots/pulse_analysis_results.pdf");
   c3->SaveAs("./plots/params_analysis.pdf");
   cPulses->SaveAs("./plots/pulses.pdf");
   cPulsesSuperimp->SaveAs("./plots/pulsesSuperimposed.pdf");
+  cPulseSum->SaveAs("./plots/cPulseSum.pdf");
 
+  // Write objects on file
   file1->cd();
   c1->Write();
   c3->Write();
