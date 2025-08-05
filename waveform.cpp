@@ -479,10 +479,10 @@ void waveformAnalysis() {
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
 
-      // // Insert selections on pulses
-      // if ((p.area / areaConvFactor) < (1.01477 - 0.59664)) {
-      //   continue;
-      // }
+      // Insert selections on pulses
+      if ((p.area / areaConvFactor) < (1.01477 - 1 * 0.59664)) {
+        continue;
+      }
 
       // Count total selected pulses
       ++pulseCounter;
