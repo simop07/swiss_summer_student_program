@@ -480,7 +480,8 @@ void waveformAnalysis() {
       const auto &p = pulses[i];
 
       // Insert selections on pulses
-      if ((p.area / areaConvFactor) < (1.01477 - 1 * 0.59664)) {
+      if (((p.area / areaConvFactor) < (1.01477 - 1 * 0.59664)) /* ||
+          ((p.endTime - p.startTime) < 40.) */) {
         continue;
       }
 
