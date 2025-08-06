@@ -191,3 +191,8 @@ Subsequently, I found several parameters for each region such as:
 Then, the idea is to further clean the graphs adding selections. Selections are used to better discriminate between physical signals and noise signals. The idea is that not only we search for pulses using the threshold cointained in the waveformAnalysis class, but also imposing some constraints on the area. Again, the idea is that a signal is considered physical if its area is above a certain value. The ratio underlying this first selection can be summarised in the following expression (note that the right hand side is usually expressed in ACD counts, while the left hand side is an area!):
 $$\mu_{singlePE}-N\cdot\sigma_1^1\gg\mu_{noise}+M\cdot\sigma_{noise}$$,
 meaning that the right tail of the noise should be much lower than the left tail of the single PE event.
+
+# 06/08/2025
+Some random comments I received at the meeting today:
+- To investigate undershots for pulses, it is better to look at wide pulses: in fact, wider pulses are simply more prone to have more undershots.
+- A nice thing that we could do is making the PTFE used for reflectance measurements a little be **wet** (be careful, you're using high voltage!!) -> in this way, you can mimick the interface Xenon-PTFE in a better way more than using air-PTFE. When performing meaurements of reflectance, you should also be aware of the **critic angle** at the interface.
