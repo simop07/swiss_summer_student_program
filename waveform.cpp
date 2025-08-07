@@ -363,7 +363,7 @@ void waveformAnalysis() {
       {"90% area time [ns]", 0., 35.},
       {"Neg area/overall area", 0., 0.05},
       {"Neg counts/overall counts", 0., 1.}};
-  int const nBins{15};
+  int const nBins{150};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
   TGraph *gPulsePar[nPulseParam][nPulseParam];
@@ -480,10 +480,10 @@ void waveformAnalysis() {
       const auto &p = pulses[i];
 
       // Insert selections on pulses
-      if (((p.area / areaConvFactor) < (1.01477 - 1 * 0.59664)) /* ||
-          ((p.endTime - p.startTime) < 40.) */) {
-        continue;
-      }
+      // if (((p.area / areaConvFactor) < (1.01477 - 1 * 0.59664)) /* ||
+      //     ((p.endTime - p.startTime) < 40.) */) {
+      //   continue;
+      // }
 
       // Count total selected pulses
       ++pulseCounter;
