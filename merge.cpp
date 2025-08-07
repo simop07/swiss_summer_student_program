@@ -1,22 +1,24 @@
+// Compile using "g++ -fsanitize=address merge.cpp"
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 
 constexpr int nMinAnalysedRows{6};  // Minimum index of analysed rows INCLUDED
-constexpr int nMaxAnalysedRows{4008};  // Maximum rows EXCLUDED
+constexpr int nMaxAnalysedRows{8008};  // Maximum rows EXCLUDED
 
 void mergeCsv() {
   // Create file to write on
-  std::ofstream outputFile{"./data/4Layers.txt"};
+  std::ofstream outputFile{"./data/4LayersD.txt"};
 
   // Read input files
-  std::string fileRoot{"./data/4Layers/C1SCOPE#"};
+  std::string fileRoot{"./data/4LayerD/Autosave/C1SCOPE#"};
   std::string fileType{".csv"};
   std::string line{};
 
   // Loop on files to merge
-  for (int i = 200000; i <= 201020; ++i) {
+  for (int i = 200001; i <= 201011; ++i) {
     std::cout << "\n*** FILE n. " << i << " ***\n";
     std::string fileName{fileRoot + std::to_string(i) + fileType};
     std::ifstream currentInfile(fileName);
