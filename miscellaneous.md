@@ -196,3 +196,4 @@ meaning that the right tail of the noise should be much lower than the left tail
 Some random comments I received at the meeting today:
 - To investigate undershots for pulses, it is better to look at wide pulses: in fact, wider pulses are simply more prone to have more undershots.
 - A nice thing that we could do is making the PTFE used for reflectance measurements a little be **wet** (be careful, you're using high voltage!!) -> in this way, you can mimick the interface Xenon-PTFE in a better way more than using air-PTFE. When performing meaurements of reflectance, you should also be aware of the **critic angle** at the interface.
+- I am doing what I am doing for ALPINE detector -> for its segmentation. Basically we want to know if and hoe many photons will pass from one segmented layer to another.
