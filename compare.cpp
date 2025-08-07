@@ -5,11 +5,35 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TH2.h"
-#include "waveformAnalysisPos.hpp"
+#include "TROOT.h"
+#include "TStyle.h"
+
+void setFitStyle() {
+  gROOT->SetStyle("Plain");
+  gStyle->SetOptStat(10);
+  gStyle->SetOptFit(0);  // It was 1111
+  gStyle->SetPalette(57);
+  gStyle->SetOptTitle(1);
+  gStyle->SetStatY(0.9);
+  gStyle->SetStatX(0.9);
+  gStyle->SetStatW(0.2);
+  gStyle->SetStatH(0.2);
+  gStyle->SetTitleX(0.5);
+  gStyle->SetTitleY(0.98);
+  gStyle->SetTitleAlign(23);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleXOffset(1.2f);
+  gStyle->SetTitleYOffset(1.1f);
+  gStyle->SetLineScalePS(1);
+  // gStyle->SetPadTopMargin(-9.);
+  // gStyle->SetPadRightMargin(-9.);
+  // gStyle->SetPadBottomMargin(-9.);
+  // gStyle->SetPadLeftMargin(-9.);
+  // gStyle->SetTitleW(0.5f);
+}
 
 void compareDig() {
   // To avoid reloading manually if .so is present
-  R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
   // Loading ROOT File
   TFile *file1 = new TFile("./rootFiles/waveformAnalysis.root", "READ");
@@ -27,9 +51,11 @@ void compareDig() {
     hPulsePar2[par_i] = (TH1F *)file2->Get(Form("h1PulsePar_%d", par_i));
   }
 
+  setFitStyle();
+
   // Plotting these instograms histograms in ROOT File
   TCanvas *c4 = new TCanvas("c4", "Compare params", 1300, 700);
-  c4->Divide(7, 2);
+  c4->Divide(6, 3);
   for (int par_i = 0; par_i < nPulseParam; ++par_i) {
     c4->cd(par_i + 1);
     hPulsePar1[par_i]->DrawCopy("");
@@ -49,7 +75,6 @@ void compareDig() {
 
 void compareOsc() {
   // To avoid reloading manually if .so is present
-  R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   // Loading ROOT File
   TFile *file1 = new TFile("./rootFiles/waveformAnalysisOsc.root", "READ");
@@ -67,9 +92,11 @@ void compareOsc() {
     hPulsePar2[par_i] = (TH1F *)file2->Get(Form("h1PulsePar_%d", par_i));
   }
 
+  setFitStyle();
+
   // Plotting these instograms histograms in ROOT File
   TCanvas *c4 = new TCanvas("c4", "Compare params", 1300, 700);
-  c4->Divide(7, 2);
+  c4->Divide(6, 3);
   for (int par_i = 0; par_i < nPulseParam; ++par_i) {
     c4->cd(par_i + 1);
     hPulsePar2[par_i]->SetLineColor(kRed);
