@@ -246,7 +246,7 @@ Pulse WaveformAnalysisNeg::integratePulse(int pulseStart, int pulseEnd) {
                FWHMTime,
                fractionalAreaTime,
                std::abs(pulseArea),
-               posFracArea,
+               std::abs(posFracArea),
                (static_cast<double>(posCounter) /
                 static_cast<double>((pulseEnd - pulseStart + 1))),
                values,
