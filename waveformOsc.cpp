@@ -28,7 +28,7 @@
 
 // Define global constants
 constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
-constexpr int nMaxAnalysedRows{1021};  // Maximum rows INCLUDED (1021)
+constexpr int nMaxAnalysedRows{1001};  // Maximum rows INCLUDED (1021)
 
 // Asymmetric gaussian functions
 
@@ -243,7 +243,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
 void setFitStyle() {
   gROOT->SetStyle("Plain");
   gStyle->SetOptStat(10);
-  gStyle->SetOptFit(1111);
+  gStyle->SetOptFit(0);  // It was 1111
   gStyle->SetPalette(57);
   gStyle->SetOptTitle(1);
   gStyle->SetStatY(0.9);
@@ -271,10 +271,10 @@ void waveformAnalysis() {
   R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   // Area conversion factor (current assumption is 1 PE = 24 mV*ns)
-  double const areaConvFactor{24.};
+  double const areaConvFactor{55.};
 
   double const samplePeriod = 0.005e-1;  // In [\mus]
-  std::ifstream infile("./data/4Layers.txt");
+  std::ifstream infile("./data/4LayersA.txt");
   std::string line;
   std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
   TMultiGraph *mg = new TMultiGraph();
@@ -294,9 +294,9 @@ void waveformAnalysis() {
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
                                "Pulse area vs relative time; Relative time "
                                "peak [#mus]; Area [mV #times ns]",
-                               60, 0.4, 2.1, 60, 0., 100.);
+                               60, 0.4, 4.1, 60, 0., 220.);
   TH1F *hNoise = new TH1F("hNoise", "Noise distribution; Voltage [mV]; Counts",
-                          17, -0.6, 0.6);
+                          30, -0.8, 1.);
   TH1F *hPhotoElectrons =
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
                80, 0, 3.5);
@@ -318,9 +318,9 @@ void waveformAnalysis() {
   int const nPulseParam{14};
   Parameter pulsePar[nPulseParam] = {
       {"Width [ns]", 1., 30.},
-      {"Area [mV #times ns]", 0., 100.},
+      {"Area [mV #times ns]", 0., 220.},
       {"Area [PE]", 0, 3.5},
-      {"Relative peak time [#mus]", 0.4, 2.1},
+      {"Relative peak time [#mus]", 0.4, 4.1},
       {"Noise RMS [mV]", -0.2, 0.2},
       {"Peak amplitude [mV]", 0., 15.},
       {"Height over width [mV/ns]", 0., 1.7},
@@ -331,7 +331,7 @@ void waveformAnalysis() {
       {"90% area time [ns]", 2., 25.},
       {"Neg area/overall area", 0., 0.05},
       {"Neg counts/overall counts", 0., 1.}};
-  int const nBins{15};
+  int const nBins{150};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
   TGraph *gPulsePar[nPulseParam][nPulseParam];
@@ -371,29 +371,29 @@ void waveformAnalysis() {
   double numTrigPE{};
 
   // Below gaussian fit on "Pulse sum" graph is used
-  double const triggerStart{0.6984880867};
-  double const triggerEnd{0.6984880867 + 2 * 0.2644352047};
+  double const triggerStart{1.1247696663 - 2 * 0.2107972105};
+  double const triggerEnd{1.1247696663 + 2 * 0.2107972105};
 
   // Variable for analysis in pre-trigger region in 1 single file
   int pulseCounterPreTriggerRegion{};
   double totPreTrigArea{};
   double numPreTrigPE{};
-  double const preTriggerStart{0.1};
-  double const preTriggerEnd{0.6};
+  double const preTriggerStart{0.6};
+  double const preTriggerEnd{0.9};
 
   // Variable for analysis in post-trigger region 1 in 1 single file
   int pulseCounterPostTriggerRegion1{};
   double totPostTrigArea1{};
   double numPostTrigPE1{};
-  double const postTriggerStart1{1.25};
-  double const postTriggerEnd1{1.5};
+  double const postTriggerStart1{1.5};
+  double const postTriggerEnd1{2.};
 
   // Variable for analysis in post-trigger region 2 in 1 single file
   int pulseCounterPostTriggerRegion2{};
   double totPostTrigArea2{};
   double numPostTrigPE2{};
-  double const postTriggerStart2{1.65};
-  double const postTriggerEnd2{1.9};
+  double const postTriggerStart2{3.};
+  double const postTriggerEnd2{3.5};
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -425,8 +425,8 @@ void waveformAnalysis() {
     }
 
     // Selection condition on the "maximum" voltage
-    double const maxVoltage{-13.9333};
-    double const tolerance{0.01};
+    double const maxVoltage{-38.};
+    double const tolerance{0.5};
     auto it = std::find_if(samples.begin(), samples.end(), [&](double val) {
       return ((val - maxVoltage) < tolerance);
     });
@@ -458,8 +458,9 @@ void waveformAnalysis() {
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
 
-      // // Insert selections on pulses
-      // if ((p.area / areaConvFactor) < (1.01477 - 0.59664)) {
+      // Insert selections on pulses
+      // if ((p.endTime - p.startTime) * 1000. < 6. ||
+      //     (p.endTime - p.startTime) * 1000. > 7.) {
       //   continue;
       // }
 
@@ -852,7 +853,7 @@ void waveformAnalysis() {
   gPulseSum->SetMarkerSize(1);
 
   // Create fit function for summed pulses
-  TF1 *fGaus = new TF1("fGaus", "gaus", 0.7, 1.2);
+  TF1 *fGaus = new TF1("fGaus", "gaus", 0.7, 1.5);
   fGaus->SetLineColor(kRed);
   fGaus->SetLineWidth(4);
   fGaus->SetLineStyle(2);
@@ -931,7 +932,7 @@ void waveformTotal() {
   TCanvas *c2 = new TCanvas("c2", "Waveform analysis", 1500, 700);
 
   const double samplePeriod = 0.005e-1;  // In [\mus]
-  std::ifstream infile("./data/4Layers.txt");
+  std::ifstream infile("./data/4LayersA.txt");
   std::string line;
 
   int row = 0;
@@ -977,8 +978,8 @@ void waveformTotal() {
     }
 
     // Selection condition on the "maximum" voltage
-    double const maxVoltage{-13.9333};
-    double const tolerance{0.01};
+    double const maxVoltage{-38.};
+    double const tolerance{0.5};
     auto it = std::find_if(yValues.begin(), yValues.end(), [&](double val) {
       return ((val - maxVoltage) < tolerance);
     });
@@ -997,7 +998,7 @@ void waveformTotal() {
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     // g->GetXaxis()->SetRangeUser(-0.5e-6, 2.1e-6);
-    g->GetYaxis()->SetRangeUser(-15., 1.);
+    g->GetYaxis()->SetRangeUser(-33., 2.);
     g->SetTitle(Form("Waveform %d; Time [#mus]; Voltage [mV]",
                      row + 1));  // Inserting placeholder
     graphs.push_back(g);
@@ -1017,7 +1018,7 @@ void waveformTotal() {
   }
 
   // Save canvas
-  c2->BuildLegend(.70, .7, .9, .9, "Legend");
+  // c2->BuildLegend(.70, .7, .9, .9, "Legend");
   file2->cd();
   c2->Write();
   file2->Close();
