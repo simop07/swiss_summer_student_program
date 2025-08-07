@@ -149,6 +149,20 @@ void compareDigOsc() {
     c[i]->Write();
   }
 
+  // Superimpose graphs
+  TCanvas *cSuperimp =
+      new TCanvas("cSuperimp", "Superimpose params", 1300, 700);
+  cSuperimp->Divide(6, 3);
+  for (int par_i = 0; par_i < nPulseParam; ++par_i) {
+    cSuperimp->cd(par_i + 1);
+    hPulsePar2[par_i]->SetLineColor(kRed);
+    hPulsePar2[par_i]->DrawCopy("");
+    hPulsePar1[par_i]->DrawCopy("SAME");
+    gPad->Update();
+  }
+
+  fileCompare->cd();
+  cSuperimp->Write();
   fileCompare->Close();
   file1->Close();
 }
