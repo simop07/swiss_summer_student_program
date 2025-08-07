@@ -113,3 +113,42 @@ void compareOsc() {
   fileCompare->Close();
   file1->Close();
 }
+
+void compareDigOsc() {
+  // To avoid reloading manually if .so is present
+
+  // Loading ROOT File
+  TFile *file1 = new TFile("./rootFiles/waveformAnalysis.root", "READ");
+  TFile *file2 = new TFile("./rootFiles/waveformAnalysisOsc.root", "READ");
+
+  // Creating ROOT File
+  TFile *fileCompare = new TFile("./rootFiles/compareDigOsc.root", "RECREATE");
+
+  // Reading histos from canvas
+  int const nPulseParam{14};
+  TH1F *hPulsePar1[nPulseParam];
+  TH1F *hPulsePar2[nPulseParam];
+  for (int par_i = 0; par_i < nPulseParam; ++par_i) {
+    hPulsePar1[par_i] = (TH1F *)file1->Get(Form("h1PulsePar_%d", par_i));
+    hPulsePar2[par_i] = (TH1F *)file2->Get(Form("h1PulsePar_%d", par_i));
+  }
+
+  setFitStyle();
+
+  // Plotting these instograms histograms in ROOT File
+  TCanvas *c[nPulseParam];
+  for (int i = 0; i < nPulseParam; ++i) {
+    c[i] = new TCanvas(Form("c%d", i + 1), "Compare params", 1300, 700);
+    c[i]->Divide(2);
+    c[i]->cd(1);
+    hPulsePar1[i]->DrawCopy("");
+    c[i]->cd(2);
+    hPulsePar2[i]->SetLineColor(kRed);
+    hPulsePar2[i]->DrawCopy("");
+    fileCompare->cd();
+    c[i]->Write();
+  }
+
+  fileCompare->Close();
+  file1->Close();
+}
