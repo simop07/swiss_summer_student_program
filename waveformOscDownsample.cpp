@@ -271,7 +271,7 @@ void waveformAnalysis() {
   R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   // Area conversion factor (current assumption is 1 PE = 24 mV*ns)
-  double const areaConvFactor{44.};
+  double const areaConvFactor{55.};
 
   double const samplePeriod = 0.02e-1;  // In [\mus]
   std::ifstream infile("./data/4LayersA.txt");
@@ -371,29 +371,29 @@ void waveformAnalysis() {
   double numTrigPE{};
 
   // Below gaussian fit on "Pulse sum" graph is used
-  double const triggerStart{0.8795038472 - 1 * 0.4344182391};
-  double const triggerEnd{0.8795038472 + 2 * 0.4344182391};
+  double const triggerStart{1.1410014154 - 2 * 0.2461653408};
+  double const triggerEnd{1.1410014154 + 2 * 0.2461653408};
 
   // Variable for analysis in pre-trigger region in 1 single file
   int pulseCounterPreTriggerRegion{};
   double totPreTrigArea{};
   double numPreTrigPE{};
-  double const preTriggerStart{0.6};
-  double const preTriggerEnd{0.9};
+  double const preTriggerStart{0.1};
+  double const preTriggerEnd{0.7};
 
   // Variable for analysis in post-trigger region 1 in 1 single file
   int pulseCounterPostTriggerRegion1{};
   double totPostTrigArea1{};
   double numPostTrigPE1{};
-  double const postTriggerStart1{1.5};
-  double const postTriggerEnd1{2.};
+  double const postTriggerStart1{1.7};
+  double const postTriggerEnd1{2.3};
 
   // Variable for analysis in post-trigger region 2 in 1 single file
   int pulseCounterPostTriggerRegion2{};
   double totPostTrigArea2{};
   double numPostTrigPE2{};
   double const postTriggerStart2{3.};
-  double const postTriggerEnd2{3.5};
+  double const postTriggerEnd2{3.6};
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -430,8 +430,8 @@ void waveformAnalysis() {
     double partialSum{};
     while (iterator1 < samples.end()) {
       auto downsampledValue =
-          (std::accumulate(iterator1, iterator1 + 5, 0.) / 5.);
-      iterator1 = iterator1 + 5;
+          (std::accumulate(iterator1, iterator1 + 4, 0.) / 4.);
+      iterator1 = iterator1 + 4;
       samplesDownsampled.push_back(downsampledValue);
     }
 
@@ -972,9 +972,9 @@ void waveformTotal() {
     double timestamp{};
     int sampleIndex{};
 
-    std::vector<double> xValues;             // Relative time
-    std::vector<double> yValues;             // ADC counts
-    std::vector<double> yValuesDownsampled;  // ADC counts downsampled
+    std::vector<double> xValues;               // Relative time
+    std::vector<double> yValues;               // ADC counts
+    std::vector<double> yValuesDownsampled{};  // ADC counts downsampled
     std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
 
     // Loop on columns
@@ -985,8 +985,6 @@ void waveformTotal() {
 
       if (column >= 7) {
         yValues.push_back(std::stod(item) * 1e3);
-        xValues.push_back(sampleIndex * samplePeriod);
-        ++sampleIndex;
       }
       ++column;
     }
@@ -996,9 +994,11 @@ void waveformTotal() {
     double partialSum{};
     while (iterator1 < yValues.end()) {
       auto downsampledValue =
-          (std::accumulate(iterator1, iterator1 + 5, 0.) / 5.);
-      iterator1 = iterator1 + 5;
+          (std::accumulate(iterator1, iterator1 + 4, 0.) / 4.);
+      iterator1 = iterator1 + 4;
       yValuesDownsampled.push_back(downsampledValue);
+      xValues.push_back(sampleIndex * samplePeriod);
+      ++sampleIndex;
     }
 
     // Selection condition on the "maximum" voltage
