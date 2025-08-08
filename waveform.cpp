@@ -273,7 +273,7 @@ void fitPEHisto(TH1F *hPhotoElectrons) {
 void setFitStyle() {
   gROOT->SetStyle("Plain");
   gStyle->SetOptStat(10);
-  gStyle->SetOptFit(1111);
+  gStyle->SetOptFit(0);  // It was 1111
   gStyle->SetPalette(57);
   gStyle->SetOptTitle(1);
   gStyle->SetStatY(0.9);
@@ -1003,6 +1003,7 @@ void waveformTotal() {
     g->SetMarkerColor(kBlack);
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
+    g->GetYaxis()->SetRangeUser(7500, 15500);
     g->SetTitle(Form("Waveform %d; Time [ns]; ADC counts",
                      row + 1));  // Inserting placeholder
     graphs.push_back(g);
