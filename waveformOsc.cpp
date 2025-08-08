@@ -28,7 +28,7 @@
 
 // Define global constants
 constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
-constexpr int nMaxAnalysedRows{1001};  // Maximum rows INCLUDED (1021)
+constexpr int nMaxAnalysedRows{1001};  // Maximum rows INCLUDED (1001 4LayersA)
 
 // Asymmetric gaussian functions
 
@@ -554,14 +554,15 @@ void waveformAnalysis() {
       // specified size, and you access map[X], the map safely creates the
       // key-value pair (X,0.0) - in this case I put 0.0 because it is the
       // default initialiser for double values
-      for (int j = 0; j < p.times.size(); ++j) {
+      for (int j = 0; j < static_cast<int>(p.times.size()); ++j) {
         map[p.times[j]] += p.values[j];
       }
 
       // Create vector to superimpose pulses
       std::vector<double> superimposedTimes = p.times;
       double shift{superimposedTimes[0]};
-      for (int timeId{}; timeId < superimposedTimes.size(); ++timeId) {
+      for (int timeId{}; timeId < static_cast<int>(superimposedTimes.size());
+           ++timeId) {
         superimposedTimes[timeId] -= shift;
       }
 
