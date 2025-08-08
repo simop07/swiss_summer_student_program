@@ -24,7 +24,8 @@ To perform pulse analysis, two lines of development are followed depending on th
 
 In addition, two main source files are presented depending on the used data:
 - [waveform.cpp](waveform.cpp), for digitised data;
-- [waveformOsc.cpp](waveformOsc.cpp), for analog data from the oscilloscope.
+- [waveformOsc.cpp](waveformOsc.cpp), for data from the oscilloscope.
+- [waveformOscDownsample.cpp](waveformOscDownsample.cpp), for downsampled data from the oscilloscope.
 
 The aim of pulse analysis is to extrapolate several parameters of interest which will leter be used to find the reflectance and transmittance of light in PTFEs. You can see the definition of parameters of interest directly in [waveform.cpp](waveform.cpp) and [waveformOsc.cpp](waveformOsc.cpp).
 
