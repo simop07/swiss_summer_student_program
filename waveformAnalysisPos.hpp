@@ -49,7 +49,7 @@ class WaveformAnalysisPos {
   double RMS(int nInitialSamples = 50);
 
   // Detect pulses
-  void findPulses(double threshold = 30., double tolerance = 20.,
+  void findPulses(double threshold = 40., double tolerance = 30.,
                   int minWidth = 20, int maxWidth = 20, int minSep = 10);
 
   // Find area of 1 pulse
