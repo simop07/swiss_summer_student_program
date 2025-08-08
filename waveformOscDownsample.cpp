@@ -972,8 +972,9 @@ void waveformTotal() {
     double timestamp{};
     int sampleIndex{};
 
-    std::vector<double> xValues;                          // Relative time
-    std::vector<double> yValues;                          // ADC counts
+    std::vector<double> xValues;             // Relative time
+    std::vector<double> yValues;             // ADC counts
+    std::vector<double> yValuesDownsampled;  // ADC counts downsampled
     std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
 
     // Loop on columns
@@ -990,13 +991,23 @@ void waveformTotal() {
       ++column;
     }
 
+    // Downsample samples
+    auto iterator1 = yValues.begin();
+    double partialSum{};
+    while (iterator1 < yValues.end()) {
+      auto downsampledValue =
+          (std::accumulate(iterator1, iterator1 + 5, 0.) / 5.);
+      iterator1 = iterator1 + 5;
+      yValuesDownsampled.push_back(downsampledValue);
+    }
+
     // Selection condition on the "maximum" voltage
     double const maxVoltage{-38.};
     double const tolerance{0.5};
-    auto it = std::find_if(yValues.begin(), yValues.end(), [&](double val) {
-      return ((val - maxVoltage) < tolerance);
-    });
-    if (it != yValues.end()) {
+    auto it = std::find_if(
+        yValuesDownsampled.begin(), yValuesDownsampled.end(),
+        [&](double val) { return ((val - maxVoltage) < tolerance); });
+    if (it != yValuesDownsampled.end()) {
       continue;
     }
 
@@ -1004,7 +1015,8 @@ void waveformTotal() {
     int randIndex = rand() % 8;
 
     // Plot each waveform using a graph object
-    TGraph *g = new TGraph(xValues.size(), xValues.data(), yValues.data());
+    TGraph *g =
+        new TGraph(xValues.size(), xValues.data(), yValuesDownsampled.data());
     g->SetLineColor(colours[randIndex]);
     g->SetLineWidth(1);
     g->SetMarkerColor(kBlack);
