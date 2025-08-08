@@ -273,7 +273,7 @@ void waveformAnalysis() {
   // Area conversion factor (current assumption is 1 PE = 24 mV*ns)
   double const areaConvFactor{55.};
 
-  double const samplePeriod = 0.02e-1;  // In [\mus]
+  double const samplePeriod = 0.025e-1;  // In [\mus]
   std::ifstream infile("./data/4LayersA.txt");
   std::string line;
   std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
@@ -428,10 +428,10 @@ void waveformAnalysis() {
     // Downsample samples
     auto iterator1 = samples.begin();
     double partialSum{};
-    while (iterator1 < samples.end()) {
+    while (iterator1 < (samples.end() - 4)) {
       auto downsampledValue =
-          (std::accumulate(iterator1, iterator1 + 4, 0.) / 4.);
-      iterator1 = iterator1 + 4;
+          (std::accumulate(iterator1, iterator1 + 5, 0.) / 5.);
+      iterator1 = iterator1 + 5;
       samplesDownsampled.push_back(downsampledValue);
     }
 
@@ -944,7 +944,7 @@ void waveformTotal() {
   TFile *file2 = new TFile("./rootFiles/waveformOsc.root", "RECREATE");
   TCanvas *c2 = new TCanvas("c2", "Waveform analysis", 1500, 700);
 
-  const double samplePeriod = 0.02e-1;  // In [\mus]
+  const double samplePeriod = 0.025e-1;  // In [\mus]
   std::ifstream infile("./data/4LayersA.txt");
   std::string line;
 
@@ -992,10 +992,10 @@ void waveformTotal() {
     // Downsample samples
     auto iterator1 = yValues.begin();
     double partialSum{};
-    while (iterator1 < yValues.end()) {
+    while (iterator1 < (yValues.end() - 4)) {
       auto downsampledValue =
-          (std::accumulate(iterator1, iterator1 + 4, 0.) / 4.);
-      iterator1 = iterator1 + 4;
+          (std::accumulate(iterator1, iterator1 + 5, 0.) / 5.);
+      iterator1 = iterator1 + 5;
       yValuesDownsampled.push_back(downsampledValue);
       xValues.push_back(sampleIndex * samplePeriod);
       ++sampleIndex;
