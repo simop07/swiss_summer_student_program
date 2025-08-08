@@ -51,3 +51,6 @@ plots/
 
 # Miscellaneous
 nicolasLoop.cpp
+*.h
+*.in
+*.cxx*
