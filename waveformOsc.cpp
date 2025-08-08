@@ -299,7 +299,7 @@ void waveformAnalysis() {
                           30, -0.8, 1.);
   TH1F *hPhotoElectrons =
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
-               80, 0, 3.5);
+               60, 0, 3.5);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 1., 30.);
   TH1F *hPETrigger = new TH1F(
@@ -415,7 +415,10 @@ void waveformAnalysis() {
 
     // Loop over columns
     while (std::getline(ss, item, '\t')) {
-      if (item.empty()) continue;
+      if (item.empty()) {
+        continue;
+      }
+
       if (column == 3) {
         timestamp = std::stod(item) * 1e6;
       } else if (column >= 7) {
