@@ -1,0 +1,10 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: Pasquini
+  given-names: Simone
+title: "UZH Summer Student Program"
+version: 1.0.0
+doi: https://doi.org/10.5281/zenodo.16323819
+date-released: 2025-11-08
+url: "https://github.com/simop07/swiss_summer_student_program"
