@@ -39,13 +39,14 @@ void setFitStyle() {
 void lightAnalysis() {
   // Define useful variables
   int const nFiles{3};
-  int const regions{4};
+  int const nRegions{4};
   TFile *files[nFiles];
   TTree *trees[nFiles];
   TCanvas *canvases[nFiles];
   PhotonData photondata[nFiles];
   TMultiGraph *mg[nFiles];
-  std::string names[nFiles] = {"Incident", "Transmitted", "Reflected"};
+  std::string namesF[nFiles] = {"Incident", "Transmitted", "Reflected"};
+  std::string namesR[nRegions] = {"PreTrig", "Trig", "PostTrig1", "PostTrig2"};
 
   // Creating ROOT File
   TFile *fileLightAnalysis =
@@ -60,8 +61,8 @@ void lightAnalysis() {
     files[i] = new TFile("./rootFiles/waveformAnalysisOsc.root", "READ");
 
     // Define canvases
-    canvases[i] = new TCanvas(Form("c%s", names[i].c_str()),
-                              Form("Pulses %s", names[i].c_str()), 1500, 700);
+    canvases[i] = new TCanvas(Form("c%s", namesF[i].c_str()),
+                              Form("Pulses %s", namesF[i].c_str()), 1500, 700);
 
     // Define and draw graphs
     mg[i] = (TMultiGraph *)files[i]->Get("Regions of pulses");
@@ -119,63 +120,159 @@ void lightAnalysis() {
   // Round printing to 10 decimal place
   std::cout << std::fixed << std::setprecision(10);
 
+  // Define reflectance and transmittance
+  std::vector<double> inc{};
+  std::vector<double> transm{};
+  std::vector<double> refl{};
+  inc.reserve(nRegions);
+  transm.reserve(nRegions);
+  refl.reserve(nRegions);
+
   // Print region properties
   int counter1{};
+  double rate{};
+  double rateCorr1{};
+  double rateCorr2{};
+  double rateCorr3{};
   for (PhotonData const &pd : photondata) {
-    std::cout << Form("\n *** %s", names[counter1].c_str())
+    std::cout << Form("\n *** %s", namesF[counter1].c_str())
               << " photon data ***\n";
-    for (int i{}; i < regions; ++i) {
+    for (int i{}; i < nRegions; ++i) {
       switch (i) {
         case 0:
-          std::cout << "\nPre trigger region" << "\n";
+          rate = (pd.preTrigger.PECounter) / (pd.preTrigger.deltaT);
+          std::cout << "\nPre trigger region" << '\n';
+          std::cout << " Rate          = " << rate << " PE/ns\n";
           std::cout << " PE counter    = " << pd.preTrigger.PECounter
                     << " PE\n";
           std::cout << " PE per pulse  = " << pd.preTrigger.PEPulses
                     << " PE/pulse\n";
           std::cout << " Delta time    = " << pd.preTrigger.deltaT << " ns\n";
-          std::cout << " Rate          = "
-                    << (pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)
-                    << " PE/ns\n";
+          switch (counter1) {
+            case 0:
+              inc.push_back(rate);
+              break;
+
+            case 1:
+              transm.push_back(rate);
+              break;
+
+            case 2:
+              refl.push_back(rate);
+              break;
+          }
           break;
 
         case 1:
-          std::cout << "\nTrigger region" << "\n";
+          std::cout << "\nTrigger region" << '\n';
           std::cout << " PE counter    = " << pd.inTrigger.PECounter << " PE\n";
-          std::cout << " PE per pulse  = " << pd.inTrigger.PEPulses
-                    << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n";
+          rateCorr1 = (pd.inTrigger.PECounter -
+                       (((pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)) *
+                        pd.inTrigger.deltaT)) /
+                      pd.inTrigger.deltaT;
           std::cout << " Rate          = "
                     << (pd.inTrigger.PECounter) / (pd.inTrigger.deltaT)
                     << " PE/ns\n";
+          std::cout << " Rate correct  = " << rateCorr1 << " PE/ns\n";
+          std::cout << " PE per pulse  = " << pd.inTrigger.PEPulses
+                    << " PE/pulse\n";
+          std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n";
+          switch (counter1) {
+            case 0:
+              inc.push_back(rateCorr1);
+              break;
+
+            case 1:
+              transm.push_back(rateCorr1);
+              break;
+
+            case 2:
+              refl.push_back(rateCorr1);
+              break;
+          }
           break;
 
         case 2:
-          std::cout << "\nPost trigger region 1" << "\n";
+          std::cout << "\nPost trigger region 1" << '\n';
           std::cout << " PE counter    = " << pd.postTrigger1.PECounter
                     << " PE\n";
-          std::cout << " PE per pulse  = " << pd.postTrigger1.PEPulses
-                    << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.postTrigger1.deltaT << " ns\n";
+          rateCorr2 = (pd.postTrigger1.PECounter -
+                       (((pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)) *
+                        pd.postTrigger1.deltaT)) /
+                      pd.postTrigger1.deltaT;
           std::cout << " Rate          = "
                     << (pd.postTrigger1.PECounter) / (pd.postTrigger1.deltaT)
                     << " PE/ns\n";
+          std::cout << " Rate correct  = " << rateCorr2 << " PE/ns\n";
+          std::cout << " PE per pulse  = " << pd.postTrigger1.PEPulses
+                    << " PE/pulse\n";
+          std::cout << " Delta time    = " << pd.postTrigger1.deltaT << " ns\n";
+          switch (counter1) {
+            case 0:
+              inc.push_back(rateCorr2);
+              break;
+
+            case 1:
+              transm.push_back(rateCorr2);
+              break;
+
+            case 2:
+              refl.push_back(rateCorr2);
+              break;
+          }
           break;
 
         case 3:
-          std::cout << "\nPost trigger region 2" << "\n";
+          std::cout << "\nPost trigger region 2" << '\n';
           std::cout << " PE counter    = " << pd.postTrigger2.PECounter
                     << " PE\n";
-          std::cout << " PE per pulse  = " << pd.postTrigger2.PEPulses
-                    << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.postTrigger2.deltaT << " ns\n";
+          rateCorr3 = (pd.postTrigger2.PECounter -
+                       (((pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)) *
+                        pd.postTrigger2.deltaT)) /
+                      pd.postTrigger2.deltaT;
           std::cout << " Rate          = "
                     << (pd.postTrigger2.PECounter) / (pd.postTrigger2.deltaT)
                     << " PE/ns\n";
+          std::cout << " Rate correct  = " << rateCorr3 << " PE/ns\n";
+          std::cout << " PE per pulse  = " << pd.postTrigger2.PEPulses
+                    << " PE/pulse\n";
+          std::cout << " Delta time    = " << pd.postTrigger2.deltaT << " ns\n";
+          switch (counter1) {
+            case 0:
+              inc.push_back(rateCorr3);
+              break;
+
+            case 1:
+              transm.push_back(rateCorr3);
+              break;
+
+            case 2:
+              refl.push_back(rateCorr3);
+              break;
+          }
           break;
       }
     }
     ++counter1;
   }
+
+  // Print photon information in each region
+  std::string titles[6] = {"Region",       "Inc [PE/ns]", "Transm [PE/ns]",
+                           "Refl [PE/ns]", "Prob_T",      "Prob_R"};
+  std::cout << "\n\n" << std::left << std::fixed << std::setprecision(3);
+  for (auto const &str : titles) {
+    std::cout << std::setw(20) << str;
+  }
+  std::cout << '\n';
+  for (int i{}; i < nRegions; ++i) {
+    double probT = transm[i] / inc[i];
+    double probR = refl[i] / inc[i];
+    std::cout << std::fixed << std::setprecision(3) << std::left;
+    std::cout << std::setw(20) << namesR[i] << std::setw(20) << inc[i]
+              << std::setw(20) << transm[i] << std::setw(20) << refl[i]
+              << std::setw(20) << probT << std::setw(20) << probR << '\n';
+  }
+  std::cout << "\n\n";
 }
 
 int main() {
