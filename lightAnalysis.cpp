@@ -1,0 +1,178 @@
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include "TAxis.h"
+#include "TCanvas.h"
+#include "TFile.h"
+#include "TMultiGraph.h"
+#include "TROOT.h"
+#include "TStyle.h"
+#include "TTree.h"
+#include "data.hpp"
+
+void setFitStyle() {
+  gROOT->SetStyle("Plain");
+  gStyle->SetOptStat(10);
+  gStyle->SetOptFit(0);  // It was 1111
+  gStyle->SetPalette(57);
+  gStyle->SetOptTitle(1);
+  gStyle->SetStatY(0.9);
+  gStyle->SetStatX(0.9);
+  gStyle->SetStatW(0.2);
+  gStyle->SetStatH(0.2);
+  gStyle->SetTitleX(0.5);
+  gStyle->SetTitleY(0.98);
+  gStyle->SetTitleAlign(23);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleXOffset(1.2f);
+  gStyle->SetTitleYOffset(1.1f);
+  gStyle->SetLineScalePS(1);
+  // gStyle->SetPadTopMargin(-9.);
+  // gStyle->SetPadRightMargin(-9.);
+  // gStyle->SetPadBottomMargin(-9.);
+  // gStyle->SetPadLeftMargin(-9.);
+  // gStyle->SetTitleW(0.5f);
+}
+
+void lightAnalysis() {
+  // Define useful variables
+  int const nFiles{3};
+  int const regions{4};
+  TFile *files[nFiles];
+  TTree *trees[nFiles];
+  TCanvas *canvases[nFiles];
+  PhotonData photondata[nFiles];
+  TMultiGraph *mg[nFiles];
+  std::string names[nFiles] = {"Incident", "Transmitted", "Reflected"};
+
+  // Loop on files
+  for (int i = 0; i < nFiles; ++i) {
+    // Define files
+    files[i] = new TFile("./rootFiles/waveformAnalysisOsc.root", "READ");
+
+    // Define canvases
+    canvases[i] = new TCanvas(Form("c%s", names[i].c_str()),
+                              Form("Pulses %s", names[i].c_str()), 1500, 700);
+
+    // Define and draw graphs
+    mg[i] = (TMultiGraph *)files[i]->Get("Regions of pulses");
+    canvases[i]->cd();
+    mg[i]->Draw("ALP");
+    mg[i]->SetTitle("Pulses");
+    mg[i]->SetName("Regions of pulses");
+    mg[i]->GetXaxis()->SetTitle("Time since \"trigger\" [#mus]");
+    mg[i]->GetYaxis()->SetTitle("Voltage [mV]");
+
+    // Define trees
+    trees[i] = (TTree *)files[i]->Get("variablesRegion");
+
+    // Collect variables from trees
+
+    // PE counters
+    trees[i]->SetBranchAddress("numPreTrigPE",
+                               &photondata[i].preTrigger.PECounter);
+    trees[i]->SetBranchAddress("numTrigPE", &photondata[i].inTrigger.PECounter);
+    trees[i]->SetBranchAddress("numPostTrigPE1",
+                               &photondata[i].postTrigger1.PECounter);
+    trees[i]->SetBranchAddress("numPostTrigPE2",
+                               &photondata[i].postTrigger2.PECounter);
+
+    // PE per pulse
+    trees[i]->SetBranchAddress("numPreTrigPEPuls",
+                               &photondata[i].preTrigger.PEPulses);
+    trees[i]->SetBranchAddress("numTrigPEPuls",
+                               &photondata[i].inTrigger.PEPulses);
+    trees[i]->SetBranchAddress("numPostTrigPE1Puls",
+                               &photondata[i].postTrigger1.PEPulses);
+    trees[i]->SetBranchAddress("numPostTrigPE2Puls",
+                               &photondata[i].postTrigger2.PEPulses);
+
+    // Time extension per region
+    trees[i]->SetBranchAddress("deltaPreTrig",
+                               &photondata[i].preTrigger.deltaT);
+    trees[i]->SetBranchAddress("deltaTrig", &photondata[i].inTrigger.deltaT);
+    trees[i]->SetBranchAddress("deltaPostTrig1",
+                               &photondata[i].postTrigger1.deltaT);
+    trees[i]->SetBranchAddress("deltaPostTrig2",
+                               &photondata[i].postTrigger2.deltaT);
+
+    // Read tree data into variables
+    const auto nEntries = trees[i]->GetEntries();
+    for (Long64_t j = 0; j < nEntries; ++j) {
+      trees[i]->GetEntry(j);
+    }
+  }
+
+  // Print region properties
+  std::cout << std::fixed
+            << std::setprecision(10);  // Round to 10 decimal place
+  int counter{1};
+  for (PhotonData const &pd : photondata) {
+    std::cout << "\n *** Photon data n. " << counter << " ***\n";
+    for (int i{}; i < 4; ++i) {
+      switch (i) {
+        case 0:
+          std::cout << "\nPre trigger region" << "\n";
+          std::cout << " PE counter    = " << pd.preTrigger.PECounter
+                    << " PE\n";
+          std::cout << " PE per pulse  = " << pd.preTrigger.PEPulses
+                    << " PE/pulse\n";
+          std::cout << " Delta time    = " << pd.preTrigger.deltaT << " ns\n";
+          std::cout << " Rate          = "
+                    << (pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)
+                    << " PE/ns\n";
+          break;
+
+        case 1:
+          std::cout << "\nTrigger region" << "\n";
+          std::cout << " PE counter    = " << pd.inTrigger.PECounter << " PE\n";
+          std::cout << " PE per pulse  = " << pd.inTrigger.PEPulses
+                    << " PE/pulse\n";
+          std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n";
+          std::cout << " Rate          = "
+                    << (pd.inTrigger.PECounter) / (pd.inTrigger.deltaT)
+                    << " PE/ns\n";
+          break;
+
+        case 2:
+          std::cout << "\nPost trigger region 1" << "\n";
+          std::cout << " PE counter    = " << pd.postTrigger1.PECounter
+                    << " PE\n";
+          std::cout << " PE per pulse  = " << pd.postTrigger1.PEPulses
+                    << " PE/pulse\n";
+          std::cout << " Delta time    = " << pd.postTrigger1.deltaT << " ns\n";
+          std::cout << " Rate          = "
+                    << (pd.postTrigger1.PECounter) / (pd.postTrigger1.deltaT)
+                    << " PE/ns\n";
+          break;
+
+        case 3:
+          std::cout << "\nPost trigger region 2" << "\n";
+          std::cout << " PE counter    = " << pd.postTrigger2.PECounter
+                    << " PE\n";
+          std::cout << " PE per pulse  = " << pd.postTrigger2.PEPulses
+                    << " PE/pulse\n";
+          std::cout << " Delta time    = " << pd.postTrigger2.deltaT << " ns\n";
+          std::cout << " Rate          = "
+                    << (pd.postTrigger2.PECounter) / (pd.postTrigger2.deltaT)
+                    << " PE/ns\n";
+          break;
+      }
+    }
+    ++counter;
+  }
+
+  // Creating ROOT File
+  TFile *fileLightAnalysis =
+      new TFile("./rootFiles/lightAnalysis.root", "RECREATE");
+
+  setFitStyle();
+}
+
+int main() {
+  lightAnalysis();
+
+  EXIT_SUCCESS;
+}
