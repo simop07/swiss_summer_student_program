@@ -24,6 +24,7 @@
 #include "TPad.h"
 #include "TROOT.h"
 #include "TStyle.h"
+#include "TTree.h"
 #include "waveformAnalysisPos.hpp"
 
 // Define global constants
@@ -688,11 +689,33 @@ void waveformAnalysis() {
   double numPostTrigPE1Puls = numPostTrigPE1 / (pulseCounterPostTriggerRegion1);
   double numPostTrigPE2Puls = numPostTrigPE2 / (pulseCounterPostTriggerRegion2);
 
+  // Define time intervals
+  auto deltaTrig = (triggerEnd - triggerStart);
+  auto deltaPreTrig = (preTriggerEnd - preTriggerStart);
+  auto deltaPostTrig1 = (postTriggerEnd1 - postTriggerStart1);
+  auto deltaPostTrig2 = (postTriggerEnd2 - postTriggerStart2);
+
   // Define rates per region
-  double rateTrig = numTrigPE / (triggerEnd - triggerStart);
-  double ratePreTrig = numPreTrigPE / (preTriggerEnd - preTriggerStart);
-  double ratePostTrig1 = numPostTrigPE1 / (postTriggerEnd1 - postTriggerStart1);
-  double ratePostTrig2 = numPostTrigPE2 / (postTriggerEnd2 - postTriggerStart2);
+  double rateTrig = numTrigPE / deltaTrig;
+  double ratePreTrig = numPreTrigPE / deltaPreTrig;
+  double ratePostTrig1 = numPostTrigPE1 / deltaPostTrig1;
+  double ratePostTrig2 = numPostTrigPE2 / deltaPostTrig2;
+
+  // Saving region variables into a TTree
+  TTree *tree = new TTree("variablesRegion", "Variables for each region");
+  tree->Branch("numPreTrigPE", &numPreTrigPE);
+  tree->Branch("numTrigPE", &numTrigPE);
+  tree->Branch("numPostTrigPE1", &numPostTrigPE1);
+  tree->Branch("numPostTrigPE2", &numPostTrigPE2);
+  tree->Branch("numPreTrigPEPuls", &numPreTrigPEPuls);
+  tree->Branch("numTrigPEPuls", &numTrigPEPuls);
+  tree->Branch("numPostTrigPE1Puls", &numPostTrigPE1Puls);
+  tree->Branch("numPostTrigPE2Puls", &numPostTrigPE2Puls);
+  tree->Branch("deltaPreTrig", &deltaPreTrig);
+  tree->Branch("deltaTrig", &deltaTrig);
+  tree->Branch("deltaPostTrig1", &deltaPostTrig1);
+  tree->Branch("deltaPostTrig2", &deltaPostTrig2);
+  tree->Fill();
 
   // Printing region information
 
@@ -830,6 +853,7 @@ void waveformAnalysis() {
   cPulses->cd();
   mg->Draw("ALP");
   mg->SetTitle("Pulses");
+  mg->SetName("Regions of pulses");
   mg->GetXaxis()->SetTitle("Time since \"trigger\" [ns]");
   mg->GetYaxis()->SetTitle("ADC Counts");
 
@@ -931,9 +955,12 @@ void waveformAnalysis() {
   file1->cd();
   c1->Write();
   c3->Write();
+  mg->Write();
   cPulses->Write();
   cPulsesSuperimp->Write();
   cPEArea->Write();
+  tree->Write();
+  // tree->Print();
   file1->Close();
 }
 
