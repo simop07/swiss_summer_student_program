@@ -278,5 +278,5 @@ void lightAnalysis() {
 int main() {
   lightAnalysis();
 
-  EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
