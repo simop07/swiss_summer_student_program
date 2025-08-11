@@ -18,6 +18,8 @@ The first part of my project is devoted to measure the reflectance and absorptio
 
 - [compare.cpp](compare.cpp) is used to compare 1D histos retrieved from the analysis.
 
+- [lightAnalysis.cpp](lightAnalysis.cpp) is used to compute transmittance and reflectance in various time regions.
+
 To perform pulse analysis, two lines of development are followed depending on the used logic:
 - [waveformAnalysisPos.cpp](waveformAnalysisPos.cpp), pulses with positive logic;
 - [waveformAnalysisNeg.cpp](waveformAnalysisNeg.cpp), for pulses with negative logic.

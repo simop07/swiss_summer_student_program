@@ -47,6 +47,13 @@ void lightAnalysis() {
   TMultiGraph *mg[nFiles];
   std::string names[nFiles] = {"Incident", "Transmitted", "Reflected"};
 
+  // Creating ROOT File
+  TFile *fileLightAnalysis =
+      new TFile("./rootFiles/lightAnalysis.root", "RECREATE");
+  fileLightAnalysis->cd();
+
+  setFitStyle();
+
   // Loop on files
   for (int i = 0; i < nFiles; ++i) {
     // Define files
@@ -64,6 +71,10 @@ void lightAnalysis() {
     mg[i]->SetName("Regions of pulses");
     mg[i]->GetXaxis()->SetTitle("Time since \"trigger\" [#mus]");
     mg[i]->GetYaxis()->SetTitle("Voltage [mV]");
+
+    // Write canvases on file
+    fileLightAnalysis->cd();
+    canvases[i]->Write();
 
     // Define trees
     trees[i] = (TTree *)files[i]->Get("variablesRegion");
@@ -105,13 +116,15 @@ void lightAnalysis() {
     }
   }
 
+  // Round printing to 10 decimal place
+  std::cout << std::fixed << std::setprecision(10);
+
   // Print region properties
-  std::cout << std::fixed
-            << std::setprecision(10);  // Round to 10 decimal place
-  int counter{1};
+  int counter1{};
   for (PhotonData const &pd : photondata) {
-    std::cout << "\n *** Photon data n. " << counter << " ***\n";
-    for (int i{}; i < 4; ++i) {
+    std::cout << Form("\n *** %s", names[counter1].c_str())
+              << " photon data ***\n";
+    for (int i{}; i < regions; ++i) {
       switch (i) {
         case 0:
           std::cout << "\nPre trigger region" << "\n";
@@ -161,14 +174,8 @@ void lightAnalysis() {
           break;
       }
     }
-    ++counter;
+    ++counter1;
   }
-
-  // Creating ROOT File
-  TFile *fileLightAnalysis =
-      new TFile("./rootFiles/lightAnalysis.root", "RECREATE");
-
-  setFitStyle();
 }
 
 int main() {
