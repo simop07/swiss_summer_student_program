@@ -33,8 +33,6 @@ void setFitStyle() {
 }
 
 void compareDig() {
-  // To avoid reloading manually if .so is present
-
   // Loading ROOT File
   TFile *file1 = new TFile("./rootFiles/waveformAnalysis.root", "READ");
   TFile *file2 = new TFile("./rootFiles/waveformAnalysis2.root", "READ");
@@ -74,8 +72,6 @@ void compareDig() {
 }
 
 void compareOsc() {
-  // To avoid reloading manually if .so is present
-
   // Loading ROOT File
   TFile *file1 = new TFile("./rootFiles/waveformAnalysisOsc.root", "READ");
   TFile *file2 = new TFile("./rootFiles/waveformAnalysisOsc2.root", "READ");
