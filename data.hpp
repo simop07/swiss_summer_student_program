@@ -16,4 +16,9 @@ struct PhotonData {
   RegionData postTrigger2{};
 };
 
+struct Point {
+  double x{};
+  double y{};
+};
+
 #endif

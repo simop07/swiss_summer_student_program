@@ -36,7 +36,7 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
-void lightAnalysis() {
+Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   // Define useful variables
   int const nFiles{3};
   int const nRegions{4};
@@ -47,6 +47,7 @@ void lightAnalysis() {
   TMultiGraph *mg[nFiles];
   std::string namesF[nFiles] = {"Incident", "Transmitted", "Reflected"};
   std::string namesR[nRegions] = {"PreTrig", "Trig", "PostTrig1", "PostTrig2"};
+  std::string fileType{".root"};
 
   // Creating ROOT File
   TFile *fileLightAnalysis =
@@ -58,7 +59,9 @@ void lightAnalysis() {
   // Loop on files
   for (int i = 0; i < nFiles; ++i) {
     // Define files
-    files[i] = new TFile("./rootFiles/waveformAnalysisOsc.root", "READ");
+    std::string fileName =
+        filePath + Form("%s", std::to_string(1).c_str()) + fileType;
+    files[i] = new TFile(fileName.c_str(), "READ");
 
     // Define canvases
     canvases[i] = new TCanvas(Form("c%s", namesF[i].c_str()),
@@ -273,10 +276,22 @@ void lightAnalysis() {
               << std::setw(20) << probT << std::setw(20) << probR << '\n';
   }
   std::cout << "\n\n";
+
+  // Create point (Prob_T, Prob_R)
+  Point p{transm[1] / inc[1], refl[1] / inc[1]};
+
+  return p;
+}
+
+void reflVsTransm() {
+  // Create points (Prob_T, Prob_R) for different configurations
+  Point p1 = lightAnalysis("./rootFiles/waveformAnalysisOsc");
+  Point p2 = lightAnalysis("./rootFiles/waveformAnalysisOsc");
+  Point p3 = lightAnalysis("./rootFiles/waveformAnalysisOsc");
 }
 
 int main() {
-  lightAnalysis();
+  Point p = lightAnalysis();
 
   return EXIT_SUCCESS;
 }

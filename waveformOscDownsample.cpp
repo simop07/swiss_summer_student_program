@@ -289,7 +289,7 @@ void waveformAnalysis() {
   srand(time(NULL));
 
   // Creating TFile
-  TFile *file1 = new TFile("./rootFiles/waveformAnalysisOsc.root", "RECREATE");
+  TFile *file1 = new TFile("./rootFiles/waveformAnalysisOsc1.root", "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
