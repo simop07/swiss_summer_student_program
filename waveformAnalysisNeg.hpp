@@ -42,11 +42,11 @@ class WaveformAnalysisNeg {
   // Analyse a waveform by extracting its noise and its pulses
   void analyseWaveform();
 
-  // Make the average of first 1100 samples of a waveform
-  void baseline(int nInitialSamples = 1100);
+  // Make the average of first 170 samples of a waveform
+  void baseline(int nInitialSamples = 170);
 
   // Compute RMS to find waveform's noise
-  double RMS(int nInitialSamples = 1100);
+  double RMS(int nInitialSamples = 170);
 
   // Detect pulses
   void findPulses(double threshold = 19., double tolerance = 7.,

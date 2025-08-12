@@ -57,7 +57,7 @@ double WaveformAnalysisNeg::RMS(int nInitialSamples) {
 void WaveformAnalysisNeg::findPulses(double threshold, double tolerance,
                                      int minWidth, int maxWidth, int minSep) {
   // Compute RMS on waveforms' baseline
-  double const rms = RMS(1100);
+  double const rms = RMS(170);
 
   // Threshold for peak detection
   double const pulseThreshold = fBaseline - threshold * rms;
