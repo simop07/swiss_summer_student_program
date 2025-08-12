@@ -292,9 +292,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
     double probR = refl[i] / incR[i];
     std::cout << std::fixed << std::setprecision(3) << std::left;
     std::cout << std::setw(20) << namesR[i] << std::setw(20) << incT[i]
-              << incR[i] << std::setw(20) << transm[i] << std::setw(20)
-              << refl[i] << std::setw(20) << probT << std::setw(20) << probR
-              << '\n';
+              << std::setw(20) << incR[i] << std::setw(20) << transm[i]
+              << std::setw(20) << refl[i] << std::setw(20) << probT
+              << std::setw(20) << probR << '\n';
   }
   std::cout << "\n\n";
 
