@@ -36,24 +36,22 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
-Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
+Point lightAnalysis(std::string filePath = "./rootFiles/wA") {
   // Define useful variables
-  int const nFiles{4};
+  int const nFiles{3};
   int const nRegions{4};
   TFile *files[nFiles];
   TTree *trees[nFiles];
   TCanvas *canvases[nFiles];
   PhotonData photondata[nFiles];
   TMultiGraph *mg[nFiles];
-  std::string namesF[nFiles] = {"Incident_T", "Incident_R", "Transmitted",
-                                "Reflected"};
+  std::string namesF[nFiles] = {"Incident_T", "Transmitted", "Reflected"};
   std::string namesR[nRegions] = {"PreTrig", "Trig", "PostTrig1", "PostTrig2"};
   std::string fileType{".root"};
 
   // Creating ROOT File
   TFile *fileLightAnalysis =
       new TFile("./rootFiles/lightAnalysis.root", "RECREATE");
-  fileLightAnalysis->cd();
 
   setFitStyle();
 
@@ -61,8 +59,13 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   for (int i = 0; i < nFiles; ++i) {
     // Define files
     std::string fileName =
-        filePath + Form("%s", std::to_string(1).c_str()) + fileType;
+        filePath + Form("%s", std::to_string(i).c_str()) + fileType;
     files[i] = new TFile(fileName.c_str(), "READ");
+
+    // Control whether files is open or was not opened
+    if (files[i]->IsZombie() || !files[i]) {
+      std::cerr << "Impossible to open file " << fileName << std::endl;
+    }
 
     // Define canvases
     canvases[i] = new TCanvas(Form("c%s", namesF[i].c_str()),
@@ -125,12 +128,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   std::cout << std::fixed << std::setprecision(10);
 
   // Define reflectance and transmittance
-  std::vector<double> incT{};
-  std::vector<double> incR{};
+  std::vector<double> inc{};
   std::vector<double> transm{};
   std::vector<double> refl{};
-  incT.reserve(nRegions);
-  incR.reserve(nRegions);
+  inc.reserve(nRegions);
   transm.reserve(nRegions);
   refl.reserve(nRegions);
 
@@ -156,18 +157,14 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.preTrigger.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              incT.push_back(rate);
+              inc.push_back(rate);
               break;
 
             case 1:
-              incR.push_back(rate);
-              break;
-
-            case 2:
               transm.push_back(rate);
               break;
 
-            case 3:
+            case 2:
               refl.push_back(rate);
               break;
           }
@@ -189,18 +186,14 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              incT.push_back(rateCorr1);
+              inc.push_back(rateCorr1);
               break;
 
             case 1:
-              incR.push_back(rateCorr1);
-              break;
-
-            case 2:
               transm.push_back(rateCorr1);
               break;
 
-            case 3:
+            case 2:
               refl.push_back(rateCorr1);
               break;
           }
@@ -223,18 +216,14 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.postTrigger1.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              incT.push_back(rateCorr2);
+              inc.push_back(rateCorr2);
               break;
 
             case 1:
-              incR.push_back(rateCorr2);
-              break;
-
-            case 2:
               transm.push_back(rateCorr2);
               break;
 
-            case 3:
+            case 2:
               refl.push_back(rateCorr2);
               break;
           }
@@ -257,18 +246,14 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.postTrigger2.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              incT.push_back(rateCorr3);
+              inc.push_back(rateCorr3);
               break;
 
             case 1:
-              incR.push_back(rateCorr3);
-              break;
-
-            case 2:
               transm.push_back(rateCorr3);
               break;
 
-            case 3:
+            case 2:
               refl.push_back(rateCorr3);
               break;
           }
@@ -279,27 +264,25 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   }
 
   // Print photon information in each region
-  std::string titles[7] = {"Region",         "Inc_T [PE/ns]", "Inc_R [PE/ns]",
-                           "Transm [PE/ns]", "Refl [PE/ns]",  "Prob_T",
-                           "Prob_R"};
+  std::string titles[6] = {"Region",       "Inc [PE/ns]", "Transm [PE/ns]",
+                           "Refl [PE/ns]", "Prob_T",      "Prob_R"};
   std::cout << "\n\n" << std::left << std::fixed << std::setprecision(3);
   for (auto const &str : titles) {
     std::cout << std::setw(20) << str;
   }
   std::cout << '\n';
   for (int i{}; i < nRegions; ++i) {
-    double probT = transm[i] / incT[i];
-    double probR = refl[i] / incR[i];
+    double probT = transm[i] / inc[i];
+    double probR = refl[i] / inc[i];
     std::cout << std::fixed << std::setprecision(3) << std::left;
-    std::cout << std::setw(20) << namesR[i] << std::setw(20) << incT[i]
-              << std::setw(20) << incR[i] << std::setw(20) << transm[i]
-              << std::setw(20) << refl[i] << std::setw(20) << probT
-              << std::setw(20) << probR << '\n';
+    std::cout << std::setw(20) << namesR[i] << std::setw(20) << inc[i]
+              << std::setw(20) << transm[i] << std::setw(20) << refl[i]
+              << std::setw(20) << probT << std::setw(20) << probR << '\n';
   }
   std::cout << "\n\n";
 
   // Create point (Prob_T, Prob_R)
-  Point p{transm[1] / incT[1], refl[1] / incR[1]};
+  Point p{transm[1] / inc[1], refl[1] / inc[1]};
 
   return p;
 }
