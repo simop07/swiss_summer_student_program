@@ -36,7 +36,7 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
-Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
+Point lightAnalysis(std::string filePath = "./rootFiles/wA") {
   // Define useful variables
   int const nFiles{4};
   int const nRegions{4};
@@ -53,7 +53,6 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   // Creating ROOT File
   TFile *fileLightAnalysis =
       new TFile("./rootFiles/lightAnalysis.root", "RECREATE");
-  fileLightAnalysis->cd();
 
   setFitStyle();
 
@@ -61,8 +60,13 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   for (int i = 0; i < nFiles; ++i) {
     // Define files
     std::string fileName =
-        filePath + Form("%s", std::to_string(1).c_str()) + fileType;
+        filePath + Form("%s", std::to_string(i).c_str()) + fileType;
     files[i] = new TFile(fileName.c_str(), "READ");
+
+    // Control whether files is open or was not opened
+    if (files[i]->IsZombie() || !files[i]) {
+      std::cerr << "Impossible to open file " << fileName << std::endl;
+    }
 
     // Define canvases
     canvases[i] = new TCanvas(Form("c%s", namesF[i].c_str()),
