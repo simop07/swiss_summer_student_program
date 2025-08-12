@@ -38,14 +38,15 @@ void setFitStyle() {
 
 Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   // Define useful variables
-  int const nFiles{3};
+  int const nFiles{4};
   int const nRegions{4};
   TFile *files[nFiles];
   TTree *trees[nFiles];
   TCanvas *canvases[nFiles];
   PhotonData photondata[nFiles];
   TMultiGraph *mg[nFiles];
-  std::string namesF[nFiles] = {"Incident", "Transmitted", "Reflected"};
+  std::string namesF[nFiles] = {"Incident_T", "Incident_R", "Transmitted",
+                                "Reflected"};
   std::string namesR[nRegions] = {"PreTrig", "Trig", "PostTrig1", "PostTrig2"};
   std::string fileType{".root"};
 
@@ -124,10 +125,12 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   std::cout << std::fixed << std::setprecision(10);
 
   // Define reflectance and transmittance
-  std::vector<double> inc{};
+  std::vector<double> incT{};
+  std::vector<double> incR{};
   std::vector<double> transm{};
   std::vector<double> refl{};
-  inc.reserve(nRegions);
+  incT.reserve(nRegions);
+  incR.reserve(nRegions);
   transm.reserve(nRegions);
   refl.reserve(nRegions);
 
@@ -153,14 +156,18 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.preTrigger.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              inc.push_back(rate);
+              incT.push_back(rate);
               break;
 
             case 1:
-              transm.push_back(rate);
+              incR.push_back(rate);
               break;
 
             case 2:
+              transm.push_back(rate);
+              break;
+
+            case 3:
               refl.push_back(rate);
               break;
           }
@@ -182,14 +189,18 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              inc.push_back(rateCorr1);
+              incT.push_back(rateCorr1);
               break;
 
             case 1:
-              transm.push_back(rateCorr1);
+              incR.push_back(rateCorr1);
               break;
 
             case 2:
+              transm.push_back(rateCorr1);
+              break;
+
+            case 3:
               refl.push_back(rateCorr1);
               break;
           }
@@ -212,14 +223,18 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.postTrigger1.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              inc.push_back(rateCorr2);
+              incT.push_back(rateCorr2);
               break;
 
             case 1:
-              transm.push_back(rateCorr2);
+              incR.push_back(rateCorr2);
               break;
 
             case 2:
+              transm.push_back(rateCorr2);
+              break;
+
+            case 3:
               refl.push_back(rateCorr2);
               break;
           }
@@ -242,14 +257,18 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
           std::cout << " Delta time    = " << pd.postTrigger2.deltaT << " ns\n";
           switch (counter1) {
             case 0:
-              inc.push_back(rateCorr3);
+              incT.push_back(rateCorr3);
               break;
 
             case 1:
-              transm.push_back(rateCorr3);
+              incR.push_back(rateCorr3);
               break;
 
             case 2:
+              transm.push_back(rateCorr3);
+              break;
+
+            case 3:
               refl.push_back(rateCorr3);
               break;
           }
@@ -260,25 +279,27 @@ Point lightAnalysis(std::string filePath = "./rootFiles/waveformAnalysisOsc") {
   }
 
   // Print photon information in each region
-  std::string titles[6] = {"Region",       "Inc [PE/ns]", "Transm [PE/ns]",
-                           "Refl [PE/ns]", "Prob_T",      "Prob_R"};
+  std::string titles[7] = {"Region",         "Inc_T [PE/ns]", "Inc_R [PE/ns]",
+                           "Transm [PE/ns]", "Refl [PE/ns]",  "Prob_T",
+                           "Prob_R"};
   std::cout << "\n\n" << std::left << std::fixed << std::setprecision(3);
   for (auto const &str : titles) {
     std::cout << std::setw(20) << str;
   }
   std::cout << '\n';
   for (int i{}; i < nRegions; ++i) {
-    double probT = transm[i] / inc[i];
-    double probR = refl[i] / inc[i];
+    double probT = transm[i] / incT[i];
+    double probR = refl[i] / incR[i];
     std::cout << std::fixed << std::setprecision(3) << std::left;
-    std::cout << std::setw(20) << namesR[i] << std::setw(20) << inc[i]
-              << std::setw(20) << transm[i] << std::setw(20) << refl[i]
-              << std::setw(20) << probT << std::setw(20) << probR << '\n';
+    std::cout << std::setw(20) << namesR[i] << std::setw(20) << incT[i]
+              << incR[i] << std::setw(20) << transm[i] << std::setw(20)
+              << refl[i] << std::setw(20) << probT << std::setw(20) << probR
+              << '\n';
   }
   std::cout << "\n\n";
 
   // Create point (Prob_T, Prob_R)
-  Point p{transm[1] / inc[1], refl[1] / inc[1]};
+  Point p{transm[1] / incT[1], refl[1] / incR[1]};
 
   return p;
 }
