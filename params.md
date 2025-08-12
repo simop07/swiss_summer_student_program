@@ -1,5 +1,12 @@
 # Params info
 ## Oscilloscope data for $30^{\circ}$
+| Region     | Inc [PE/ns] | Transm [PE/ns] | Refl [PE/ns] | Prob_T | Prob_R |
+|------------|-------------|----------------|--------------|--------|--------|
+| PreTrig    | 1.897       | 1.700          | 2.387        | 0.896  | 1.258  |
+| Trig       | 1055.665    | 229.932        | 380.482      | 0.218  | 0.360  |
+| PostTrig1  | 472.744     | 117.550        | 150.555      | 0.249  | 0.318  |
+| PostTrig2  | 254.758     | 84.519         | 74.242       | 0.332  | 0.291  |
+
 ### [4LayersA.txt](./data/4LayersA.txt)
 ```
   // Bin for hPhotoelectron = 60
