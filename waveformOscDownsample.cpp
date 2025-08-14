@@ -29,7 +29,7 @@
 
 // Define global constants
 constexpr int nMinAnalysedRows{0};  // Minimum index of analysed rows EXCLUDED
-constexpr int nMaxAnalysedRows{1001};  // Maximum rows INCLUDED (1001 4LayersA)
+constexpr int nMaxAnalysedRows{1000};  // Maximum rows INCLUDED
 
 // Asymmetric gaussian functions
 
@@ -272,10 +272,10 @@ void waveformAnalysis() {
   R__LOAD_LIBRARY(waveformAnalysisNeg_cpp.so);
 
   // Area conversion factor (current assumption is 1 PE = 24 mV*ns)
-  double const areaConvFactor{55.};
+  double const areaConvFactor{27.};
 
   double const samplePeriod = 0.025e-1;  // In [\mus]
-  std::ifstream infile("./data/4LayersA.txt");
+  std::ifstream infile("./data/transm60.txt");
   std::string line;
   std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
   TMultiGraph *mg = new TMultiGraph();
@@ -289,7 +289,7 @@ void waveformAnalysis() {
   srand(time(NULL));
 
   // Creating TFile
-  TFile *file1 = new TFile("./rootFiles/waveformAnalysisOsc1.root", "RECREATE");
+  TFile *file1 = new TFile("./rootFiles/wA60_1.root", "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
@@ -300,7 +300,7 @@ void waveformAnalysis() {
                           30, -0.8, 1.);
   TH1F *hPhotoElectrons =
       new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
-               60, 0, 3.5);
+               40, 0, 4.5);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 40, 1., 30.);
   TH1F *hPETrigger = new TH1F(
@@ -372,29 +372,29 @@ void waveformAnalysis() {
   double numTrigPE{};
 
   // Below gaussian fit on "Pulse sum" graph is used
-  double const triggerStart{1.1410014154 - 2 * 0.2461653408};
-  double const triggerEnd{1.1410014154 + 2 * 0.2461653408};
+  double const triggerStart{0.5612464817 - 2 * 0.0749055716};
+  double const triggerEnd{0.5612464817 + 2 * 0.0749055716};
 
   // Variable for analysis in pre-trigger region in 1 single file
   int pulseCounterPreTriggerRegion{};
   double totPreTrigArea{};
   double numPreTrigPE{};
-  double const preTriggerStart{0.1};
-  double const preTriggerEnd{0.7};
+  double const preTriggerStart{0.};
+  double const preTriggerEnd{0.45};
 
   // Variable for analysis in post-trigger region 1 in 1 single file
   int pulseCounterPostTriggerRegion1{};
   double totPostTrigArea1{};
   double numPostTrigPE1{};
-  double const postTriggerStart1{1.7};
-  double const postTriggerEnd1{2.3};
+  double const postTriggerStart1{0.8};
+  double const postTriggerEnd1{1.2};
 
   // Variable for analysis in post-trigger region 2 in 1 single file
   int pulseCounterPostTriggerRegion2{};
   double totPostTrigArea2{};
   double numPostTrigPE2{};
-  double const postTriggerStart2{3.};
-  double const postTriggerEnd2{3.6};
+  double const postTriggerStart2{1.4};
+  double const postTriggerEnd2{1.8};
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -890,13 +890,13 @@ void waveformAnalysis() {
   gPulseSum->SetMarkerSize(1);
 
   // Create fit function for summed pulses
-  TF1 *fGaus = new TF1("fGaus", "gaus", 0.7, 1.5);
+  TF1 *fGaus = new TF1("fGaus", "gaus", 0.4, 0.7);
   fGaus->SetLineColor(kRed);
   fGaus->SetLineWidth(4);
   fGaus->SetLineStyle(2);
-  fGaus->SetParameter(0, 120);   // Amplitude
-  fGaus->SetParameter(1, 0.75);  // Mean
-  fGaus->SetParameter(2, 0.1);   // Sigma
+  fGaus->SetParameter(0, 120);  // Amplitude
+  fGaus->SetParameter(1, 0.5);  // Mean
+  fGaus->SetParameter(2, 0.1);  // Sigma
   gPulseSum->Fit(fGaus, "M R");
 
   // Draw summed pulses
@@ -972,7 +972,7 @@ void waveformTotal() {
   TCanvas *c2 = new TCanvas("c2", "Waveform analysis", 1500, 700);
 
   const double samplePeriod = 0.025e-1;  // In [\mus]
-  std::ifstream infile("./data/4LayersA.txt");
+  std::ifstream infile("./data/transm60.txt");
   std::string line;
 
   int row = 0;
@@ -1050,7 +1050,7 @@ void waveformTotal() {
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     // g->GetXaxis()->SetRangeUser(-0.5e-6, 2.1e-6);
-    g->GetYaxis()->SetRangeUser(-33., 2.);
+    g->GetYaxis()->SetRangeUser(-45., 2.);
     g->SetTitle(Form("Waveform %d; Time [#mus]; Voltage [mV]",
                      row + 1));  // Inserting placeholder
     graphs.push_back(g);
