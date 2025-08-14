@@ -19,6 +19,7 @@
 #include "TH2.h"
 #include "TLatex.h"
 #include "TLegend.h"
+#include "TMath.h"
 #include "TMatrixD.h"
 #include "TMultiGraph.h"
 #include "TPad.h"
@@ -315,7 +316,8 @@ void waveformAnalysis() {
   std::vector<TGraph *> graphs{};
   std::vector<TGraph *> graphsSuperimposed{};
   std::map<int, double> map{};
-  int row = 0;
+  int row{0};
+  int rowSum{0};
 
   // Select random generator seed for colours based on current time
   srand(time(NULL));
@@ -397,6 +399,95 @@ void waveformAnalysis() {
     }
   }
 
+  // Loop over rows (waveforms) to extract pulse sum graph
+  while (std::getline(infile, line)) {
+    // Control over analysed rows
+    if (rowSum < nMinAnalysedRows) {
+      ++rowSum;
+      continue;
+    }
+    if (rowSum >= nMaxAnalysedRows) {
+      break;
+    }
+
+    // Defining loop variables
+    std::stringstream ss(line);
+    std::string item;
+    std::vector<double> samples;
+    double timestamp = 0.;
+    int column = 1;
+
+    // Loop over columns
+    while (std::getline(ss, item, '\t')) {
+      if (item.empty()) continue;
+      if (column == 3)
+        timestamp = std::stod(item);
+      else if (column >= 7)
+        samples.push_back(std::stod(item));
+      ++column;
+    }
+
+    // Creating WaveformAnalysis object
+    WaveformAnalysisPos wf(samples, timestamp, samplePeriod);
+    const auto &pulses = wf.getPulses();
+
+    for (size_t i = 0; i < pulses.size(); ++i) {
+      const auto &p = pulses[i];
+
+      // Generate sum of pulses using a STL map. Here the keys of the map
+      // correspond to the time values of pulses, while values correpond to the
+      // voltage/ADC counts. Contrary to std::vector<T>, std::map<T1,T2>'s
+      // operator[] is more secure: when you have an empty map, with no
+      // specified size, and you access map[X], the map safely creates the
+      // key-value pair (X,0.0) - in this case I put 0.0 because it is the
+      // default initialiser for double values
+      for (int j = 0; j < static_cast<int>(p.times.size()); ++j) {
+        map[p.times[j]] += p.values[j];
+      }
+    }
+    ++rowSum;
+  }
+
+  // Create canvas for summing pulses
+  TCanvas *cPulseSum = new TCanvas("cPulseSum", "Pulse sum", 1500, 700);
+  std::vector<double> xValues{};
+  std::vector<double> yValues{};
+  xValues.reserve(map.size());
+  yValues.reserve(map.size());
+  for (auto const &[key, value] : map) {
+    xValues.push_back(key);
+    yValues.push_back(value);
+  }
+
+  // Create graph for summing pulses
+  TGraph *gPulseSum = new TGraph(map.size(), xValues.data(), yValues.data());
+  gPulseSum->SetTitle("Pulse sum; Time since \"trigger\" [ns]; ADC Counts");
+  gPulseSum->SetLineColor(kBlue);
+  gPulseSum->SetLineWidth(1);
+  gPulseSum->SetMarkerColor(kBlack);
+  gPulseSum->SetMarkerStyle(20);
+  gPulseSum->SetMarkerSize(1);
+
+  // gPulseSum relevant paramters
+  auto const maxId{TMath::MinElement(gPulseSum->GetN(), gPulseSum->GetX())};
+  auto const sigmaId{maxId + 3 * gPulseSum->GetRMS()};
+  double const startPoint{maxId - 6 * gPulseSum->GetRMS()};
+  double const endPoint{maxId + 6 * gPulseSum->GetRMS()};
+
+  // Create fit function for summed pulses
+  TF1 *fGaus = new TF1("fGaus", "gaus", startPoint, endPoint);
+  fGaus->SetLineColor(kRed);
+  fGaus->SetLineWidth(4);
+  fGaus->SetLineStyle(2);
+  fGaus->SetParameter(0, gPulseSum->Eval(maxId));  // Amplitude
+  fGaus->SetParameter(1, maxId);                   // Mean
+  fGaus->SetParameter(2, sigmaId);                 // Sigma
+  gPulseSum->Fit(fGaus, "R");
+
+  // Save gPulseSum fit relevant parameters
+  double const meanSum{fGaus->GetParameter(1)};
+  double const sigmaSum{fGaus->GetParameter(2)};
+
   // Variable for analysis in trigger region in 1 single file
   int pulseCounter{};
   int pulseCounterTriggerRegion{};
@@ -404,29 +495,33 @@ void waveformAnalysis() {
   double numTrigPE{};
 
   // Below gaussian fit on "Pulse sum" graph is used (2 sigmas)
-  double const triggerStart{179.12236 - 2 * 15.27892};
-  double const triggerEnd{179.12236 + 2 * 15.27892};
+  double const triggerStart{meanSum - 2 * sigmaSum};
+  double const triggerEnd{meanSum + 2 * sigmaSum};
 
   // Variable for analysis in pre-trigger region in 1 single file
   int pulseCounterPreTriggerRegion{};
   double totPreTrigArea{};
   double numPreTrigPE{};
-  double const preTriggerStart{100.};
-  double const preTriggerEnd{130.};
+  double const preTriggerStart{meanSum - 4.5 * sigmaSum};
+  double const preTriggerEnd{meanSum - 4.5 * sigmaSum + 20};
 
   // Variable for analysis in post-trigger region 1 in 1 single file
   int pulseCounterPostTriggerRegion1{};
   double totPostTrigArea1{};
   double numPostTrigPE1{};
-  double const postTriggerStart1{219.};
-  double const postTriggerEnd1{239.};
+  double const postTriggerStart1{meanSum + 3 * sigmaSum};
+  double const postTriggerEnd1{meanSum + 3 * sigmaSum + 20};
 
   // Variable for analysis in post-trigger region 2 in 1 single file
   int pulseCounterPostTriggerRegion2{};
   double totPostTrigArea2{};
   double numPostTrigPE2{};
-  double const postTriggerStart2{264.};
-  double const postTriggerEnd2{284.};
+  double const postTriggerStart2{meanSum + 3 * sigmaSum + 40};
+  double const postTriggerEnd2{meanSum + 3 * sigmaSum + 60};
+
+  // Prepare to read again the file
+  infile.clear();               // Clear the failed state of the stream
+  infile.seekg(0, infile.beg);  // Seek to the first character in the file
 
   // Loop over rows (waveforms)
   while (std::getline(infile, line)) {
@@ -448,7 +543,9 @@ void waveformAnalysis() {
 
     // Loop over columns
     while (std::getline(ss, item, '\t')) {
-      if (item.empty()) continue;
+      if (item.empty()) {
+        continue;
+      }
       if (column == 3)
         timestamp = std::stod(item);
       else if (column >= 7)
@@ -563,17 +660,6 @@ void waveformAnalysis() {
 
       // Generate a random number between 0 and 7 (used for colour indices)
       int randIndex = rand() % 8;
-
-      // Generate sum of pulses using a STL map. Here the keys of the map
-      // correspond to the time values of pulses, while values correpond to the
-      // voltage/ADC counts. Contrary to std::vector<T>, std::map<T1,T2>'s
-      // operator[] is more secure: when you have an empty map, with no
-      // specified size, and you access map[X], the map safely creates the
-      // key-value pair (X,0.0) - in this case I put 0.0 because it is the
-      // default initialiser for double values
-      for (int j = 0; j < static_cast<int>(p.times.size()); ++j) {
-        map[p.times[j]] += p.values[j];
-      }
 
       // Create vector to superimpose pulses
       std::vector<double> superimposedTimes = p.times;
@@ -786,14 +872,33 @@ void waveformAnalysis() {
   // Fit noise with gaussian function
   hNoise->Fit("gaus");
 
+  setFitStyle();
+
   // Fit PE histograms with several functions
+  gPad->Update();
   fitPEHisto(hPhotoElectrons);
+
+  // Draw summed pulses
+  gPad->Update();
+  cPulseSum->cd();
+  gPad->Update();
+  gPulseSum->Draw("ALP");
+
+  // Print pulse Sum fit info
+  std::cout << "\n Print pulse sum fit info:\n";
+  std::cout << "  Amplitude         = " << fGaus->GetParameter(0) << " +/- "
+            << fGaus->GetParError(0) << '\n';
+  std::cout << "  Mean              = " << meanSum << " +/- "
+            << fGaus->GetParError(1) << '\n';
+  std::cout << "  Sigma             = " << sigmaSum << " +/- "
+            << fGaus->GetParError(2) << '\n';
+  std::cout << "  P-value           = " << fGaus->GetProb() << '\n';
+  std::cout << "  Red chi-squared   = "
+            << (fGaus->GetChisquare()) / (fGaus->GetNDF()) << "\n\n";
 
   // Draw all histograms on canvas
   TCanvas *c1 = new TCanvas("c1", "Pulse analysis", 1300, 700);
   c1->Divide(2, 2);
-
-  setFitStyle();
 
   c1->cd(1);
   gPad->SetLogz();
@@ -870,40 +975,6 @@ void waveformAnalysis() {
   mgSuperimposed->SetTitle("Superimposed pulses");
   mgSuperimposed->GetXaxis()->SetTitle("Time since startPulse [ns]");
   mgSuperimposed->GetYaxis()->SetTitle("ADC Counts");
-
-  // Create canvas for summing pulses
-  TCanvas *cPulseSum = new TCanvas("cPulseSum", "Pulse sum", 1500, 700);
-  std::vector<double> xValues{};
-  std::vector<double> yValues{};
-  xValues.reserve(map.size());
-  yValues.reserve(map.size());
-  for (auto const &[key, value] : map) {
-    xValues.push_back(key);
-    yValues.push_back(value);
-  }
-
-  // Create graph for summing pulses
-  TGraph *gPulseSum = new TGraph(map.size(), xValues.data(), yValues.data());
-  gPulseSum->SetTitle("Pulse sum; Time since \"trigger\" [ns]; ADC Counts");
-  gPulseSum->SetLineColor(kBlue);
-  gPulseSum->SetLineWidth(1);
-  gPulseSum->SetMarkerColor(kBlack);
-  gPulseSum->SetMarkerStyle(20);
-  gPulseSum->SetMarkerSize(1);
-
-  // Create fit function for summed pulses
-  TF1 *fGaus = new TF1("fGaus", "gaus", 120., 220.);
-  fGaus->SetLineColor(kRed);
-  fGaus->SetLineWidth(4);
-  fGaus->SetLineStyle(2);
-  fGaus->SetParameter(0, 2e7);   // Amplitude
-  fGaus->SetParameter(1, 180.);  // Mean
-  fGaus->SetParameter(2, 20.);   // Sigma
-  gPulseSum->Fit(fGaus, "M R");
-
-  // Draw summed pulses
-  cPulseSum->cd();
-  gPulseSum->Draw("ALP");
 
   // Create canvas for areas in PE of region of interest
   TCanvas *cPEArea = new TCanvas("cPEArea", "Pulse distribution", 1500, 700);
