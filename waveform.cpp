@@ -1050,7 +1050,7 @@ void waveformTotal() {
   }
 
   // Save canvas
-  c2->BuildLegend(.70, .7, .9, .9, "Legend");
+  // c2->BuildLegend(.70, .7, .9, .9, "Legend");
   file2->cd();
   c2->Write();
   file2->Close();
