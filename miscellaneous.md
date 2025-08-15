@@ -203,3 +203,8 @@ When in [lightAnalysis.cpp](lightAnalysis.cpp) i mention "Rate correct" I mean t
 $$N_{PE region}^{correct}=N_{PE region}-R_{bkg}*\Delta t_{region}$$
 $$RATE^{correct}=N_{PE region}^{correct}/\Delta t_{region}$$
 where $R_{bkg}=N_{bkg}/\Delta t_{bkg}$.
+
+# 15/08/2025
+I further developed what I did [here](#15082025) in order to improve measurements on reflectance. Indeed, reflected photons reaching PMT_R include also incident photons that directly travel from the LED to the PMT_R. So what I did was take the $N_{PE region}^{correct}$ and subtract then the rate of incident photons, in the following way:
+$$RATE_{R}^{correct'}={N_{PE region}^{correct}-rate_{incident}*\Delta t_{region}}/\Delta t_{region}$$
+At the moment I still have to veryfy if this last update of the code works.
