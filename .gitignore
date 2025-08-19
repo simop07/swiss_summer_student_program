@@ -54,3 +54,4 @@ nicolasLoop.cpp
 *.h
 *.in
 *.cxx*
+*_maincpp
