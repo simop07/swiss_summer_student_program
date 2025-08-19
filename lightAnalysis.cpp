@@ -176,9 +176,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
 
             case 3:
               rateCorrRefl = (((rate * pd.preTrigger.deltaT) -
-                               incR[counter] * pd.preTrigger.deltaT) /
+                               incR[i] * pd.preTrigger.deltaT) /
                               pd.preTrigger.deltaT);
-              std::cout << " Rate corr ref = " << rate << " PE/ns\n";
+              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
           }
@@ -187,9 +187,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
         case 1:
           std::cout << "\nTrigger region" << '\n';
           std::cout << " PE counter    = " << pd.inTrigger.PECounter << " PE\n";
-          rateCorr = (pd.inTrigger.PECounter -
-                      (((pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)) *
-                       pd.inTrigger.deltaT)) /
+          rateCorr = (pd.inTrigger.PECounter - (rate * pd.inTrigger.deltaT)) /
                      pd.inTrigger.deltaT;
           std::cout << " Rate          = "
                     << (pd.inTrigger.PECounter) / (pd.inTrigger.deltaT)
@@ -212,10 +210,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
               break;
 
             case 3:
-              rateCorrRefl = (((rate * pd.preTrigger.deltaT) -
-                               incR[counter] * pd.preTrigger.deltaT) /
-                              pd.preTrigger.deltaT);
-              std::cout << " Rate corr ref = " << rate << " PE/ns\n";
+              rateCorrRefl = (((rateCorr * pd.inTrigger.deltaT) -
+                               incR[i] * pd.inTrigger.deltaT) /
+                              pd.inTrigger.deltaT);
+              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
           }
@@ -225,10 +223,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
           std::cout << "\nPost trigger region 1" << '\n';
           std::cout << " PE counter    = " << pd.postTrigger1.PECounter
                     << " PE\n";
-          rateCorr = (pd.postTrigger1.PECounter -
-                      (((pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)) *
-                       pd.postTrigger1.deltaT)) /
-                     pd.postTrigger1.deltaT;
+          rateCorr =
+              (pd.postTrigger1.PECounter - (rate * pd.postTrigger1.deltaT)) /
+              pd.postTrigger1.deltaT;
           std::cout << " Rate          = "
                     << (pd.postTrigger1.PECounter) / (pd.postTrigger1.deltaT)
                     << " PE/ns\n";
@@ -250,10 +247,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
               break;
 
             case 3:
-              rateCorrRefl = (((rate * pd.preTrigger.deltaT) -
-                               incR[counter] * pd.preTrigger.deltaT) /
-                              pd.preTrigger.deltaT);
-              std::cout << " Rate corr ref = " << rate << " PE/ns\n";
+              rateCorrRefl = (((rateCorr * pd.postTrigger1.deltaT) -
+                               incR[i] * pd.postTrigger1.deltaT) /
+                              pd.postTrigger1.deltaT);
+              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
           }
@@ -263,10 +260,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
           std::cout << "\nPost trigger region 2" << '\n';
           std::cout << " PE counter    = " << pd.postTrigger2.PECounter
                     << " PE\n";
-          rateCorr = (pd.postTrigger2.PECounter -
-                      (((pd.preTrigger.PECounter) / (pd.preTrigger.deltaT)) *
-                       pd.postTrigger2.deltaT)) /
-                     pd.postTrigger2.deltaT;
+          rateCorr =
+              (pd.postTrigger2.PECounter - (rate * pd.postTrigger2.deltaT)) /
+              pd.postTrigger2.deltaT;
           std::cout << " Rate          = "
                     << (pd.postTrigger2.PECounter) / (pd.postTrigger2.deltaT)
                     << " PE/ns\n";
@@ -288,10 +284,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
               break;
 
             case 3:
-              rateCorrRefl = (((rate * pd.preTrigger.deltaT) -
-                               incR[counter] * pd.preTrigger.deltaT) /
-                              pd.preTrigger.deltaT);
-              std::cout << " Rate corr ref = " << rate << " PE/ns\n";
+              rateCorrRefl = (((rateCorr * pd.postTrigger2.deltaT) -
+                               incR[i] * pd.postTrigger2.deltaT) /
+                              pd.postTrigger2.deltaT);
+              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
           }
@@ -312,7 +308,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
   std::cout << '\n';
   for (int i{}; i < nRegions; ++i) {
     double probT = transm[i] / incT[i];
-    double probR = refl[i] / incR[i];
+    double probR = refl[i] / incT[i];
     std::cout << std::fixed << std::setprecision(3) << std::left;
     std::cout << std::setw(20) << namesR[i] << std::setw(20) << incT[i]
               << incR[i] << std::setw(20) << transm[i] << std::setw(20)
