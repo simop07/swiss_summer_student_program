@@ -1,3 +1,3 @@
 #!/bin/bash
-root -l -e '.L lightAnalysis.cpp+' \
+root -l -e '.L lightAnalysis.cpp' \
         -e 'lightAnalysis()'
