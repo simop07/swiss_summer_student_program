@@ -1,3 +1,4 @@
+#include <array>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -6,6 +7,7 @@
 #include "TAxis.h"
 #include "TCanvas.h"
 #include "TFile.h"
+#include "TGraph.h"
 #include "TMultiGraph.h"
 #include "TROOT.h"
 #include "TStyle.h"
@@ -36,7 +38,10 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
-Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
+Point lightAnalysis(
+    std::string filePath = "./rootFiles/45Degrees3Layer/wA3Layer",
+    std::string fileLightAnalysisName =
+        "./rootFiles/lightAnalysis45Deg3Layer.root") {
   // Define useful variables
   int const nFiles{4};
   int const nRegions{4};
@@ -52,7 +57,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
 
   // Creating ROOT File
   TFile *fileLightAnalysis =
-      new TFile("./rootFiles/lightAnalysis60.root", "RECREATE");
+      new TFile(fileLightAnalysisName.c_str(), "RECREATE");
 
   setFitStyle();
 
@@ -311,9 +316,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
     double probR = refl[i] / incT[i];
     std::cout << std::fixed << std::setprecision(3) << std::left;
     std::cout << std::setw(20) << namesR[i] << std::setw(20) << incT[i]
-              << incR[i] << std::setw(20) << transm[i] << std::setw(20)
-              << refl[i] << std::setw(20) << probT << std::setw(20) << probR
-              << '\n';
+              << std::setw(20) << incR[i] << std::setw(20) << transm[i]
+              << std::setw(20) << refl[i] << std::setw(20) << probT
+              << std::setw(20) << probR << '\n';
   }
   std::cout << "\n\n";
 
@@ -323,11 +328,59 @@ Point lightAnalysis(std::string filePath = "./rootFiles/wA60_") {
   return p;
 }
 
-void reflVsTransm() {
+void reflTransm() {
   // Create points (Prob_T, Prob_R) for different configurations
-  Point p1 = lightAnalysis("./rootFiles/waveformAnalysisOsc");
-  Point p2 = lightAnalysis("./rootFiles/waveformAnalysisOsc");
-  Point p3 = lightAnalysis("./rootFiles/waveformAnalysisOsc");
+
+  // 45 DEGREES
+
+  Point p45Deg1Layer =
+      lightAnalysis("./rootFiles/45Degrees1Layer/wA1Layer",
+                    "./rootFiles/lightAnalysis45Deg1Layer.root");
+  Point p45Deg2Layer =
+      lightAnalysis("./rootFiles/45Degrees2Layer/wA2Layer",
+                    "./rootFiles/lightAnalysis45Deg2Layer.root");
+  Point p45Deg3Layer =
+      lightAnalysis("./rootFiles/45Degrees3Layer/wA3Layer",
+                    "./rootFiles/lightAnalysis45Deg3Layer.root");
+
+  // Create graphs for (Prob_T, Prob_R) as function of thickness
+  std::array<double, 3> thicknesses{1.55, 3.1, 5.14};
+  std::array<double, 3> probT{p45Deg1Layer.x, p45Deg2Layer.x, p45Deg3Layer.x};
+  std::array<double, 3> probR{p45Deg1Layer.y, p45Deg2Layer.y, p45Deg3Layer.y};
+
+  TMultiGraph *mg45Deg = new TMultiGraph();
+  std::array<TGraph *, 2> g45Deg{
+      new TGraph(thicknesses.size(), thicknesses.data(), probT.data()),
+      new TGraph(thicknesses.size(), thicknesses.data(), probR.data())};
+
+  // Set colours for transmittance
+  g45Deg[0]->SetMarkerStyle(20);
+  g45Deg[0]->SetMarkerColor(kBlue);
+  g45Deg[0]->SetLineColor(kBlue);
+  g45Deg[0]->SetTitle("Prob transmittance");
+
+  // Set colours for reflectance
+  g45Deg[1]->SetMarkerStyle(21);
+  g45Deg[1]->SetMarkerColor(kRed);
+  g45Deg[1]->SetLineColor(kRed);
+  g45Deg[1]->SetTitle("Prob reflectance");
+
+  // Draw all pulses on multigraph object
+  for (auto const &g : g45Deg) {
+    mg45Deg->Add(g, "LP");
+  }
+
+  // Create canvases to display probabilities
+  TCanvas *c45Deg = new TCanvas("c45Deg", "45 degrees", 1500, 700);
+
+  // Fill canvas and draw multigraph
+  c45Deg->cd();
+  mg45Deg->Draw("ALP");
+  mg45Deg->SetTitle("45 degrees probability");
+  mg45Deg->SetName("45Deg");
+  mg45Deg->GetXaxis()->SetTitle("Thickness [mm]");
+  mg45Deg->GetYaxis()->SetTitle("Probability");
+  c45Deg->BuildLegend(.70, .7, .9, .9, "Legend");
 }
 
 int main() {
