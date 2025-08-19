@@ -328,8 +328,10 @@ Point lightAnalysis(
   return p;
 }
 
+// Create plots using points (Prob_T, Prob_R) for different configurations
 void reflTransm() {
-  // Create points (Prob_T, Prob_R) for different configurations
+  // Create file to save canvases
+  TFile *reflTransmAnalyisis = new TFile("reflTransmAnalyisis", "RECREATE");
 
   // 45 DEGREES
 
@@ -381,6 +383,11 @@ void reflTransm() {
   mg45Deg->GetXaxis()->SetTitle("Thickness [mm]");
   mg45Deg->GetYaxis()->SetTitle("Probability");
   c45Deg->BuildLegend(.70, .7, .9, .9, "Legend");
+
+  // Write everything on file
+  reflTransmAnalyisis->cd();
+  c45Deg->Write();
+  reflTransmAnalyisis->Close();
 }
 
 int main() {
