@@ -26,11 +26,11 @@
 | PostTrig2  | 24.283        | 5.056         | 1.745          | 3.749        | 0.072  | 0.154  |
 
 ### Comparison table
-| Dataset      | Prob_T | Prob_R |
-|--------------|--------|--------|
-| 1 PTFE Layer | 0.214  | 0.172  |
-| 2 PTFE Layer | 0.123  | 0.203  |
-| 3 PTFE Layer | 0.064  | 0.217  |
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 1.55           | 0.214  | 0.172  |
+| 3.10           | 0.123  | 0.203  |
+| 5.14           | 0.064  | 0.217  |
 
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
