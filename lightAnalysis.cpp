@@ -345,48 +345,69 @@ void reflTransm() {
       lightAnalysis("./rootFiles/45Degrees3Layer/wA3Layer",
                     "./rootFiles/lightAnalysis45Deg3Layer.root");
 
-  // Create graphs for (Prob_T, Prob_R) as function of thickness
+  // Define useful variables
   std::array<double, 3> thicknesses{1.55, 3.1, 5.14};
   std::array<double, 3> probT{p45Deg1Layer.x, p45Deg2Layer.x, p45Deg3Layer.x};
   std::array<double, 3> probR{p45Deg1Layer.y, p45Deg2Layer.y, p45Deg3Layer.y};
+  std::array<int, 3> colours{kBlue, kRed, kOrange + 2};
+  std::array<int, 3> markers{20, 21, 22};
+  std::array<std::string, 2> names{"Transmittance", "Reflectance"};
 
+  // Create graphs for (Prob_T, Prob_R) as function of thickness
   TMultiGraph *mg45Deg = new TMultiGraph();
+  TMultiGraph *mgReflVsTransm = new TMultiGraph();
   std::array<TGraph *, 2> g45Deg{
       new TGraph(thicknesses.size(), thicknesses.data(), probT.data()),
       new TGraph(thicknesses.size(), thicknesses.data(), probR.data())};
 
-  // Set colours for transmittance
-  g45Deg[0]->SetMarkerStyle(20);
-  g45Deg[0]->SetMarkerColor(kBlue);
-  g45Deg[0]->SetLineColor(kBlue);
-  g45Deg[0]->SetTitle("Prob transmittance");
-
-  // Set colours for reflectance
-  g45Deg[1]->SetMarkerStyle(21);
-  g45Deg[1]->SetMarkerColor(kRed);
-  g45Deg[1]->SetLineColor(kRed);
-  g45Deg[1]->SetTitle("Prob reflectance");
-
   // Draw all pulses on multigraph object
-  for (auto const &g : g45Deg) {
-    mg45Deg->Add(g, "LP");
+  for (size_t i = 0; i < names.size(); ++i) {
+    g45Deg[i]->SetMarkerStyle(markers[i]);
+    g45Deg[i]->SetMarkerColor(colours[i]);
+    g45Deg[i]->SetLineColor(colours[i]);
+    g45Deg[i]->SetTitle(names[i].c_str());
+    mg45Deg->Add(g45Deg[i], "LP");
   }
 
-  // Create canvases to display probabilities
+  // Create canvases to display plots
   TCanvas *c45Deg = new TCanvas("c45Deg", "45 degrees", 1500, 700);
+  TCanvas *cReflVsTransm =
+      new TCanvas("cReflVsTransm", "Refl vs transm", 1500, 700);
 
   // Fill canvas and draw multigraph
   c45Deg->cd();
   mg45Deg->Draw("ALP");
   mg45Deg->SetTitle("45 degrees probability");
-  mg45Deg->SetName("45Deg");
+  mg45Deg->SetName("mg45Deg");
   mg45Deg->GetXaxis()->SetTitle("Thickness [mm]");
   mg45Deg->GetYaxis()->SetTitle("Probability");
-  c45Deg->BuildLegend(.70, .7, .9, .9, "Legend");
+  c45Deg->BuildLegend(.70, .7, .9, .9, "Proabability");
+
+  // Create transmittance vs reflectance graph
+  for (size_t i = 0; i < thicknesses.size(); ++i) {
+    auto *g = new TGraph();
+    g->AddPoint(probR[i], probT[i]);
+    g->SetMarkerStyle(markers[i]);
+    g->SetMarkerSize(2);
+    g->SetMarkerColor(colours[i]);
+    g->SetLineColor(colours[i]);
+    g->SetTitle(Form("%.2f", thicknesses[i]));
+    mgReflVsTransm->Add(g, "P");
+  }
+
+  // Draw transmittance vs reflectance graph
+  cReflVsTransm->cd();
+  mgReflVsTransm->Draw("ALP");
+  mgReflVsTransm->SetTitle("Transmittance vs Reflectance");
+  mgReflVsTransm->SetName("mgReflVsTransm");
+  mgReflVsTransm->GetXaxis()->SetTitle("Reflectance prob");
+  mgReflVsTransm->GetYaxis()->SetTitle("Transm prob");
+  cReflVsTransm->BuildLegend(.70, .7, .9, .9, "Thickness");
 
   // Write everything on file
   reflTransmAnalyisis->cd();
   c45Deg->Write();
+  cReflVsTransm->Write();
   reflTransmAnalyisis->Close();
 }
 
