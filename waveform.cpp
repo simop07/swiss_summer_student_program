@@ -1,4 +1,8 @@
-// To compile in SHELL: "analysis.cpp `root-config --cflags --libs`"
+// To compile in SHELL: "waveformAnalysisPos.cpp waveform.cpp `root-config
+// --cflags --libs`" Best data to show fit is
+// DataF_CH0@DT5730S_59483_run_new_1300_2-3.5 with Refl PMT conversion factor
+// inside data/miscellaneous
+
 #include <time.h>
 
 #include <algorithm>
@@ -95,7 +99,7 @@ Double_t asym2GaussiansConstrainedSameSigma(Double_t *x, Double_t *par) {
 // Group functions for fitting PE histo
 void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   // Import user defined function asymmetric gaussians for 1 PE
-  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 1.9, 4);
+  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 1.8, 4);
   fAsymmetric1PE->SetLineColor(kRed);
   fAsymmetric1PE->SetLineWidth(4);
   fAsymmetric1PE->SetLineStyle(2);
@@ -107,7 +111,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma^{1}_{2}
 
   // Import user defined function asymmetric gaussians for 2 PE
-  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.9, 2.1, 4);
+  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.7, 4);
   fAsymmetric2PE->SetLineColor(kOrange + 2);
   fAsymmetric2PE->SetLineWidth(4);
   fAsymmetric2PE->SetLineStyle(2);
@@ -119,7 +123,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma^{2}_{2}
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotal = new TF1("fTotal", asym2Gaussians, 0., 4.2, 9);
+  TF1 *fTotal = new TF1("fTotal", asym2Gaussians, 0., 3., 9);
   fTotal->SetLineColor(kGreen + 2);
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
@@ -161,7 +165,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fTotal->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}", "#sigma^{1}_{2}",
                       "N^{2}", "#mu^{2}", "#sigma^{2}_{1}", "#sigma^{2}_{2}",
                       "Background");
-  TFitResultPtr fitResult = hPhotoElectrons->Fit(fTotal, "S R+");
+  TFitResultPtr fitResult = hPhotoElectrons->Fit(fTotal, "S R+ N");
 
   // Get results
   std::cout
@@ -181,7 +185,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConst =
-      new TF1("fTotalConst", asym2GaussiansConstrained, 0., 4.2, 8);
+      new TF1("fTotalConst", asym2GaussiansConstrained, 0., 3., 8);
   fTotalConst->SetLineColor(kOrange + 2);
   fTotalConst->SetLineWidth(4);
   fTotalConst->SetLineStyle(2);
@@ -191,7 +195,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fTotalConst->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
                            "#sigma^{1}_{2}", "N^{2}", "#sigma^{2}_{1}",
                            "#sigma^{2}_{2}", "Background");
-  TFitResultPtr fitResultConst = hPhotoElectrons->Fit(fTotalConst, "S R+");
+  TFitResultPtr fitResultConst = hPhotoElectrons->Fit(fTotalConst, "S R+ N");
 
   // Get results
   std::cout
@@ -211,7 +215,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConstSameSigmas = new TF1(
-      "fTotalConstSameSigmas", asym2GaussiansConstrainedSameSigma, 0., 4.2, 6);
+      "fTotalConstSameSigmas", asym2GaussiansConstrainedSameSigma, 0., 3., 6);
   fTotalConstSameSigmas->SetLineColor(kRed);
   fTotalConstSameSigmas->SetLineWidth(4);
   fTotalConstSameSigmas->SetLineStyle(2);
@@ -297,7 +301,7 @@ Double_t asym2GaussiansExpoConstrainedSameSigma(Double_t *x, Double_t *par) {
 
 void fitPEHistoExp(TH1F *hPhotoElectrons) {
   // Import user defined function asymmetric gaussians for 1 PE
-  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 1.8, 4);
+  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 1.9, 4);
   fAsymmetric1PE->SetLineColor(kRed);
   fAsymmetric1PE->SetLineWidth(4);
   fAsymmetric1PE->SetLineStyle(2);
@@ -309,7 +313,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma^{1}_{2}
 
   // Import user defined function asymmetric gaussians for 2 PE
-  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.6, 4);
+  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.9, 2.6, 4);
   fAsymmetric2PE->SetLineColor(kOrange + 2);
   fAsymmetric2PE->SetLineWidth(4);
   fAsymmetric2PE->SetLineStyle(2);
@@ -321,7 +325,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma^{2}_{2}
 
   // Define expo function for noise fit
-  TF1 *fExpo = new TF1("fExpo", "expo", 0., 4.2);
+  TF1 *fExpo = new TF1("fExpo", "expo", 0., 3.);
   fExpo->SetLineColor(kGreen + 2);
   fExpo->SetLineWidth(4);
   fExpo->SetLineStyle(2);
@@ -329,7 +333,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   fExpo->SetParameter(1, -1.2);  // Slope
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0., 4.2, 11);
+  TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0., 3., 11);
   fTotal->SetLineColor(kGreen + 2);
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
@@ -402,7 +406,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConst =
-      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0., 4.2, 10);
+      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0., 3., 10);
   fTotalConst->SetLineColor(kOrange + 2);
   fTotalConst->SetLineWidth(4);
   fTotalConst->SetLineStyle(2);
@@ -433,7 +437,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConstSameSigmas =
       new TF1("fTotalConstSameSigmas", asym2GaussiansExpoConstrainedSameSigma,
-              0., 4.2, 8);
+              0., 3., 8);
   fTotalConstSameSigmas->SetLineColor(kRed);
   fTotalConstSameSigmas->SetLineWidth(4);
   fTotalConstSameSigmas->SetLineStyle(2);
@@ -489,21 +493,28 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
+// Choose area conversion factor
+enum AreaConvFactor { Transm = 4000, Refl = 12500 };
+
 // This function analyses the waveform by building areaVStime, Noise, PE
 // counts and pulseWidth histos
-void waveformAnalysis() {
+void waveformAnalysis(AreaConvFactor areaConv,
+                      std::string infileName =
+                          "./data/miscellaneous/"
+                          "DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt",
+                      std::string rootFileName =
+                          "./rootFiles/miscellaneous/waveformAnalysis.root") {
   // To avoid reloading manually if .so is present
   R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
   // Area conversion factor (current assumption is 1 PE = 11000 ADC*ns)
-  // For Transm PTFE = 4000.
-  // For Refl PTFE = 12000.
-  double const areaConvFactor{4000.};
+  // For Transm PMT = 4000.
+  // For Refl PMT = 12500.
+  auto const areaConvFactor = static_cast<double>(areaConv);
 
   // Variables used later
   double const samplePeriod = 2.0;  // In [ns]
-  std::ifstream infile(
-      "./data/45Degrees/CH0_3PTFE-LED_45_1.3_2-3.5_70_INC_TRANSM.txt");
+  std::ifstream infile(infileName.c_str());
   std::string line;
   std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
   TMultiGraph *mg = new TMultiGraph();
@@ -518,7 +529,7 @@ void waveformAnalysis() {
   srand(time(NULL));
 
   // Creating TFile
-  TFile *file1 = new TFile("./rootFiles/wA1Layer0.root", "RECREATE");
+  TFile *file1 = new TFile(rootFileName.c_str(), "RECREATE");
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
@@ -526,10 +537,9 @@ void waveformAnalysis() {
                                "peak [ns]; Area [ADC #times ns]",
                                40, 100., 460., 100, 0., 100000.);
   TH1F *hNoise = new TH1F("hNoise", "Noise distribution; ADC counts; Counts",
-                          30, 8020, 8050);
-  TH1F *hPhotoElectrons =
-      new TH1F("hPE", "Pulse area distribution; Area [PE]; Normalized counts",
-               150, 0, 6);
+                          30, 2755, 2785);
+  TH1F *hPhotoElectrons = new TH1F(
+      "hPE", "Pulse area distribution; Area [PE]; Normalized counts", 90, 0, 6);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 20, 2, 50);
   TH1F *hPETrigger = new TH1F(
@@ -1325,8 +1335,10 @@ void waveformTotal() {
 }
 
 int main() {
-  waveformAnalysis();
-  waveformTotal();
+  waveformAnalysis(
+      Transm,
+      "./data/miscellaneous/DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt",
+      "./rootFiles/miscellaneous/waveformAnalysis.root");
 
-  EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
