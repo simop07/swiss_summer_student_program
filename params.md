@@ -1,6 +1,6 @@
 # Params info
 
-## Digitised data for $45^{\circ}$
+## Primary digitised data for $45^{\circ}$
 ### $1$ PTFE layer
 | Region     | Inc_T [PE/ns] | Inc_R [PE/ns] | Transm [PE/ns] | Refl [PE/ns] | Prob_T | Prob_R |
 |------------|---------------|---------------|----------------|--------------|--------|--------|
@@ -31,6 +31,18 @@
 | 1.55           | 0.214  | 0.172  |
 | 3.10           | 0.123  | 0.203  |
 | 5.14           | 0.064  | 0.217  |
+
+## Secondary digitised data for $45^{\circ}$ (more points)
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.519  | 0.112  |
+| 0.800          | 0.228  | 0.157  |
+| 1.550          | 0.209  | 0.209  |
+| 2.050          | 0.145  | 0.229  |
+| 3.100          | 0.123  | 0.161  |
+| 3.600          | 0.102  | 0.234  |
+| 4.100          | 0.067  | 0.222  |
+| 5.150          | 0.074  | 0.209  |
 
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
