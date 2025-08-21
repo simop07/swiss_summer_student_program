@@ -9,8 +9,10 @@
 
 #include "TAxis.h"
 #include "TCanvas.h"
+#include "TF1.h"
 #include "TFile.h"
 #include "TGraph.h"
+#include "TMath.h"
 #include "TMultiGraph.h"
 #include "TROOT.h"
 #include "TStyle.h"
@@ -39,6 +41,48 @@ void setFitStyle() {
   // gStyle->SetPadBottomMargin(-9.);
   // gStyle->SetPadLeftMargin(-9.);
   // gStyle->SetTitleW(0.5f);
+}
+
+Double_t beerLambert(Double_t *x, Double_t *par) {
+  // par[0] = A
+  // par[1] = #lambda_t
+  // par[2] = B
+
+  Double_t xVal = x[0];
+  Double_t fitVal = par[0] * TMath::Exp(-xVal / par[1]) + par[2];
+  return fitVal;
+}
+
+// Alpha function (peak of gaussian specular distribution)
+Double_t alphaFunc(Double_t x, Double_t aDeg) {
+  Double_t aRad = aDeg * TMath::Pi() / 180.0;
+  Double_t xRad = x * TMath::Pi() / 180.0;
+
+  Double_t val = (TMath::Sin(aRad) * TMath::Sin(xRad)) +
+                 (TMath::Cos(aRad) * TMath::Cos(xRad));
+
+  return TMath::ACos(val);
+}
+
+// F(x) function for reflectance
+Double_t FFunc(Double_t *x, Double_t *par) {
+  // par[0] = R_1
+  // par[1] = a (degrees)
+  // par[2] = #beta
+  // par[3] = R_2
+
+  Double_t xVal = x[0];
+
+  Double_t alpha = alphaFunc(xVal, par[1]);
+
+  Double_t expo = par[0] * TMath::Exp(-TMath::Power(alpha, 2) /
+                                      (2.0 * TMath::Power(par[2], 2)));
+
+  Double_t cosine = par[3] * TMath::Cos(xVal * TMath::Pi() / 180.0);
+
+  Double_t fitVal = (expo + cosine) / 125.6324;
+
+  return fitVal;
 }
 
 Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
@@ -382,6 +426,26 @@ void reflTransm() {
               << probT[i] << std::setw(20) << probR[i] << '\n';
   }
 
+  // Create function for angular correction
+  TF1 *fFFunction45 = new TF1("fFFunction45", FFunc, 0., 180., 4);
+
+  // Fix parameters value for 45 degrees
+  fFFunction45->FixParameter(0, 90.0);     // R_1
+  fFFunction45->FixParameter(1, 45.0);     // a (degrees)
+  fFFunction45->FixParameter(2, -0.1469);  // #beta
+  fFFunction45->FixParameter(3, 50.18);    // R_2
+
+  // Compute ratio between the PMT area and the total area [-90,90]
+  double angle1{40.};
+  double angle2{50.};
+  auto geomCorr = fFFunction45->Integral(angle1, angle2) /
+                  fFFunction45->Integral(-90., 90.);
+
+  // Print correction factor for 45 degrees
+  std::cout << std::fixed << std::setprecision(6)
+            << "\nCorrection factor for 45° (" << angle1 << "°–" << angle2
+            << "°) = " << geomCorr << "\n\n";
+
   // Create graphs for (Prob_T, Prob_R) as function of thickness
   TMultiGraph *mg45Deg = new TMultiGraph();
   TMultiGraph *mgReflVsTransm = new TMultiGraph();
@@ -403,14 +467,27 @@ void reflTransm() {
   TCanvas *cReflVsTransm =
       new TCanvas("cReflVsTransm", "Refl vs transm", 1500, 700);
 
-  // Fill canvas and draw multigraph
+  // Fit transmittance
   c45Deg->cd();
+  TF1 *beerLambert45Transm =
+      new TF1("beerLambert45Transm", beerLambert, 0.1, 4.2, 3);
+  beerLambert45Transm->SetLineColor(kRed);
+  beerLambert45Transm->SetLineWidth(4);
+  beerLambert45Transm->SetLineStyle(2);
+  beerLambert45Transm->SetTitle("Transmittance fit");
+  beerLambert45Transm->SetParNames("A", "#lambda_t", "B");
+  beerLambert45Transm->SetParameter(0, 0.5);     // A
+  beerLambert45Transm->SetParameter(1, 350e-3);  // #lambda_t
+  beerLambert45Transm->SetParameter(2, 0.0);     // B
+  g45Deg[0]->Fit(beerLambert45Transm, "R");
+
+  // Fill canvas and draw multigraph
   mg45Deg->Draw("ALP");
   mg45Deg->SetTitle("45 degrees probability");
   mg45Deg->SetName("mg45Deg");
   mg45Deg->GetXaxis()->SetTitle("Thickness [mm]");
   mg45Deg->GetYaxis()->SetTitle("Probability");
-  c45Deg->BuildLegend(.70, .7, .9, .9, "Proabability");
+  c45Deg->BuildLegend(.70, .7, .9, .9, "Legend");
 
   // Create transmittance vs reflectance graph
   for (size_t i = 0; i < thicknesses.size(); ++i) {
