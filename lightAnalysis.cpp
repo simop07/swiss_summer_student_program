@@ -1,3 +1,6 @@
+// To compile in SHELL:
+// "g++ lightAnalysis.cpp `root-config --cflags --libs`"
+
 #include <array>
 #include <iomanip>
 #include <iostream>
@@ -38,10 +41,9 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
-Point lightAnalysis(
-    std::string filePath = "./rootFiles/45Degrees3Layer/wA3Layer",
-    std::string fileLightAnalysisName =
-        "./rootFiles/lightAnalysis45Deg3Layer.root") {
+Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
+                    std::string fileLightAnalysisName =
+                        "./rootFiles/lightAnalysis45Deg3Layer.root") {
   // Define useful variables
   int const nFiles{4};
   int const nRegions{4};
@@ -180,9 +182,7 @@ Point lightAnalysis(
               break;
 
             case 3:
-              rateCorrRefl = (((rate * pd.preTrigger.deltaT) -
-                               incR[i] * pd.preTrigger.deltaT) /
-                              pd.preTrigger.deltaT);
+              rateCorrRefl = rate - incR[i];
               std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
@@ -215,9 +215,7 @@ Point lightAnalysis(
               break;
 
             case 3:
-              rateCorrRefl = (((rateCorr * pd.inTrigger.deltaT) -
-                               incR[i] * pd.inTrigger.deltaT) /
-                              pd.inTrigger.deltaT);
+              rateCorrRefl = rateCorr - incR[i];
               std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
@@ -252,9 +250,7 @@ Point lightAnalysis(
               break;
 
             case 3:
-              rateCorrRefl = (((rateCorr * pd.postTrigger1.deltaT) -
-                               incR[i] * pd.postTrigger1.deltaT) /
-                              pd.postTrigger1.deltaT);
+              rateCorrRefl = rateCorr - incR[i];
               std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
@@ -289,9 +285,7 @@ Point lightAnalysis(
               break;
 
             case 3:
-              rateCorrRefl = (((rateCorr * pd.postTrigger2.deltaT) -
-                               incR[i] * pd.postTrigger2.deltaT) /
-                              pd.postTrigger2.deltaT);
+              rateCorrRefl = rateCorr - incR[i];
               std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
               refl.push_back(rateCorrRefl);
               break;
@@ -331,27 +325,62 @@ Point lightAnalysis(
 // Create plots using points (Prob_T, Prob_R) for different configurations
 void reflTransm() {
   // Create file to save canvases
-  TFile *reflTransmAnalyisis = new TFile("reflTransmAnalyisis", "RECREATE");
+  TFile *reflTransmAnalyisis =
+      new TFile("./rootFiles/reflTransmAnalyisis45Degrees.root", "RECREATE");
 
-  // 45 DEGREES
+  // 45 DEGREES CONFIGURATION
 
-  Point p45Deg1Layer =
-      lightAnalysis("./rootFiles/45Degrees1Layer/wA1Layer",
-                    "./rootFiles/lightAnalysis45Deg1Layer.root");
-  Point p45Deg2Layer =
-      lightAnalysis("./rootFiles/45Degrees2Layer/wA2Layer",
-                    "./rootFiles/lightAnalysis45Deg2Layer.root");
-  Point p45Deg3Layer =
-      lightAnalysis("./rootFiles/45Degrees3Layer/wA3Layer",
-                    "./rootFiles/lightAnalysis45Deg3Layer.root");
+  // Collect all points from available ROOT files
+  Point p45Deg0p20mm =
+      lightAnalysis("./rootFiles/45Degrees0.20mm/wA",
+                    "./rootFiles/lightAnalysis45Deg0p20mm.root");
+  Point p45Deg0p80mm =
+      lightAnalysis("./rootFiles/45Degrees0.80mm/wA",
+                    "./rootFiles/lightAnalysis45Deg0p80mm.root");
+  Point p45Deg1p55mm =
+      lightAnalysis("./rootFiles/45Degrees1.55mm/wA",
+                    "./rootFiles/lightAnalysis45Deg1p55mm.root");
+  Point p45Deg2p05mm =
+      lightAnalysis("./rootFiles/45Degrees2.05mm/wA",
+                    "./rootFiles/lightAnalysis45Deg2p05mm.root");
+  Point p45Deg3p10mm =
+      lightAnalysis("./rootFiles/45Degrees3.10mm/wA",
+                    "./rootFiles/lightAnalysis45Deg3p10mm.root");
+  Point p45Deg3p60mm =
+      lightAnalysis("./rootFiles/45Degrees3.60mm/wA",
+                    "./rootFiles/lightAnalysis45Deg3p60mm.root");
+  Point p45Deg4p10mm =
+      lightAnalysis("./rootFiles/45Degrees4.10mm/wA",
+                    "./rootFiles/lightAnalysis45Deg4p10mm.root");
+  Point p45Deg5p15mm =
+      lightAnalysis("./rootFiles/45Degrees5.15mm/wA",
+                    "./rootFiles/lightAnalysis45Deg5p15mm.root");
 
   // Define useful variables
-  std::array<double, 3> thicknesses{1.55, 3.1, 5.14};
-  std::array<double, 3> probT{p45Deg1Layer.x, p45Deg2Layer.x, p45Deg3Layer.x};
-  std::array<double, 3> probR{p45Deg1Layer.y, p45Deg2Layer.y, p45Deg3Layer.y};
-  std::array<int, 3> colours{kBlue, kRed, kOrange + 2};
-  std::array<int, 3> markers{20, 21, 22};
   std::array<std::string, 2> names{"Transmittance", "Reflectance"};
+
+  // Tune the following chunk if varying the nnumber of measurements
+  std::array<double, 8> thicknesses{0.20, 0.80, 1.55, 2.05,
+                                    3.10, 3.60, 4.10, 5.15};
+  std::array<double, 8> probT{p45Deg0p20mm.x, p45Deg0p80mm.x, p45Deg1p55mm.x,
+                              p45Deg2p05mm.x, p45Deg3p10mm.x, p45Deg3p60mm.x,
+                              p45Deg4p10mm.x, p45Deg5p15mm.x};
+  std::array<double, 8> probR{p45Deg0p20mm.y, p45Deg0p80mm.y, p45Deg1p55mm.y,
+                              p45Deg2p05mm.y, p45Deg3p10mm.y, p45Deg3p60mm.y,
+                              p45Deg4p10mm.y, p45Deg5p15mm.y};
+  std::array<int, 8> colours{kBlue,   kRed,      kOrange + 2, kGreen + 2,
+                             kViolet, kCyan + 1, kMagenta,    kBlack};
+  std::array<int, 8> markers{20, 21, 22, 23, 24, 25, 26, 27};
+
+  // Print table with (Prob_T, Prob_R) and thicknesses
+  std::cout << "\n\n*** Results in trigger region ***\n\n";
+  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
+            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+  for (size_t i = 0; i < thicknesses.size(); ++i) {
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
+              << probT[i] << std::setw(20) << probR[i] << '\n';
+  }
 
   // Create graphs for (Prob_T, Prob_R) as function of thickness
   TMultiGraph *mg45Deg = new TMultiGraph();
@@ -412,7 +441,7 @@ void reflTransm() {
 }
 
 int main() {
-  Point p = lightAnalysis();
+  reflTransm();
 
   return EXIT_SUCCESS;
 }
