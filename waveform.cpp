@@ -1342,18 +1342,17 @@ void waveformTotal() {
 
 void rateAnalysis() {
   // Create angles and thicknesses vector
-  std::vector<std::string> angles = {"45", "30", "60"};
-  std::vector<std::string> thicknesses = {"0.20mm", "0.80mm", "1.55mm",
-                                          "2.05mm", "3.10mm", "3.60mm",
-                                          "4.10mm", "5.15mm"};
+  std::vector<std::string> angles = {"45"};
+  std::vector<std::string> thicknesses = {"0.20", "0.80", "1.55", "2.05",
+                                          "3.10", "3.60", "4.10", "5.15"};
 
   // Loop over angles
   for (auto &a : angles) {
     // Loop over thicknesses
     for (auto &t : thicknesses) {
       // Create file paths
-      std::string dataPath = "./data/" + a + "Degrees/" + t + "/";
-      std::string rootFilePath = "./rootFiles/" + a + "Degrees" + t + "/";
+      std::string dataPath = "./data/" + a + "Degrees/" + t + "mm/";
+      std::string rootFilePath = "./rootFiles/" + a + "Degrees" + t + "mm/";
 
       // Create folder if it doesn-t exist
       if (gSystem->AccessPathName(rootFilePath.c_str())) {
@@ -1388,14 +1387,12 @@ void rateAnalysis() {
         Refl, incDataPath + "CH1_3PTFE-LED_" + a + "_1.3_2-3.5_70_INC_REFL.txt",
         incRootFilePath + "wA1.root");
   }
-
-  copyIncidentFiles();
 }
 
 // Copy incidence transmittance and reflectance in all thickness subfolders
 void copyIncidentFiles() {
   // Create angle vector
-  std::vector<std::string> angles = {"45", "30", "60"};
+  std::vector<std::string> angles = {"45"};
 
   // Loop over angles
   for (auto &a : angles) {
@@ -1643,6 +1640,7 @@ void plotWaveform(
 
 int main() {
   rateAnalysis();
+  copyIncidentFiles();
 
   return EXIT_SUCCESS;
 }
