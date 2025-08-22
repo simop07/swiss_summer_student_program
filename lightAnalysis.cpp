@@ -1,6 +1,7 @@
 // To compile in SHELL:
 // "g++ lightAnalysis.cpp `root-config --cflags --libs`"
 
+#include <algorithm>
 #include <array>
 #include <iomanip>
 #include <iostream>
@@ -403,6 +404,26 @@ void reflTransm() {
   // Define useful variables
   std::array<std::string, 2> names{"Transmittance", "Reflectance"};
 
+  // Create function for angular correction
+  TF1 *fFFunction45 = new TF1("fFFunction45", FFunc, 0., 180., 4);
+
+  // Fix parameters value for 45 degrees
+  fFFunction45->FixParameter(0, 90.0);     // R_1
+  fFFunction45->FixParameter(1, 45.0);     // a (degrees)
+  fFFunction45->FixParameter(2, -0.1469);  // #beta
+  fFFunction45->FixParameter(3, 50.18);    // R_2
+
+  // Compute ratio between the PMT area and the total area [-90,90]
+  double angle1{35.};
+  double angle2{55.};
+  auto geomCorr = fFFunction45->Integral(angle1, angle2) /
+                  fFFunction45->Integral(-90., 90.);
+
+  // Print correction factor for 45 degrees
+  std::cout << std::fixed << std::setprecision(6)
+            << "\nCorrection factor for 45° (" << angle1 << "°–" << angle2
+            << "°) = " << geomCorr << "\n\n";
+
   // Tune the following chunk if varying the nnumber of measurements
   std::array<double, 8> thicknesses{0.20, 0.80, 1.55, 2.05,
                                     3.10, 3.60, 4.10, 5.15};
@@ -416,6 +437,10 @@ void reflTransm() {
                              kViolet, kCyan + 1, kMagenta,    kBlack};
   std::array<int, 8> markers{20, 21, 22, 23, 24, 25, 26, 27};
 
+  // Apply correction factor
+  std::transform(probR.begin(), probR.end(), probR.begin(),
+                 [geomCorr](double r) { return r / geomCorr; });
+
   // Print table with (Prob_T, Prob_R) and thicknesses
   std::cout << "\n\n*** Results in trigger region ***\n\n";
   std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
@@ -425,26 +450,6 @@ void reflTransm() {
     std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
               << probT[i] << std::setw(20) << probR[i] << '\n';
   }
-
-  // Create function for angular correction
-  TF1 *fFFunction45 = new TF1("fFFunction45", FFunc, 0., 180., 4);
-
-  // Fix parameters value for 45 degrees
-  fFFunction45->FixParameter(0, 90.0);     // R_1
-  fFFunction45->FixParameter(1, 45.0);     // a (degrees)
-  fFFunction45->FixParameter(2, -0.1469);  // #beta
-  fFFunction45->FixParameter(3, 50.18);    // R_2
-
-  // Compute ratio between the PMT area and the total area [-90,90]
-  double angle1{40.};
-  double angle2{50.};
-  auto geomCorr = fFFunction45->Integral(angle1, angle2) /
-                  fFFunction45->Integral(-90., 90.);
-
-  // Print correction factor for 45 degrees
-  std::cout << std::fixed << std::setprecision(6)
-            << "\nCorrection factor for 45° (" << angle1 << "°–" << angle2
-            << "°) = " << geomCorr << "\n\n";
 
   // Create graphs for (Prob_T, Prob_R) as function of thickness
   TMultiGraph *mg45Deg = new TMultiGraph();
