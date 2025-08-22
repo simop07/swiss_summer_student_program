@@ -1337,55 +1337,76 @@ void waveformTotal() {
 }
 
 void rateAnalysis() {
-  // 45 DEGREES CONFIGURATION
+  // Create angles and thicknesses vector
+  std::vector<std::string> angles = {"45", "30", "60"};
+  std::vector<std::string> thicknesses = {"0.20mm", "0.80mm", "1.55mm",
+                                          "2.05mm", "3.10mm", "3.60mm",
+                                          "4.10mm", "5.15mm"};
 
-  // 0.20mm thickness of PTFE
+  // Loop over angles
+  for (auto &a : angles) {
+    // Loop over thicknesses
+    for (auto &t : thicknesses) {
+      // Create file paths
+      std::string dataPath = "./data/" + a + "Degrees/" + t + "/";
+      std::string rootFilePath = "./rootFiles/" + a + "Degrees" + t + "/";
+
+      // Create folder if it doesn-t exist
+      if (gSystem->AccessPathName(rootFilePath.c_str())) {
+        gSystem->mkdir(rootFilePath.c_str(), true);
+      }
+
+      // Analyse transmittance data
   waveformAnalysis(Transm,
-                   "./data/45Degrees/0.20mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_0.2_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees0.20mm/wA2.root");
+                   dataPath +                    "DataF_CH0@DT5730S_59483_run_" + a + "_" + t +
+                           "_TRANSM_REFL.txt",
+                   rootFilePath + "wA2.root");
 
+// Analyse reflectance data
   waveformAnalysis(Refl,
-                   "./data/45Degrees/0.20mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_0.2_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees0.20mm/wA3.root");
+                   dataPath +                    "DataF_CH1@DT5730S_59483_run_" + a + "_" + t +
+                           "_TRANSM_REFL.txt",
+                   rootFilePath + "wA3.root");
+}
 
-  // 0.80mm thickness of PTFE
-  waveformAnalysis(Transm,
-                   "./data/45Degrees/0.80mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_0.8_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees0.80mm/wA2.root");
+  // Incidence transmittance and reflectance analysis
+    std::string incDataPath = "./data/" + a + "Degrees/";
+    std::string incRootFilePath = "./rootFiles/" + a + "Degrees/";
 
-  waveformAnalysis(Refl,
-                   "./data/45Degrees/0.80mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_0.8_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees0.80mm/wA3.root");
+    // Incidence transmittance
+  waveformAnalysis(
+Transm,
+                   incDataPath + "CH0_3PTFE-LED_" + a + "_1.3_2-3.5_70_INC_TRANSM.txt",
+        incRootFilePath + "wA0.root");
 
-  // 1.55mm thickness of PTFE
-  waveformAnalysis(Transm,
-                   "./data/45Degrees/1.55mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_1.55_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees1.55mm/wA2.root");
+    // Incidence reflectance
+    waveformAnalysis(
+        Refl, incDataPath + "CH1_3PTFE-LED_" + a + "_1.3_2-3.5_70_INC_REFL.txt",
+        incRootFilePath + "wA1.root");
+  }
 
-  waveformAnalysis(Refl,
-                   "./data/45Degrees/1.55mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_1.55_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees1.55mm/wA3.root");
+  copyIncidentFiles();
+}
 
-  // 2.05mm thickness of PTFE
-  waveformAnalysis(Transm,
-                   "./data/45Degrees/2.05mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_2.05_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees2.05mm/wA2.root");
+// Copy incidence transmittance and reflectance in all thickness subfolders
+void copyIncidentFiles() {
+  // Create angle vector
+  std::vector<std::string> angles = {"45", "30", "60"};
 
-  waveformAnalysis(Refl,
-                   "./data/45Degrees/2.05mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_2.05_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees2.05mm/wA3.root");
-  // 3.10mm thickness of PTFE
-  waveformAnalysis(Transm,
-                   "./data/45Degrees/3.10mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_3.10_TRANSM_REFL.txt",
+  // Loop over angles
+  for (auto &a : angles) {
+    // Select incident files to copy
+    std::string incTransm = "./rootFiles/" + a + "Degrees/wA0.root";
+    std::string incRefl = "./rootFiles/" + a + "Degrees/wA1.root";
+
+    // Folders for different PTFE thicknesses
+    std::vector<std::string> folders = {"./rootFiles/" + a + "Degrees0.20mm/",
+                                        "./rootFiles/" + a + "Degrees0.80mm/",
+                   "./rootFiles/" + a + "Degrees1.55mm/",
+                                        "./rootFiles/" + a + "Degrees2.05mm/",
+                                        "./rootFiles/" + a + "Degrees3.10mm/",
+                   "./rootFiles/" + a + "Degrees3.60mm/",
+                                        "./rootFiles/" + a + "Degrees4.10mm/",
                    "./rootFiles/" + a + "Degrees5.15mm/"};
 
     // Loop over folders
