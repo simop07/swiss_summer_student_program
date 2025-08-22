@@ -1386,57 +1386,235 @@ void rateAnalysis() {
   waveformAnalysis(Transm,
                    "./data/45Degrees/3.10mm/"
                    "DataF_CH0@DT5730S_59483_run_45_3.10_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees3.10mm/wA2.root");
+                   "./rootFiles/" + a + "Degrees5.15mm/"};
 
-  waveformAnalysis(Refl,
-                   "./data/45Degrees/3.10mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_3.10_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees3.10mm/wA3.root");
+    // Loop over folders
+    for (auto &f : folders) {
+      std::string incTransmFile = f + "wA0.root";
+      std::string incReflFile = f + "wA1.root";
 
-  // 3.60mm thickness of PTFE
-  waveformAnalysis(Transm,
-                   "./data/45Degrees/3.60mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_3.60_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees3.60mm/wA2.root");
+      // Copy incidence transmittance
+      if (gSystem->CopyFile(incTransm.c_str(), incTransmFile.c_str())) {
+        std::cout << "Copied transmittance to " << incTransmFile << '\n';
+      } else {
+        std::cout << "Failed to copy Transm to " << incTransmFile << '\n';
+      }
 
-  waveformAnalysis(Refl,
-                   "./data/45Degrees/3.60mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_3.60_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees3.60mm/wA3.root");
-
-  // 4.10mm thickness of PTFE
-  waveformAnalysis(Transm,
-                   "./data/45Degrees/4.10mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_4.10_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees4.10mm/wA2.root");
-
-  waveformAnalysis(Refl,
-                   "./data/45Degrees/4.10mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_4.10_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees4.10mm/wA3.root");
-
-  // 5.15mm thickness of PTFE
-  waveformAnalysis(Transm,
-                   "./data/45Degrees/5.15mm/"
-                   "DataF_CH0@DT5730S_59483_run_45_5.15_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees5.15mm/wA2.root");
-
-  waveformAnalysis(Refl,
-                   "./data/45Degrees/5.15mm/"
-                   "DataF_CH1@DT5730S_59483_run_45_5.15_TRANSM_REFL.txt",
-                   "./rootFiles/45Degrees5.15mm/wA3.root");
-
-  // Incidence transmittance and reflectance
-  waveformAnalysis(
-      Transm, "./data/45Degrees/CH0_3PTFE-LED_45_1.3_2-3.5_70_INC_TRANSM.txt",
-      "./rootFiles/45Degrees/wA0.root");
-
-  waveformAnalysis(
-      Refl, "./data/45Degrees/CH1_3PTFE-LED_45_1.3_2-3.5_70_INC_REFL.txt",
-      "./rootFiles/45Degrees/wA1.root");
+      // Copy incidence reflectance
+      if (gSystem->CopyFile(incRefl.c_str(), incReflFile.c_str())) {
+        std::cout << "Copied Refl to " << incReflFile << '\n';
+      } else {
+        std::cout << "Failed to copy Refl to " << incReflFile << '\n';
+      }
+    }
+  }
 }
 
-void plotWaveform() {}
+// Plot working principle of pulse finder
+void plotWaveform(
+    AreaConvFactor areaConv = Transm,
+    std::string infileName =
+        "./data/miscellaneous/DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt",
+    std::string rootFileName = "./rootFiles/miscellaneous/plotWF.root") {
+  // To avoid reloading manually if .so is present
+  R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
+
+  // Area conversion factor (current assumption is 1 PE = 11000 ADC*ns)
+  // For Transm PMT = 4000.
+  // For Refl PMT = 12500.
+  auto const areaConvFactor = static_cast<double>(areaConv);
+
+  // Variables used later
+  double const samplePeriod = 2.0;  // In [ns]
+  std::ifstream infile(infileName.c_str());
+  std::string line;
+  std::vector<double> colours{1, 3, 4, 5, 6, 7, 8, 9};  // Colour vector
+  std::vector<TGraph *> graphs{};
+  std::vector<TF1 *> thresholds{};
+  std::vector<TBox *> boxes{};
+  std::vector<TLine *> lines{};
+  TMultiGraph *mg = new TMultiGraph();
+  int row{0};
+
+  // Creating TFile
+  TFile *file2 = new TFile(rootFileName.c_str(), "RECREATE");
+
+  // Create canvas to store waveforms
+  TCanvas *c2 = new TCanvas("c2", "Plot waveform", 1500, 700);
+
+  // Select random generator seed for colours based on current time
+  srand(time(NULL));
+
+  // Loop over rows (waveforms) to extract pulse sum graph
+  while (std::getline(infile, line)) {
+    // Control over analysed rows
+    if (row < nMinAnalysedRows) {
+      ++row;
+      continue;
+    }
+    if (row >= nMaxAnalysedRows) {
+      break;
+    }
+
+    // Defining loop variables
+    std::stringstream ss(line);
+    std::string item;
+    std::vector<double> samples;
+    std::vector<double> xValues;
+    double timestamp = 0.;
+    int sampleIndex{};
+    int column = 1;
+
+    setFitStyle();
+
+    // Loop over columns
+    while (std::getline(ss, item, '\t')) {
+      if (item.empty()) continue;
+      if (column == 3) {
+        timestamp = std::stod(item);
+      } else if (column >= 7) {
+        samples.push_back(std::stod(item));
+        xValues.push_back(sampleIndex * samplePeriod);
+        ++sampleIndex;
+      }
+      ++column;
+    }
+
+    // Creating WaveformAnalysis object
+    WaveformAnalysisPos wf(samples, timestamp, samplePeriod);
+
+    // Generate a random number between 0 and 7 (used for colour indices)
+    int randIndex = rand() % 8;
+
+    // Print waveform properties
+    std::cout << std::fixed
+              << std::setprecision(2);  // Round to 2 decimal place
+    std::cout << "\n********** Waveform n. " << row + 1 << " **********\n";
+    std::cout << "Timestamp        = " << wf.getTimeStamp() << " ns\n";
+    std::cout << "Baseline         = " << wf.getBaseline() << " ADC counts\n";
+    std::cout << "Sample period    = " << wf.getSamplePeriod() << " ns\n";
+
+    // Get pulse vector from each single waveform
+    const auto &pulses = wf.getPulses();
+    std::cout << "Number of Pulses without selection = " << pulses.size()
+              << '\n';
+
+  // Draw threshold for given waveform
+    TF1 *fThreshold = new TF1(Form("fThreshold_%d", row), "[0]", 0., 450.);
+    fThreshold->SetLineWidth(4);
+    fThreshold->SetLineStyle(2);
+    fThreshold->SetLineColor(colours[randIndex]);
+    fThreshold->SetParNames("Const");
+    fThreshold->FixParameter(0, wf.getThreshold());  // Const
+    thresholds.push_back(fThreshold);
+
+    // Plot each waveform using a graph object
+    TGraph *g = new TGraph(xValues.size(), xValues.data(), samples.data());
+    g->SetLineColor(colours[randIndex]);
+    g->SetLineWidth(1);
+    g->SetMarkerColor(kBlack);
+    g->SetMarkerStyle(20);
+    g->SetMarkerSize(1);
+    graphs.push_back(g);
+
+    // Loop on pulses
+    for (size_t i = 0; i < pulses.size(); ++i) {
+      const auto &p = pulses[i];
+
+      // Insert selections on pulses
+      if (p.peakValue > 15900.) {
+        continue;
+      }
+
+      // Define box coordinates for pulse
+      double x1 = p.startTime - wf.getTimeStamp();
+      double x2 = p.endTime - wf.getTimeStamp();
+      double y1 = p.values[0];
+      double y2 = p.peakValue;
+
+      TBox *box = new TBox(x1, y1, x2, y2);
+      box->SetFillColor(kRed - 9);
+      box->SetFillStyle(3354);  // Hatched style
+      box->SetLineColor(kRed);
+      boxes.push_back(box);
+
+      // Draw boundary lines
+      TLine *l1 = new TLine(x1, y1, x1, y2);
+      TLine *l2 = new TLine(x2, y1, x2, y2);
+      l1->SetLineColor(kRed);
+      l2->SetLineColor(kRed);
+      lines.push_back(l1);
+      lines.push_back(l2);
+
+      // Params of interest
+      double heightOverWidth{p.peakValue / (p.endTime - p.startTime)};
+      double peakFractionPos{(p.peakTime - p.startTime) /
+                             (p.endTime - p.startTime)};
+      double areaOverFullTime{p.area / ((p.endTime - p.startTime))};
+
+      std::cout << "\n  *** Pulse n. " << i + 1 << " ***\n\n";
+      std::cout << "  Overall start time           = " << p.startTime
+                << " ns\n";
+      std::cout << "  Overall end time             = " << p.endTime << " ns\n";
+      std::cout << "  Overall peak time            = " << p.peakTime << " ns\n";
+      std::cout << "  Relative start time          = "
+                << p.startTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Relative end time            = "
+                << p.endTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Relative peak time           = "
+                << p.peakTime - wf.getTimeStamp() << " ns\n";
+      std::cout << "  Peak time since startPulse   = "
+                << p.peakTime - wf.getTimeStamp() - p.times[0] << " ns\n";
+      std::cout << "  Peak value                   = " << p.peakValue
+                << " ADC\n";
+      std::cout << "  Width                        = "
+                << p.endTime - p.startTime << " ns\n";
+      std::cout << "  Rise time                    = " << p.riseTime << " ns\n";
+      std::cout << "  FWHM                         = " << p.FWHMTime << " ns\n";
+      std::cout << "  90% area time                = " << p.areaFractionTime
+                << " ns\n";
+      std::cout << "  Height over width            = " << heightOverWidth
+                << " ADC/ns\n";
+      std::cout << "  Peak fraction pos.           = " << peakFractionPos
+                << '\n';
+      std::cout << "  Area / full width            = " << areaOverFullTime
+                << " ADC\n";
+      std::cout << "  Area                         = " << p.area << " ADC*ns\n";
+      std::cout << "  Area in PE                   = "
+                << p.area / areaConvFactor << " PE\n";
+      std::cout << "  Negative/overall area frac   = " << p.negFracArea
+                << " \n";
+      std::cout << "  Negative/overall counts      = " << p.negFrac << " \n";
+    }
+    ++row;
+  }
+
+  // Draw all graphs
+  for (size_t i = 0; i < graphs.size(); ++i) {
+    mg->Add(graphs[i]);
+  }
+  mg->SetTitle("Pulse finder");
+  mg->SetName("mg");
+  mg->GetXaxis()->SetTitle("Time since \"trigger\" [ns]");
+  mg->GetYaxis()->SetTitle("ADC Counts");
+  c2->cd();
+  mg->Draw("ALP");
+  for (auto &t : thresholds) {
+    t->Draw("SAME");
+}
+for (auto &l : lines) {
+    l->Draw("SAME");
+  }
+  for (auto &b : boxes) {
+    b->Draw("SAME");
+  }
+
+  // Save canvas
+  c2->Update();
+  file2->cd();
+  c2->Write();
+  file2->Close();
+}
 
 int main() {
   rateAnalysis();
