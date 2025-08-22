@@ -44,7 +44,7 @@
 | 4.100          | 0.067  | 0.222  |
 | 5.150          | 0.074  | 0.209  |
 
-## Tertiary digitised data for $45^{\circ}$ (more points and more waveforms)
+## Tertiary digitised data for $45^{\circ}$ (more points, more waveforms and with corrected geometry)
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
 | 0.200          | 0.565  | 0.248  |
