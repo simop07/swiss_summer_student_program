@@ -1,7 +1,7 @@
-// To compile in SHELL: "waveformAnalysisPos.cpp waveform.cpp `root-config
-// --cflags --libs`" Best data to show fit is
-// DataF_CH0@DT5730S_59483_run_new_1300_2-3.5 with Refl PMT conversion factor
-// inside data/miscellaneous
+// To compile in SHELL:
+// "g++ waveformAnalysisPos.cpp waveform.cpp `root-config --cflags --libs`" Best
+// data to show fit is DataF_CH0@DT5730S_59483_run_new_1300_2-3.5 with Refl PMT
+// conversion factor inside data/miscellaneous
 
 #include <time.h>
 
@@ -33,8 +33,8 @@
 #include "waveformAnalysisPos.hpp"
 
 // Define global constants
-constexpr int nMinAnalysedRows{1};  // Minimum index of analysed rows EXCLUDED
-constexpr int nMaxAnalysedRows{10000};  // Maximum rows INCLUDED
+constexpr int nMinAnalysedRows{1};      // Minimum rows EXCLUDED
+constexpr int nMaxAnalysedRows{30000};  // Maximum rows INCLUDED
 
 // Asymmetric gaussian functions
 
@@ -99,7 +99,7 @@ Double_t asym2GaussiansConstrainedSameSigma(Double_t *x, Double_t *par) {
 // Group functions for fitting PE histo
 void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   // Import user defined function asymmetric gaussians for 1 PE
-  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.5, 1.8, 4);
+  TF1 *fAsymmetric1PE = new TF1("fAsymmetric1PE", asymGaussians, 0.6, 1.9, 4);
   fAsymmetric1PE->SetLineColor(kRed);
   fAsymmetric1PE->SetLineWidth(4);
   fAsymmetric1PE->SetLineStyle(2);
@@ -111,7 +111,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fAsymmetric1PE->SetParameter(3, 0.5);  // #sigma^{1}_{2}
 
   // Import user defined function asymmetric gaussians for 2 PE
-  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.8, 2.7, 4);
+  TF1 *fAsymmetric2PE = new TF1("fAsymmetric2PE", asymGaussians, 1.9, 2.5, 4);
   fAsymmetric2PE->SetLineColor(kOrange + 2);
   fAsymmetric2PE->SetLineWidth(4);
   fAsymmetric2PE->SetLineStyle(2);
@@ -123,7 +123,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma^{2}_{2}
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotal = new TF1("fTotal", asym2Gaussians, 0., 3., 9);
+  TF1 *fTotal = new TF1("fTotal", asym2Gaussians, 0.5, 3., 9);
   fTotal->SetLineColor(kGreen + 2);
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
@@ -185,7 +185,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConst =
-      new TF1("fTotalConst", asym2GaussiansConstrained, 0., 3., 8);
+      new TF1("fTotalConst", asym2GaussiansConstrained, 0.5, 3., 8);
   fTotalConst->SetLineColor(kOrange + 2);
   fTotalConst->SetLineWidth(4);
   fTotalConst->SetLineStyle(2);
@@ -215,7 +215,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConstSameSigmas = new TF1(
-      "fTotalConstSameSigmas", asym2GaussiansConstrainedSameSigma, 0., 3., 6);
+      "fTotalConstSameSigmas", asym2GaussiansConstrainedSameSigma, 0.5, 3., 6);
   fTotalConstSameSigmas->SetLineColor(kRed);
   fTotalConstSameSigmas->SetLineWidth(4);
   fTotalConstSameSigmas->SetLineStyle(2);
@@ -325,7 +325,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma^{2}_{2}
 
   // Define expo function for noise fit
-  TF1 *fExpo = new TF1("fExpo", "expo", 0., 3.);
+  TF1 *fExpo = new TF1("fExpo", "expo", 0.5, 3.);
   fExpo->SetLineColor(kGreen + 2);
   fExpo->SetLineWidth(4);
   fExpo->SetLineStyle(2);
@@ -333,7 +333,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   fExpo->SetParameter(1, -1.2);  // Slope
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0., 3., 11);
+  TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0.5, 3., 11);
   fTotal->SetLineColor(kGreen + 2);
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
@@ -406,7 +406,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConst =
-      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0., 3., 10);
+      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0.5, 3., 10);
   fTotalConst->SetLineColor(kOrange + 2);
   fTotalConst->SetLineWidth(4);
   fTotalConst->SetLineStyle(2);
@@ -437,7 +437,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConstSameSigmas =
       new TF1("fTotalConstSameSigmas", asym2GaussiansExpoConstrainedSameSigma,
-              0., 3., 8);
+              0.5, 3., 8);
   fTotalConstSameSigmas->SetLineColor(kRed);
   fTotalConstSameSigmas->SetLineWidth(4);
   fTotalConstSameSigmas->SetLineStyle(2);
@@ -493,17 +493,14 @@ void setFitStyle() {
   // gStyle->SetTitleW(0.5f);
 }
 
-// Choose area conversion factor
-enum AreaConvFactor { Transm = 4000, Refl = 12500 };
-
 // This function analyses the waveform by building areaVStime, Noise, PE
 // counts and pulseWidth histos
-void waveformAnalysis(AreaConvFactor areaConv,
-                      std::string infileName =
-                          "./data/miscellaneous/"
-                          "DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt",
-                      std::string rootFileName =
-                          "./rootFiles/miscellaneous/waveformAnalysis.root") {
+void waveformAnalysis(
+    AreaConvFactor areaConv = Transm,
+    std::string infileName =
+        "./data/45Degrees/0.20mm/"
+        "DataF_CH0@DT5730S_59483_run_45_0.2_TRANSM_REFL.txt",
+    std::string rootFileName = "./rootFiles/45Degrees0.20mm/wA2.root") {
   // To avoid reloading manually if .so is present
   R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
@@ -537,7 +534,7 @@ void waveformAnalysis(AreaConvFactor areaConv,
                                "peak [ns]; Area [ADC #times ns]",
                                40, 100., 460., 100, 0., 100000.);
   TH1F *hNoise = new TH1F("hNoise", "Noise distribution; ADC counts; Counts",
-                          30, 2755, 2785);
+                          30, 2755, 3000);
   TH1F *hPhotoElectrons = new TH1F(
       "hPE", "Pulse area distribution; Area [PE]; Normalized counts", 90, 0, 6);
   TH1F *hWidth =
@@ -638,6 +635,11 @@ void waveformAnalysis(AreaConvFactor areaConv,
 
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
+
+      // Insert selections on pulses
+      if (p.peakValue > 15900.) {
+        continue;
+      }
 
       // Generate sum of pulses using a STL map. Here the keys of the map
       // correspond to the time values of pulses, while values correpond to the
@@ -1334,11 +1336,110 @@ void waveformTotal() {
   c2->SaveAs("./plots/dig/waveform_plot.png");
 }
 
-int main() {
+void rateAnalysis() {
+  // 45 DEGREES CONFIGURATION
+
+  // 0.20mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/0.20mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_0.2_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees0.20mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/0.20mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_0.2_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees0.20mm/wA3.root");
+
+  // 0.80mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/0.80mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_0.8_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees0.80mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/0.80mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_0.8_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees0.80mm/wA3.root");
+
+  // 1.55mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/1.55mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_1.55_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees1.55mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/1.55mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_1.55_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees1.55mm/wA3.root");
+
+  // 2.05mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/2.05mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_2.05_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees2.05mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/2.05mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_2.05_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees2.05mm/wA3.root");
+  // 3.10mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/3.10mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_3.10_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees3.10mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/3.10mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_3.10_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees3.10mm/wA3.root");
+
+  // 3.60mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/3.60mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_3.60_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees3.60mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/3.60mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_3.60_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees3.60mm/wA3.root");
+
+  // 4.10mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/4.10mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_4.10_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees4.10mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/4.10mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_4.10_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees4.10mm/wA3.root");
+
+  // 5.15mm thickness of PTFE
+  waveformAnalysis(Transm,
+                   "./data/45Degrees/5.15mm/"
+                   "DataF_CH0@DT5730S_59483_run_45_5.15_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees5.15mm/wA2.root");
+
+  waveformAnalysis(Refl,
+                   "./data/45Degrees/5.15mm/"
+                   "DataF_CH1@DT5730S_59483_run_45_5.15_TRANSM_REFL.txt",
+                   "./rootFiles/45Degrees5.15mm/wA3.root");
+
+  // Incidence transmittance and reflectance
   waveformAnalysis(
-      Transm,
-      "./data/miscellaneous/DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt",
-      "./rootFiles/miscellaneous/waveformAnalysis.root");
+      Transm, "./data/45Degrees/CH0_3PTFE-LED_45_1.3_2-3.5_70_INC_TRANSM.txt",
+      "./rootFiles/45Degrees/wA0.root");
+
+  waveformAnalysis(
+      Refl, "./data/45Degrees/CH1_3PTFE-LED_45_1.3_2-3.5_70_INC_REFL.txt",
+      "./rootFiles/45Degrees/wA1.root");
+}
+
+void plotWaveform() {}
+
+int main() {
+  rateAnalysis();
 
   return EXIT_SUCCESS;
 }
