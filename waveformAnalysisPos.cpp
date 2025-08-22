@@ -23,6 +23,8 @@ double WaveformAnalysisPos::getSamplePeriod() const { return fSamplePeriod; }
 
 double WaveformAnalysisPos::getBaseline() const { return fBaseline; }
 
+double WaveformAnalysisPos::getThreshold() const { return fThreshold; }
+
 std::vector<Pulse> const &WaveformAnalysisPos::getPulses() const {
   return fPulses;
 }
@@ -60,7 +62,7 @@ void WaveformAnalysisPos::findPulses(double threshold, double tolerance,
   double const rms = RMS(50);
 
   // Threshold for peak detection
-  double const pulseThreshold = fBaseline + threshold * rms;
+  fThreshold = fBaseline + threshold * rms;
 
   // Used to find the lower value of the interval for pulseStart and pulseEnd
   double const lowLimit = fBaseline - tolerance * rms;
@@ -76,8 +78,8 @@ void WaveformAnalysisPos::findPulses(double threshold, double tolerance,
 
   for (int i{1}; i < static_cast<int>(fSamples.size()) - 2; ++i) {
     // Detection of pulse's maximum value
-    if (fSamples[i] > pulseThreshold && i - prevPulseEnd >= minSep &&
-        fSamples[i] > fSamples[i - 1] && fSamples[i] > fSamples[i + 1]) {
+    if (fSamples[i] > fThreshold && fSamples[i] > fSamples[i - 1] &&
+        fSamples[i] > fSamples[i + 1]) {
       bool foundStart{false};  // Have I found startPulse?
       bool foundEnd{false};    // Have I found endPulse?
 
@@ -107,7 +109,8 @@ void WaveformAnalysisPos::findPulses(double threshold, double tolerance,
       }
 
       // Build pulse and save it into a vector
-      if (foundStart && foundEnd && pulseStart < pulseEnd) {
+      if (foundStart && foundEnd && pulseStart < pulseEnd &&
+          pulseStart - prevPulseEnd > minSep) {
         fPulses.push_back(integratePulse(pulseStart, pulseEnd));
         prevPulseEnd = pulseEnd;
       }
@@ -118,7 +121,7 @@ void WaveformAnalysisPos::findPulses(double threshold, double tolerance,
   std::cout << std::fixed << std::setprecision(2);  // Use 2 decimal digit
   std::cout << "\n\n*** PROPERTIES OF THE FOLLOWING WF ***\n";
   std::cout << "RMS value for noise             = " << rms << '\n';
-  std::cout << "Threshold for pulse detection   = " << pulseThreshold << '\n';
+  std::cout << "Threshold for pulse detection   = " << fThreshold << '\n';
   std::cout << "Lower limit for pulse endpoints = " << lowLimit << '\n';
   std::cout << "Upper limit for pulse endpoints = " << upLimit << '\n';
 }
