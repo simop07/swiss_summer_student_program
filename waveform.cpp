@@ -13,6 +13,7 @@
 #include <sstream>
 #include <vector>
 
+#include "TBox.h"
 #include "TCanvas.h"
 #include "TF1.h"
 #include "TFile.h"
@@ -23,12 +24,14 @@
 #include "TH2.h"
 #include "TLatex.h"
 #include "TLegend.h"
+#include "TLine.h"
 #include "TMath.h"
 #include "TMatrixD.h"
 #include "TMultiGraph.h"
 #include "TPad.h"
 #include "TROOT.h"
 #include "TStyle.h"
+#include "TSystem.h"
 #include "TTree.h"
 #include "waveformAnalysisPos.hpp"
 
@@ -773,7 +776,8 @@ void waveformAnalysis(
 
     // Get pulse vector from each single waveform
     const auto &pulses = wf.getPulses();
-    std::cout << "Number of Pulses = " << pulses.size() << '\n';
+    std::cout << "Number of Pulses without selection = " << pulses.size()
+              << '\n';
 
     // Fill noise information
     int const nBaselineSamples{50};
@@ -1357,26 +1361,26 @@ void rateAnalysis() {
       }
 
       // Analyse transmittance data
-  waveformAnalysis(Transm,
-                   dataPath +                    "DataF_CH0@DT5730S_59483_run_" + a + "_" + t +
+      waveformAnalysis(Transm,
+                       dataPath + "DataF_CH0@DT5730S_59483_run_" + a + "_" + t +
                            "_TRANSM_REFL.txt",
-                   rootFilePath + "wA2.root");
+                       rootFilePath + "wA2.root");
 
-// Analyse reflectance data
-  waveformAnalysis(Refl,
-                   dataPath +                    "DataF_CH1@DT5730S_59483_run_" + a + "_" + t +
+      // Analyse reflectance data
+      waveformAnalysis(Refl,
+                       dataPath + "DataF_CH1@DT5730S_59483_run_" + a + "_" + t +
                            "_TRANSM_REFL.txt",
-                   rootFilePath + "wA3.root");
-}
+                       rootFilePath + "wA3.root");
+    }
 
-  // Incidence transmittance and reflectance analysis
+    // Incidence transmittance and reflectance analysis
     std::string incDataPath = "./data/" + a + "Degrees/";
     std::string incRootFilePath = "./rootFiles/" + a + "Degrees/";
 
     // Incidence transmittance
-  waveformAnalysis(
-Transm,
-                   incDataPath + "CH0_3PTFE-LED_" + a + "_1.3_2-3.5_70_INC_TRANSM.txt",
+    waveformAnalysis(
+        Transm,
+        incDataPath + "CH0_3PTFE-LED_" + a + "_1.3_2-3.5_70_INC_TRANSM.txt",
         incRootFilePath + "wA0.root");
 
     // Incidence reflectance
@@ -1402,12 +1406,12 @@ void copyIncidentFiles() {
     // Folders for different PTFE thicknesses
     std::vector<std::string> folders = {"./rootFiles/" + a + "Degrees0.20mm/",
                                         "./rootFiles/" + a + "Degrees0.80mm/",
-                   "./rootFiles/" + a + "Degrees1.55mm/",
+                                        "./rootFiles/" + a + "Degrees1.55mm/",
                                         "./rootFiles/" + a + "Degrees2.05mm/",
                                         "./rootFiles/" + a + "Degrees3.10mm/",
-                   "./rootFiles/" + a + "Degrees3.60mm/",
+                                        "./rootFiles/" + a + "Degrees3.60mm/",
                                         "./rootFiles/" + a + "Degrees4.10mm/",
-                   "./rootFiles/" + a + "Degrees5.15mm/"};
+                                        "./rootFiles/" + a + "Degrees5.15mm/"};
 
     // Loop over folders
     for (auto &f : folders) {
@@ -1520,7 +1524,7 @@ void plotWaveform(
     std::cout << "Number of Pulses without selection = " << pulses.size()
               << '\n';
 
-  // Draw threshold for given waveform
+    // Draw threshold for given waveform
     TF1 *fThreshold = new TF1(Form("fThreshold_%d", row), "[0]", 0., 450.);
     fThreshold->SetLineWidth(4);
     fThreshold->SetLineStyle(2);
@@ -1622,8 +1626,8 @@ void plotWaveform(
   mg->Draw("ALP");
   for (auto &t : thresholds) {
     t->Draw("SAME");
-}
-for (auto &l : lines) {
+  }
+  for (auto &l : lines) {
     l->Draw("SAME");
   }
   for (auto &b : boxes) {
