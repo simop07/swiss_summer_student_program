@@ -44,6 +44,18 @@
 | 4.100          | 0.067  | 0.222  |
 | 5.150          | 0.074  | 0.209  |
 
+## Tertiary digitised data for $45^{\circ}$ (more points and more waveforms)
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.565  | 0.248  |
+| 0.800          | 0.251  | 0.597  |
+| 1.550          | 0.224  | 0.812  |
+| 2.050          | 0.161  | 0.743  |
+| 3.100          | 0.125  | 0.896  |
+| 3.600          | 0.108  | 0.862  |
+| 4.100          | 0.077  | 0.940  |
+| 5.150          | 0.077  | 0.918  |
+
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
   // Bin for hPhotoelectron = 60
