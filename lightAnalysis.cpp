@@ -369,11 +369,11 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 
 // Create plots using points (Prob_T, Prob_R) for different configurations
 void reflTransm() {
+  // 45 DEGREES CONFIGURATION
+
   // Create file to save canvases
   TFile *reflTransmAnalyisis =
       new TFile("./rootFiles/reflTransmAnalyisis45Degrees.root", "RECREATE");
-
-  // 45 DEGREES CONFIGURATION
 
   // Collect all points from available ROOT files
   Point p45Deg0p20mm =
