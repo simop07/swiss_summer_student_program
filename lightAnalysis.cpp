@@ -68,8 +68,8 @@ Double_t alphaFunc(Double_t x, Double_t aDeg) {
 // F(x) function for reflectance
 Double_t FFunc(Double_t *x, Double_t *par) {
   // par[0] = R_1
-  // par[1] = a (degrees)
-  // par[2] = #beta
+  // par[1] = Angle (degrees)
+  // par[2] = #sigma
   // par[3] = R_2
 
   Double_t xVal = x[0];
@@ -81,7 +81,7 @@ Double_t FFunc(Double_t *x, Double_t *par) {
 
   Double_t cosine = par[3] * TMath::Cos(xVal * TMath::Pi() / 180.0);
 
-  Double_t fitVal = (expo + cosine) / 125.6324;
+  Double_t fitVal = (expo + cosine);
 
   return fitVal;
 }
@@ -369,157 +369,161 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 
 // Create plots using points (Prob_T, Prob_R) for different configurations
 void reflTransm() {
-  // 45 DEGREES CONFIGURATION
+  // Define angle vector
+  std::vector<int> angles{45};
 
-  // Create file to save canvases
-  TFile *reflTransmAnalyisis =
-      new TFile("./rootFiles/reflTransmAnalyisis45Degrees.root", "RECREATE");
-
-  // Collect all points from available ROOT files
-  Point p45Deg0p20mm =
-      lightAnalysis("./rootFiles/45Degrees0.20mm/wA",
-                    "./rootFiles/lightAnalysis45Deg0p20mm.root");
-  Point p45Deg0p80mm =
-      lightAnalysis("./rootFiles/45Degrees0.80mm/wA",
-                    "./rootFiles/lightAnalysis45Deg0p80mm.root");
-  Point p45Deg1p55mm =
-      lightAnalysis("./rootFiles/45Degrees1.55mm/wA",
-                    "./rootFiles/lightAnalysis45Deg1p55mm.root");
-  Point p45Deg2p05mm =
-      lightAnalysis("./rootFiles/45Degrees2.05mm/wA",
-                    "./rootFiles/lightAnalysis45Deg2p05mm.root");
-  Point p45Deg3p10mm =
-      lightAnalysis("./rootFiles/45Degrees3.10mm/wA",
-                    "./rootFiles/lightAnalysis45Deg3p10mm.root");
-  Point p45Deg3p60mm =
-      lightAnalysis("./rootFiles/45Degrees3.60mm/wA",
-                    "./rootFiles/lightAnalysis45Deg3p60mm.root");
-  Point p45Deg4p10mm =
-      lightAnalysis("./rootFiles/45Degrees4.10mm/wA",
-                    "./rootFiles/lightAnalysis45Deg4p10mm.root");
-  Point p45Deg5p15mm =
-      lightAnalysis("./rootFiles/45Degrees5.15mm/wA",
-                    "./rootFiles/lightAnalysis45Deg5p15mm.root");
-
-  // Define useful variables
-  std::array<std::string, 2> names{"Transmittance", "Reflectance"};
-
-  // Create function for angular correction
-  TF1 *fFFunction45 = new TF1("fFFunction45", FFunc, 0., 180., 4);
-
-  // Fix parameters value for 45 degrees
-  fFFunction45->FixParameter(0, 90.0);     // R_1
-  fFFunction45->FixParameter(1, 45.0);     // a (degrees)
-  fFFunction45->FixParameter(2, -0.1469);  // #beta
-  fFFunction45->FixParameter(3, 50.18);    // R_2
-
-  // Compute ratio between the PMT area and the total area [-90,90]
-  double angle1{35.};
-  double angle2{55.};
-  auto geomCorr = fFFunction45->Integral(angle1, angle2) /
-                  fFFunction45->Integral(-90., 90.);
-
-  // Print correction factor for 45 degrees
-  std::cout << std::fixed << std::setprecision(6)
-            << "\nCorrection factor for 45° (" << angle1 << "°–" << angle2
-            << "°) = " << geomCorr << "\n\n";
-
-  // Tune the following chunk if varying the nnumber of measurements
+  // Define useful vector for thicknesses and colours
   std::array<double, 8> thicknesses{0.20, 0.80, 1.55, 2.05,
                                     3.10, 3.60, 4.10, 5.15};
-  std::array<double, 8> probT{p45Deg0p20mm.x, p45Deg0p80mm.x, p45Deg1p55mm.x,
-                              p45Deg2p05mm.x, p45Deg3p10mm.x, p45Deg3p60mm.x,
-                              p45Deg4p10mm.x, p45Deg5p15mm.x};
-  std::array<double, 8> probR{p45Deg0p20mm.y, p45Deg0p80mm.y, p45Deg1p55mm.y,
-                              p45Deg2p05mm.y, p45Deg3p10mm.y, p45Deg3p60mm.y,
-                              p45Deg4p10mm.y, p45Deg5p15mm.y};
   std::array<int, 8> colours{kBlue,   kRed,      kOrange + 2, kGreen + 2,
                              kViolet, kCyan + 1, kMagenta,    kBlack};
   std::array<int, 8> markers{20, 21, 22, 23, 24, 25, 26, 27};
 
-  // Apply correction factor
-  std::transform(probR.begin(), probR.end(), probR.begin(),
-                 [geomCorr](double r) { return r / geomCorr; });
+  // Loop on angles
+  for (auto angle : angles) {
+    // Create file to save canvases
+    TFile *reflTransmAnalysis =
+        new TFile(Form("./rootFiles/reflTransmAnalyisis%dDegrees.root", angle),
+                  "RECREATE");
 
-  // Print table with (Prob_T, Prob_R) and thicknesses
-  std::cout << "\n\n*** Results in trigger region ***\n\n";
-  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
-            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
-  for (size_t i = 0; i < thicknesses.size(); ++i) {
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-              << probT[i] << std::setw(20) << probR[i] << '\n';
+    // Collect points for fixed angle
+    std::vector<Point> points;
+    points.reserve(thicknesses.size());
+    for (auto thick : thicknesses) {
+      points.push_back(lightAnalysis(
+          Form("./rootFiles/%dDegrees%.2fmm/wA", angle, thick),
+          Form("./rootFiles/lightAnalysis%dDeg%.2fmm.root", angle, thick)));
+    }
+
+    // Create refl and transm probability vectors
+    std::vector<double> probT;
+    std::vector<double> probR;
+    for (auto &p : points) {
+      probT.push_back(p.x);
+      probR.push_back(p.y);
+    }
+
+    // Create function for angular correction
+    TF1 *fFFunction = new TF1(Form("fFFunction%d", angle), FFunc, -90., 90., 4);
+
+    // Fix angles parameters
+    switch (angle) {
+      case 30:
+        fFFunction->FixParameter(0, 40.59);          // R_1
+        fFFunction->FixParameter(1, (double)angle);  // Angle (degrees)
+        fFFunction->FixParameter(2, 0.1768);         // #sigma
+        fFFunction->FixParameter(3, 48.99);          // R_2
+        break;
+
+      case 45:
+        fFFunction->FixParameter(0, 90.0);           // R_1
+        fFFunction->FixParameter(1, (double)angle);  // Angle (degrees)
+        fFFunction->FixParameter(2, -0.1469);        // #sigma
+        fFFunction->FixParameter(3, 50.18);          // R_2
+        break;
+
+      case 60:
+        fFFunction->FixParameter(0, 240);            // R_1
+        fFFunction->FixParameter(1, (double)angle);  // Angle (degrees)
+        fFFunction->FixParameter(2, 0.1314);         // #sigma
+        fFFunction->FixParameter(3, 66.51);          // R_2
+        break;
+    }
+
+    // Compute ratio between the PMT area and the total area [-90,90]
+    double angle1{angle - 10.};
+    double angle2{angle + 10.};
+    auto geomCorr =
+        fFFunction->Integral(angle1, angle2) / fFFunction->Integral(-90., 90.);
+
+    // Print correction factor for 45 degrees
+    std::cout << std::fixed << std::setprecision(6)
+              << "\nCorrection factor for " << angle << "° (" << angle1 << "°–"
+              << angle1 << "°) = " << geomCorr << "\n\n";
+
+    // Apply correction factor to Reflectance
+    std::transform(probR.begin(), probR.end(), probR.begin(),
+                   [geomCorr](double r) { return r / geomCorr; });
+
+    // Print table with (Prob_T, Prob_R) and thicknesses
+    std::cout << "\n\n*** Results in trigger region ***\n\n";
+    std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
+              << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+    for (size_t i = 0; i < thicknesses.size(); ++i) {
+      std::cout << std::fixed << std::setprecision(3);
+      std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
+                << probT[i] << std::setw(20) << probR[i] << '\n';
+    }
+
+    // Multigraphs
+    TMultiGraph *mg = new TMultiGraph();
+    TMultiGraph *mgReflVsTransm = new TMultiGraph();
+    std::array<TGraph *, 2> g{
+        new TGraph(thicknesses.size(), thicknesses.data(), probT.data()),
+        new TGraph(thicknesses.size(), thicknesses.data(), probR.data())};
+
+    std::array<std::string, 2> names{"Transmittance", "Reflectance"};
+    for (size_t i = 0; i < names.size(); ++i) {
+      g[i]->SetMarkerStyle(markers[i]);
+      g[i]->SetMarkerColor(colours[i]);
+      g[i]->SetLineColor(colours[i]);
+      g[i]->SetTitle(names[i].c_str());
+      mg->Add(g[i], "LP");
+    }
+
+    // Canvases
+    TCanvas *cDeg = new TCanvas(Form("c%dDeg", angle),
+                                Form("%d degrees", angle), 1500, 700);
+    TCanvas *cReflVsTransm = new TCanvas(Form("cReflVsTransm%d", angle),
+                                         "Refl vs transm", 1500, 700);
+
+    // Fit transmittance
+    cDeg->cd();
+    TF1 *beerLambertTransm =
+        new TF1(Form("beerLambert%dTransm", angle), beerLambert, 0.1, 4.2, 3);
+    beerLambertTransm->SetLineColor(kRed);
+    beerLambertTransm->SetLineWidth(4);
+    beerLambertTransm->SetLineStyle(2);
+    beerLambertTransm->SetTitle("Transmittance fit");
+    beerLambertTransm->SetParNames("A", "#lambda_t", "B");
+    beerLambertTransm->SetParameter(0, 0.5);
+    beerLambertTransm->SetParameter(1, 350e-3);
+    beerLambertTransm->SetParameter(2, 0.0);
+    g[0]->Fit(beerLambertTransm, "R");
+
+    mg->Draw("ALP");
+    mg->SetTitle(Form("%d degrees probability", angle));
+    mg->SetName(Form("mg%dDeg", angle));
+    mg->GetXaxis()->SetTitle("Thickness [mm]");
+    mg->GetYaxis()->SetTitle("Probability");
+    cDeg->BuildLegend(.70, .7, .9, .9, "Legend");
+
+    // Transmittance vs Reflectance
+    for (size_t i = 0; i < thicknesses.size(); ++i) {
+      auto *gr = new TGraph();
+      gr->AddPoint(probR[i], probT[i]);
+      gr->SetMarkerStyle(markers[i]);
+      gr->SetMarkerSize(2);
+      gr->SetMarkerColor(colours[i]);
+      gr->SetLineColor(colours[i]);
+      gr->SetTitle(Form("%.2f", thicknesses[i]));
+      mgReflVsTransm->Add(gr, "P");
+    }
+
+    cReflVsTransm->cd();
+    mgReflVsTransm->Draw("ALP");
+    mgReflVsTransm->SetTitle("Transmittance vs Reflectance");
+    mgReflVsTransm->SetName("mgReflVsTransm");
+    mgReflVsTransm->GetXaxis()->SetTitle("Reflectance prob");
+    mgReflVsTransm->GetYaxis()->SetTitle("Transm prob");
+    cReflVsTransm->BuildLegend(.70, .7, .9, .9, "Thickness");
+
+    // Save to file
+    reflTransmAnalysis->cd();
+    cDeg->Write();
+    cReflVsTransm->Write();
+    reflTransmAnalysis->Close();
   }
-
-  // Create graphs for (Prob_T, Prob_R) as function of thickness
-  TMultiGraph *mg45Deg = new TMultiGraph();
-  TMultiGraph *mgReflVsTransm = new TMultiGraph();
-  std::array<TGraph *, 2> g45Deg{
-      new TGraph(thicknesses.size(), thicknesses.data(), probT.data()),
-      new TGraph(thicknesses.size(), thicknesses.data(), probR.data())};
-
-  // Draw all pulses on multigraph object
-  for (size_t i = 0; i < names.size(); ++i) {
-    g45Deg[i]->SetMarkerStyle(markers[i]);
-    g45Deg[i]->SetMarkerColor(colours[i]);
-    g45Deg[i]->SetLineColor(colours[i]);
-    g45Deg[i]->SetTitle(names[i].c_str());
-    mg45Deg->Add(g45Deg[i], "LP");
-  }
-
-  // Create canvases to display plots
-  TCanvas *c45Deg = new TCanvas("c45Deg", "45 degrees", 1500, 700);
-  TCanvas *cReflVsTransm =
-      new TCanvas("cReflVsTransm", "Refl vs transm", 1500, 700);
-
-  // Fit transmittance
-  c45Deg->cd();
-  TF1 *beerLambert45Transm =
-      new TF1("beerLambert45Transm", beerLambert, 0.1, 4.2, 3);
-  beerLambert45Transm->SetLineColor(kRed);
-  beerLambert45Transm->SetLineWidth(4);
-  beerLambert45Transm->SetLineStyle(2);
-  beerLambert45Transm->SetTitle("Transmittance fit");
-  beerLambert45Transm->SetParNames("A", "#lambda_t", "B");
-  beerLambert45Transm->SetParameter(0, 0.5);     // A
-  beerLambert45Transm->SetParameter(1, 350e-3);  // #lambda_t
-  beerLambert45Transm->SetParameter(2, 0.0);     // B
-  g45Deg[0]->Fit(beerLambert45Transm, "R");
-
-  // Fill canvas and draw multigraph
-  mg45Deg->Draw("ALP");
-  mg45Deg->SetTitle("45 degrees probability");
-  mg45Deg->SetName("mg45Deg");
-  mg45Deg->GetXaxis()->SetTitle("Thickness [mm]");
-  mg45Deg->GetYaxis()->SetTitle("Probability");
-  c45Deg->BuildLegend(.70, .7, .9, .9, "Legend");
-
-  // Create transmittance vs reflectance graph
-  for (size_t i = 0; i < thicknesses.size(); ++i) {
-    auto *g = new TGraph();
-    g->AddPoint(probR[i], probT[i]);
-    g->SetMarkerStyle(markers[i]);
-    g->SetMarkerSize(2);
-    g->SetMarkerColor(colours[i]);
-    g->SetLineColor(colours[i]);
-    g->SetTitle(Form("%.2f", thicknesses[i]));
-    mgReflVsTransm->Add(g, "P");
-  }
-
-  // Draw transmittance vs reflectance graph
-  cReflVsTransm->cd();
-  mgReflVsTransm->Draw("ALP");
-  mgReflVsTransm->SetTitle("Transmittance vs Reflectance");
-  mgReflVsTransm->SetName("mgReflVsTransm");
-  mgReflVsTransm->GetXaxis()->SetTitle("Reflectance prob");
-  mgReflVsTransm->GetYaxis()->SetTitle("Transm prob");
-  cReflVsTransm->BuildLegend(.70, .7, .9, .9, "Thickness");
-
-  // Write everything on file
-  reflTransmAnalyisis->cd();
-  c45Deg->Write();
-  cReflVsTransm->Write();
-  reflTransmAnalyisis->Close();
 }
 
 int main() {
