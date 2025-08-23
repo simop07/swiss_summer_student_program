@@ -44,17 +44,17 @@
 | 4.100          | 0.067  | 0.222  |
 | 5.150          | 0.074  | 0.209  |
 
-## Tertiary digitised data for $45^{\circ}$ (more points, more waveforms and with corrected geometry)
+## Tertiary digitised data for $45^{\circ}$ (more points, more waveforms and with corrected geometry, with final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
-| 0.200          | 0.565  | 0.248  |
-| 0.800          | 0.251  | 0.597  |
-| 1.550          | 0.224  | 0.812  |
-| 2.050          | 0.161  | 0.743  |
-| 3.100          | 0.125  | 0.896  |
-| 3.600          | 0.108  | 0.862  |
-| 4.100          | 0.077  | 0.940  |
-| 5.150          | 0.077  | 0.918  |
+| 0.200          | 0.506  | 0.143  |
+| 0.800          | 0.236  | 0.292  |
+| 1.550          | 0.210  | 0.426  |
+| 2.050          | 0.143  | 0.427  |
+| 3.100          | 0.115  | 0.520  |
+| 3.600          | 0.095  | 0.511  |
+| 4.100          | 0.069  | 0.567  |
+| 5.150          | 0.071  | 0.572  |
 
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
