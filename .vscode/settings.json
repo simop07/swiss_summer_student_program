@@ -59,6 +59,7 @@
         "thread": "cpp",
         "typeinfo": "cpp",
         "iomanip": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "codecvt": "cpp"
     }
 }
