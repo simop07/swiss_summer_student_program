@@ -624,11 +624,14 @@ void waveformAnalysis(
 
     // Loop over columns
     while (std::getline(ss, item, '\t')) {
-      if (item.empty()) continue;
-      if (column == 3)
+      if (item.empty()) {
+        continue;
+      }
+      if (column == 3) {
         timestamp = std::stod(item);
-      else if (column >= 7)
+      } else if (column >= 7) {
         samples.push_back(std::stod(item));
+      }
       ++column;
     }
 
@@ -1389,6 +1392,20 @@ void rateAnalysis() {
   }
 }
 
+// Copy file in cpp standard way
+bool copyFile(std::string const &from, std::string const &to) {
+  std::ifstream input(from, std::ios::binary);
+  std::ofstream output(to, std::ios::binary);
+  if (!input) {
+    return false;  // Source file missing
+  }
+  if (!output) {
+    return false;  // Failed to open destination
+  }
+  output << input.rdbuf();
+  return true;
+}
+
 // Copy incidence transmittance and reflectance in all thickness subfolders
 void copyIncidentFiles() {
   // Create angle vector
@@ -1416,17 +1433,17 @@ void copyIncidentFiles() {
       std::string incReflFile = f + "wA1.root";
 
       // Copy incidence transmittance
-      if (gSystem->CopyFile(incTransm.c_str(), incTransmFile.c_str())) {
-        std::cout << "Copied transmittance to " << incTransmFile << '\n';
+      if (copyFile(incTransm, incTransmFile)) {
+        std::cout << "Copied transm to " << incTransmFile << '\n';
       } else {
-        std::cout << "Failed to copy Transm to " << incTransmFile << '\n';
+        std::cout << "Failed to copy transm to " << incTransmFile << '\n';
       }
 
       // Copy incidence reflectance
-      if (gSystem->CopyFile(incRefl.c_str(), incReflFile.c_str())) {
-        std::cout << "Copied Refl to " << incReflFile << '\n';
+      if (copyFile(incRefl, incReflFile)) {
+        std::cout << "Copied refl to " << incReflFile << '\n';
       } else {
-        std::cout << "Failed to copy Refl to " << incReflFile << '\n';
+        std::cout << "Failed to copy refl to " << incReflFile << '\n';
       }
     }
   }
