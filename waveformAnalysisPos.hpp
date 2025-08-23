@@ -1,6 +1,7 @@
 #ifndef WAVEFORMANALYSISPOS_HPP
 #define WAVEFORMANALYSISPOS_HPP
 
+#include <string>
 #include <vector>
 
 struct Parameter {
@@ -8,6 +9,9 @@ struct Parameter {
   double min{};         // Min of range
   double max{};         // Max of range
 };
+
+// Choose area conversion factor
+enum AreaConvFactor { Transm = 4200, Refl = 12500 };
 
 // Pulse struct allows to define the properties of pulses in a waveform
 struct Pulse {
@@ -37,6 +41,7 @@ class WaveformAnalysisPos {
   double getTimeStamp() const;
   double getSamplePeriod() const;
   double getBaseline() const;
+  double getThreshold() const;
   std::vector<Pulse> const &getPulses() const;
 
   // Analyse a waveform by extracting its noise and its pulses
@@ -49,8 +54,8 @@ class WaveformAnalysisPos {
   double RMS(int nInitialSamples = 50);
 
   // Detect pulses
-  void findPulses(double threshold = 40., double tolerance = 30.,
-                  int minWidth = 20, int maxWidth = 20, int minSep = 10);
+  void findPulses(double threshold = 80., double tolerance = 50.,
+                  int minWidth = 20, int maxWidth = 20, int minSep = 1);
 
   // Find area of 1 pulse
   Pulse integratePulse(int pulseStart, int pulseEnd);
@@ -60,6 +65,7 @@ class WaveformAnalysisPos {
   double fTimeStamp{};             // Overall timestamp of the waveform
   double fSamplePeriod{};          // Sampling period
   double fBaseline{};              // Baseline of the waveform
+  double fThreshold{};             // Threshold for pulse detection
   std::vector<Pulse> fPulses{};    // Vector of pulses composing the waveform
 };
 

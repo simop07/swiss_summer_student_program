@@ -1,7 +1,7 @@
 // To compile in SHELL:
-// "g++ waveformAnalysisPos.cpp waveform.cpp `root-config --cflags --libs`" Best
-// data to show fit is DataF_CH0@DT5730S_59483_run_new_1300_2-3.5 with Refl PMT
-// conversion factor inside data/miscellaneous
+// "g++ waveformAnalysisPos.cpp waveform.cpp `root-config --cflags --libs`"
+// Best data to show fit is DataF_CH0@DT5730S_59483_run_new_1300_2-3.5 with Refl
+// PMT conversion factor inside data/miscellaneous
 
 #include <time.h>
 
@@ -499,11 +499,11 @@ void setFitStyle() {
 // This function analyses the waveform by building areaVStime, Noise, PE
 // counts and pulseWidth histos
 void waveformAnalysis(
-    AreaConvFactor areaConv = Transm,
+    AreaConvFactor areaConv = Refl,
     std::string infileName =
-        "./data/45Degrees/0.20mm/"
-        "DataF_CH0@DT5730S_59483_run_45_0.2_TRANSM_REFL.txt",
-    std::string rootFileName = "./rootFiles/45Degrees0.20mm/wA2.root") {
+        "./data/miscellaneous/"
+        "DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt",
+    std::string rootFileName = "./rootFiles/miscellaneous/wfAnalysis.root") {
   // To avoid reloading manually if .so is present
   R__LOAD_LIBRARY(waveformAnalysisPos_cpp.so);
 
@@ -1357,7 +1357,7 @@ void rateAnalysis() {
       std::string dataPath = "./data/" + a + "Degrees/" + t + "mm/";
       std::string rootFilePath = "./rootFiles/" + a + "Degrees" + t + "mm/";
 
-      // Create folder if it doesn-t exist
+      // Create folder if it doesn't exist
       if (gSystem->AccessPathName(rootFilePath.c_str())) {
         gSystem->mkdir(rootFilePath.c_str(), true);
       }
