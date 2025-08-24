@@ -431,8 +431,8 @@ void reflTransm() {
     }
 
     // Compute ratio between the PMT area and the total area [-90,90]
-    double angle1{angle - 10.};
-    double angle2{angle + 10.};
+    double angle1{angle - 25.};
+    double angle2{angle + 25.};
     auto geomCorr =
         fFFunction->Integral(angle1, angle2) / fFFunction->Integral(-90., 90.);
 
