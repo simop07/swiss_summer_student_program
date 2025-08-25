@@ -389,6 +389,17 @@ void reflTransm() {
   std::vector<double> prob60T;
   std::vector<double> prob60R;
 
+  // Store fit parameters for transmittance
+  double a30{};
+  double lambda30{};
+  double b30{};
+  double a45{};
+  double lambda45{};
+  double b45{};
+  double a60{};
+  double lambda60{};
+  double b60{};
+
   // Loop on angles
   for (auto angle : angles) {
     // Create file to save canvases
@@ -402,7 +413,8 @@ void reflTransm() {
     for (auto thick : thicknesses) {
       points.push_back(lightAnalysis(
           Form("./rootFiles/%dDegrees%.2fmm/wA", angle, thick),
-          Form("./rootFiles/lightAnalysis%dDeg%.2fmm.root", angle, thick)));
+          Form("./rootFiles/%dDegrees/lightAnalysis%dDeg%.2fmm.root", angle,
+               angle, thick)));
     }
 
     // Create refl and transm probability vectors
@@ -519,6 +531,27 @@ void reflTransm() {
     beerLambertTransm->SetParameter(2, 0.0);
     g[0]->Fit(beerLambertTransm, "R");
 
+    // Save transmittance fit parameters
+    switch (angle) {
+      case 30:
+        a30 = beerLambertTransm->GetParameter(0);
+        lambda30 = beerLambertTransm->GetParameter(1);
+        b30 = beerLambertTransm->GetParameter(2);
+        break;
+
+      case 45:
+        a45 = beerLambertTransm->GetParameter(0);
+        lambda45 = beerLambertTransm->GetParameter(1);
+        b45 = beerLambertTransm->GetParameter(2);
+        break;
+
+      case 60:
+        a60 = beerLambertTransm->GetParameter(0);
+        lambda60 = beerLambertTransm->GetParameter(1);
+        b60 = beerLambertTransm->GetParameter(2);
+        break;
+    }
+
     mg->Draw("ALP");
     mg->SetTitle(Form("%d degrees probability", angle));
     mg->SetName(Form("mg%dDeg", angle));
@@ -582,6 +615,7 @@ void reflTransm() {
     gR->SetLineWidth(2);
 
     // Draw graphs
+    cAngle->Update();
     cAngle->cd();
     gT->Draw("ALP");
     gT->GetXaxis()->SetTitle("Angle [^{#circ}]");
@@ -596,8 +630,53 @@ void reflTransm() {
     legend->Draw();
   }
 
+  // Print table with (Prob_T, Prob_R) and thicknesses for 30°
+  std::cout << "\n\n*** Results in trigger region for 30° ***\n\n";
+  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
+            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+  for (size_t i = 0; i < thicknesses.size(); ++i) {
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
+              << prob30T[i] << std::setw(20) << prob30R[i] << '\n';
+  }
+
+  // Print table with (Prob_T, Prob_R) and thicknesses for 45°
+  std::cout << "\n\n*** Results in trigger region for 45° ***\n\n";
+  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
+            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+  for (size_t i = 0; i < thicknesses.size(); ++i) {
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
+              << prob45T[i] << std::setw(20) << prob45R[i] << '\n';
+  }
+
+  // Print table with (Prob_T, Prob_R) and thicknesses for 60°
+  std::cout << "\n\n*** Results in trigger region for 60° ***\n\n";
+  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
+            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+  for (size_t i = 0; i < thicknesses.size(); ++i) {
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
+              << prob60T[i] << std::setw(20) << prob60R[i] << '\n';
+  }
+
+  // Transmittance fit results
+  std::cout << "\n\n** Fit results for 30° **\n\n";
+  std::cout << "A           = " << a30 << '\n';
+  std::cout << "lambda_t    = " << lambda30 << '\n';
+  std::cout << "B           = " << b30 << '\n';
+  std::cout << "\n\n** Fit results for 45° **\n\n";
+  std::cout << "A           = " << a45 << '\n';
+  std::cout << "lambda_t    = " << lambda45 << '\n';
+  std::cout << "B           = " << b45 << '\n';
+  std::cout << "\n\n** Fit results for 60° **\n\n";
+  std::cout << "A           = " << a60 << '\n';
+  std::cout << "lambda_t    = " << lambda60 << '\n';
+  std::cout << "B           = " << b60 << '\n';
+
   // Creating ROOT File
-  TFile *fileAngleAnalysis = new TFile("fileAngleAnalysis", "RECREATE");
+  TFile *fileAngleAnalysis =
+      new TFile("./rootFiles/fileAngleAnalysis.root", "RECREATE");
 
   // Save canvas
   fileAngleAnalysis->cd();
