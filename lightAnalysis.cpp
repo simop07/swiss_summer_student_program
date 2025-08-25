@@ -13,6 +13,8 @@
 #include "TF1.h"
 #include "TFile.h"
 #include "TGraph.h"
+#include "TLatex.h"
+#include "TLegend.h"
 #include "TMath.h"
 #include "TMultiGraph.h"
 #include "TROOT.h"
@@ -370,7 +372,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 // Create plots using points (Prob_T, Prob_R) for different configurations
 void reflTransm() {
   // Define angle vector
-  std::vector<int> angles{45};
+  std::vector<int> angles{30, 45, 60};
 
   // Define useful vector for thicknesses and colours
   std::array<double, 8> thicknesses{0.20, 0.80, 1.55, 2.05,
@@ -378,6 +380,14 @@ void reflTransm() {
   std::array<int, 8> colours{kBlue,   kRed,      kOrange + 2, kGreen + 2,
                              kViolet, kCyan + 1, kMagenta,    kBlack};
   std::array<int, 8> markers{20, 21, 22, 23, 24, 25, 26, 27};
+
+  // Store probabilities for each angle here
+  std::vector<double> prob30T;
+  std::vector<double> prob30R;
+  std::vector<double> prob45T;
+  std::vector<double> prob45R;
+  std::vector<double> prob60T;
+  std::vector<double> prob60R;
 
   // Loop on angles
   for (auto angle : angles) {
@@ -444,6 +454,24 @@ void reflTransm() {
     // Apply correction factor to Reflectance
     std::transform(probR.begin(), probR.end(), probR.begin(),
                    [geomCorr](double r) { return r / geomCorr; });
+
+    // Save probabilities into vectors
+    switch (angle) {
+      case 30:
+        std::copy(probT.begin(), probT.end(), std::back_inserter(prob30T));
+        std::copy(probR.begin(), probR.end(), std::back_inserter(prob30R));
+        break;
+
+      case 45:
+        std::copy(probT.begin(), probT.end(), std::back_inserter(prob45T));
+        std::copy(probR.begin(), probR.end(), std::back_inserter(prob45R));
+        break;
+
+      case 60:
+        std::copy(probT.begin(), probT.end(), std::back_inserter(prob60T));
+        std::copy(probR.begin(), probR.end(), std::back_inserter(prob60R));
+        break;
+    }
 
     // Print table with (Prob_T, Prob_R) and thicknesses
     std::cout << "\n\n*** Results in trigger region ***\n\n";
@@ -524,6 +552,57 @@ void reflTransm() {
     cReflVsTransm->Write();
     reflTransmAnalysis->Close();
   }
+
+  // Cast int into doubles
+  std::vector<double> angleVals(angles.begin(), angles.end());
+
+  // Draw a canvas for probabilities as function of angle fixing thicknesses
+  TCanvas *cAngle = new TCanvas("cAngle", "Probabilities vs Angle", 1500, 700);
+  cAngle->Divide(4, 2);
+
+  // Loop over thicknesses
+  for (size_t i = 0; i < thicknesses.size(); ++i) {
+    cAngle->cd(i + 1);
+
+    // Extract probabilities for this thickness across different angles
+    double probT[3] = {prob30T[i], prob45T[i], prob60T[i]};
+    double probR[3] = {prob30R[i], prob45R[i], prob60R[i]};
+
+    // Create graphs
+    TGraph *gT = new TGraph(3, angleVals.data(), probT);
+    TGraph *gR = new TGraph(3, angleVals.data(), probR);
+    gT->SetMarkerStyle(20);
+    gT->SetMarkerColor(kBlue);
+    gT->SetLineColor(kBlue);
+    gT->SetLineWidth(2);
+    gT->SetTitle(Form("Thickness %.2f mm", thicknesses[i]));
+    gR->SetMarkerStyle(21);
+    gR->SetMarkerColor(kRed);
+    gR->SetLineColor(kRed);
+    gR->SetLineWidth(2);
+
+    // Draw graphs
+    cAngle->cd();
+    gT->Draw("ALP");
+    gT->GetXaxis()->SetTitle("Angle [^{#circ}]");
+    gT->GetYaxis()->SetTitle("Probability");
+
+    gR->Draw("LP SAME");
+
+    // Legend
+    TLegend *legend = new TLegend(0.65, 0.75, 0.9, 0.9);
+    legend->AddEntry(gT, "Transmittance", "L P");
+    legend->AddEntry(gR, "Reflectance", "L P");
+    legend->Draw();
+  }
+
+  // Creating ROOT File
+  TFile *fileAngleAnalysis = new TFile("fileAngleAnalysis", "RECREATE");
+
+  // Save canvas
+  fileAngleAnalysis->cd();
+  cAngle->Write();
+  fileAngleAnalysis->Close();
 }
 
 int main() {
