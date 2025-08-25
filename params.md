@@ -59,7 +59,7 @@
 - $\lambda_t ~ 0.7/0.8
 
 ## Quaternary digitised data for $30^{\circ}$  
-*(30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+*(fit transmittance up to 4.2 mm, 30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
 
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
@@ -81,7 +81,7 @@ $\lambda_t$ = 0.849 ± 0.230
 B           = 0.084 ± 0.024  
 
 ## Quaternary digitised data for $45^{\circ}$  
-*(30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+*(fit transmittance up to 4.2 mm, 30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
 
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
@@ -103,7 +103,7 @@ $\lambda_t$ = 0.842 ± 0.214
 B           = 0.098 ± 0.028  
 
 ## Quaternary digitised data for $60^{\circ}$  
-*(30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+*(fit transmittance up to 4.2 mm, 30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
 
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
@@ -123,6 +123,59 @@ NCalls      = 77
 A           = 1.531 ± 0.187  
 $\lambda_t$ = 0.795 ± 0.249  
 B           = 0.236 ± 0.080  
+
+## 5th data taking
+*(fit transmittance up to 4.2 mm, 60k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+
+## Results in trigger region for 30°  
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.471  | 0.212  |
+| 0.800          | 0.221  | 0.364  |
+| 1.550          | 0.196  | 0.394  |
+| 2.050          | 0.132  | 0.417  |
+| 3.100          | 0.103  | 0.485  |
+| 3.600          | 0.080  | 0.393  |
+| 4.100          | 0.067  | 0.487  |
+| 5.150          | 0.056  | 0.415  |
+**Fit results for 30°**  
+- $A = 0.481$  
+- $\lambda_t = 0.811$  
+- $B = 0.083$  
+
+
+## Results in trigger region for 45°  
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.603  | 0.189  |
+| 0.800          | 0.279  | 0.396  |
+| 1.550          | 0.235  | 0.342  |
+| 2.050          | 0.169  | 0.349  |
+| 3.100          | 0.121  | 0.369  |
+| 3.600          | 0.099  | 0.414  |
+| 4.100          | 0.080  | 0.416  |
+| 5.150          | 0.069  | 0.403  |
+**Fit results for 45°**  
+- $A = 0.629$  
+- $\lambda_t = 0.779$  
+- $B = 0.103$  
+
+
+## Results in trigger region for 60°  
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 1.448  | 0.430  |
+| 0.800          | 0.619  | 0.848  |
+| 1.550          | 0.578  | 1.311  |
+| 2.050          | 0.367  | 0.783  |
+| 3.100          | 0.288  | 0.995  |
+| 3.600          | 0.213  | 0.569  |
+| 4.100          | 0.174  | 1.536  |
+| 5.150          | 0.146  | 1.038  |
+**Fit results for 60°**  
+- $A = 1.544$  
+- $\lambda_t = 0.732$  
+- $B = 0.239$  
 
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
