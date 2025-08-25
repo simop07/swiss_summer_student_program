@@ -449,7 +449,7 @@ void reflTransm() {
     // Print correction factor for 45 degrees
     std::cout << std::fixed << std::setprecision(6)
               << "\nCorrection factor for " << angle << "° (" << angle1 << "°–"
-              << angle1 << "°) = " << geomCorr << "\n\n";
+              << angle2 << "°) = " << geomCorr << "\n\n";
 
     // Apply correction factor to Reflectance
     std::transform(probR.begin(), probR.end(), probR.begin(),

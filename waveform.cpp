@@ -1345,7 +1345,7 @@ void waveformTotal() {
 
 void rateAnalysis() {
   // Create angles and thicknesses vector
-  std::vector<std::string> angles = {"45"};
+  std::vector<std::string> angles = {"30", "45", "60"};
   std::vector<std::string> thicknesses = {"0.20", "0.80", "1.55", "2.05",
                                           "3.10", "3.60", "4.10", "5.15"};
 
@@ -1409,7 +1409,7 @@ bool copyFile(std::string const &from, std::string const &to) {
 // Copy incidence transmittance and reflectance in all thickness subfolders
 void copyIncidentFiles() {
   // Create angle vector
-  std::vector<std::string> angles = {"45"};
+  std::vector<std::string> angles = {"30", "45", "60"};
 
   // Loop over angles
   for (auto &a : angles) {
