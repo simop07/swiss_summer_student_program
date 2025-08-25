@@ -55,6 +55,74 @@
 | 3.600          | 0.095  | 0.511  |
 | 4.100          | 0.069  | 0.567  |
 | 5.150          | 0.071  | 0.572  |
+**Fit results**  
+- $\lambda_t ~ 0.7/0.8
+
+## Quaternary digitised data for $30^{\circ}$  
+*(30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.487  | 0.172  |
+| 0.800          | 0.237  | 0.384  |
+| 1.550          | 0.208  | 0.474  |
+| 2.050          | 0.130  | 0.432  |
+| 3.100          | 0.105  | 0.456  |
+| 3.600          | 0.083  | 0.468  |
+| 4.100          | 0.073  | 0.449  |
+| 5.150          | 0.060  | 0.428  |
+**Fit results**  
+Chi2        = 0.004  
+NDf         = 4  
+Edm         = 0.000  
+NCalls      = 79  
+A           = 0.496 ± 0.052  
+$\lambda_t$ = 0.849 ± 0.230  
+B           = 0.084 ± 0.024  
+
+## Quaternary digitised data for $45^{\circ}$  
+*(30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.592  | 0.239  |
+| 0.800          | 0.287  | 0.315  |
+| 1.550          | 0.241  | 0.505  |
+| 2.050          | 0.166  | 0.422  |
+| 3.100          | 0.121  | 0.443  |
+| 3.600          | 0.100  | 0.456  |
+| 4.100          | 0.079  | 0.485  |
+| 5.150          | 0.068  | 0.464  |
+**Fit results**  
+Chi2        = 0.005  
+NDf         = 4  
+Edm         = 0.000  
+NCalls      = 72  
+A           = 0.609 ± 0.060  
+$\lambda_t$ = 0.842 ± 0.214  
+B           = 0.098 ± 0.028  
+
+## Quaternary digitised data for $60^{\circ}$  
+*(30k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 1.462  | 0.531  |
+| 0.800          | 0.660  | 1.009  |
+| 1.550          | 0.599  | 1.470  |
+| 2.050          | 0.371  | 0.830  |
+| 3.100          | 0.296  | 1.083  |
+| 3.600          | 0.221  | 0.527  |
+| 4.100          | 0.182  | 1.467  |
+| 5.150          | 0.161  | 1.150  |
+**Fit results**  
+Chi2        = 0.047  
+NDf         = 4  
+Edm         = 0.000  
+NCalls      = 77  
+A           = 1.531 ± 0.187  
+$\lambda_t$ = 0.795 ± 0.249  
+B           = 0.236 ± 0.080  
 
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
