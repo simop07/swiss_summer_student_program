@@ -631,7 +631,7 @@ void reflTransm() {
   }
 
   // Print table with (Prob_T, Prob_R) and thicknesses for 30°
-  std::cout << "\n\n*** Results in trigger region for 30° ***\n\n";
+  std::cout << "\n\n*** Results in trigger region for 30° ***\n";
   std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
             << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
   for (size_t i = 0; i < thicknesses.size(); ++i) {
@@ -641,7 +641,7 @@ void reflTransm() {
   }
 
   // Print table with (Prob_T, Prob_R) and thicknesses for 45°
-  std::cout << "\n\n*** Results in trigger region for 45° ***\n\n";
+  std::cout << "\n\n*** Results in trigger region for 45° ***\n";
   std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
             << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
   for (size_t i = 0; i < thicknesses.size(); ++i) {
@@ -651,7 +651,7 @@ void reflTransm() {
   }
 
   // Print table with (Prob_T, Prob_R) and thicknesses for 60°
-  std::cout << "\n\n*** Results in trigger region for 60° ***\n\n";
+  std::cout << "\n\n*** Results in trigger region for 60° ***\n";
   std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
             << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
   for (size_t i = 0; i < thicknesses.size(); ++i) {
@@ -661,15 +661,15 @@ void reflTransm() {
   }
 
   // Transmittance fit results
-  std::cout << "\n\n** Fit results for 30° **\n\n";
+  std::cout << "\n\n** Fit results for 30° **\n";
   std::cout << "A           = " << a30 << '\n';
   std::cout << "lambda_t    = " << lambda30 << '\n';
   std::cout << "B           = " << b30 << '\n';
-  std::cout << "\n\n** Fit results for 45° **\n\n";
+  std::cout << "\n\n** Fit results for 45° **\n";
   std::cout << "A           = " << a45 << '\n';
   std::cout << "lambda_t    = " << lambda45 << '\n';
   std::cout << "B           = " << b45 << '\n';
-  std::cout << "\n\n** Fit results for 60° **\n\n";
+  std::cout << "\n\n** Fit results for 60° **\n";
   std::cout << "A           = " << a60 << '\n';
   std::cout << "lambda_t    = " << lambda60 << '\n';
   std::cout << "B           = " << b60 << '\n';
