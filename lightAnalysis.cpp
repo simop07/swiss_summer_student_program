@@ -13,6 +13,7 @@
 #include "TF1.h"
 #include "TFile.h"
 #include "TGraph.h"
+#include "TH1F.h"
 #include "TLatex.h"
 #include "TLegend.h"
 #include "TMath.h"
@@ -73,6 +74,7 @@ Double_t FFunc(Double_t *x, Double_t *par) {
   // par[1] = Angle (degrees)
   // par[2] = #sigma
   // par[3] = R_2
+  // par[4] = Norm factor
 
   Double_t xVal = x[0];
 
@@ -83,7 +85,7 @@ Double_t FFunc(Double_t *x, Double_t *par) {
 
   Double_t cosine = par[3] * TMath::Cos(xVal * TMath::Pi() / 180.0);
 
-  Double_t fitVal = (expo + cosine);
+  Double_t fitVal = (expo + cosine) / par[4];
 
   return fitVal;
 }
@@ -138,6 +140,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
     // Write canvases on file
     fileLightAnalysis->cd();
     canvases[i]->Write();
+    canvases[i]->Close();
 
     // Define trees
     trees[i] = (TTree *)files[i]->Get("variablesRegion");
@@ -377,9 +380,10 @@ void reflTransm() {
   // Define useful vector for thicknesses and colours
   std::array<double, 8> thicknesses{0.20, 0.80, 1.55, 2.05,
                                     3.10, 3.60, 4.10, 5.15};
-  std::array<int, 8> colours{kBlue,   kRed,      kOrange + 2, kGreen + 2,
-                             kViolet, kCyan + 1, kMagenta,    kBlack};
-  std::array<int, 8> markers{20, 21, 22, 23, 24, 25, 26, 27};
+
+  // Colour array
+  int colours[8] = {kRed - 10, kRed - 9, kRed - 7, kRed - 4,
+                    kRed,      kRed + 1, kRed + 2, kRed + 3};
 
   // Store probabilities for each angle here
   std::vector<double> prob30T;
@@ -425,42 +429,91 @@ void reflTransm() {
       probR.push_back(p.y);
     }
 
-    // Create function for angular correction
-    TF1 *fFFunction = new TF1(Form("fFFunction%d", angle), FFunc, -90., 90., 4);
+    // Define angles for shaded region
+    double angle1 = angle - 25.;
+    double angle2 = angle + 25.;
 
-    // Fix angles parameters
+    // Create canvas
+    TCanvas *cFunc = new TCanvas("cFunc", "Angular Correction", 800, 600);
+
+    // Create a frame for axes, titles, and range
+    TH1F *frame =
+        new TH1F("frame", Form("Correction function for %d^{#circ}", angle),
+                 100, -90, 90);
+    frame->SetXTitle("Angle [deg]");
+    frame->SetYTitle("Arbitrary units");
+    frame->SetTitle(Form("Correction function for %d^{#circ}", angle));
+    frame->SetMinimum(0);
+    frame->SetMaximum(1);
+
+    // Create function for angular correction
+    TF1 *fFFunction = new TF1(Form("fFFunction%d", angle), FFunc, -90., 90., 5);
+
+    // Fix parameters depending on angle
     switch (angle) {
       case 30:
-        fFFunction->FixParameter(0, 40.59);          // R_1
-        fFFunction->FixParameter(1, (double)angle);  // Angle (degrees)
-        fFFunction->FixParameter(2, 0.1768);         // #sigma
-        fFFunction->FixParameter(3, 48.99);          // R_2
+        fFFunction->FixParameter(0, 40.59);
+        fFFunction->FixParameter(1, (double)angle);
+        fFFunction->FixParameter(2, 0.1768);
+        fFFunction->FixParameter(3, 48.99);
+        fFFunction->FixParameter(4, 83.24086);
         break;
-
       case 45:
-        fFFunction->FixParameter(0, 90.0);           // R_1
-        fFFunction->FixParameter(1, (double)angle);  // Angle (degrees)
-        fFFunction->FixParameter(2, -0.1469);        // #sigma
-        fFFunction->FixParameter(3, 50.18);          // R_2
+        fFFunction->FixParameter(0, 90.0);
+        fFFunction->FixParameter(1, (double)angle);
+        fFFunction->FixParameter(2, -0.1469);
+        fFFunction->FixParameter(3, 50.18);
+        fFFunction->FixParameter(4, 125.6324);
         break;
-
       case 60:
-        fFFunction->FixParameter(0, 240);            // R_1
-        fFFunction->FixParameter(1, (double)angle);  // Angle (degrees)
-        fFFunction->FixParameter(2, 0.1314);         // #sigma
-        fFFunction->FixParameter(3, 66.51);          // R_2
+        fFFunction->FixParameter(0, 240);
+        fFFunction->FixParameter(1, (double)angle);
+        fFFunction->FixParameter(2, 0.1314);
+        fFFunction->FixParameter(3, 66.51);
+        fFFunction->FixParameter(4, 273.37408);
         break;
     }
 
-    // Compute ratio between the PMT area and the total area [-90,90]
-    double angle1{angle - 25.};
-    double angle2{angle + 25.};
-    auto geomCorr =
-        fFFunction->Integral(angle1, angle2) / fFFunction->Integral(-90., 90.);
+    // Draw main function
+    fFFunction->SetLineColor(kBlue);
+    fFFunction->SetLineWidth(2);
+    cFunc->cd();
 
-    // Print correction factor for 45 degrees
+    // Create shaded area for angle1-angle2
+    TF1 *f1Range = (TF1 *)fFFunction->Clone();
+    f1Range->SetRange(angle1, angle2);
+    f1Range->SetFillColor(kRed);
+    f1Range->SetFillStyle(1001);
+    cFunc->cd();
+    frame->Draw();
+    frame->Draw("SAME AXIS");
+    fFFunction->Draw("SAME");
+    f1Range->Draw("SAME FC");
+
+    // Add legend
+    TLegend *leg = new TLegend(.70, .7, .9, .9, "Legend");
+    leg->AddEntry(f1Range, "Shaded region", "F");
+    leg->Draw();
+
+    // Add text labels for angle1 and angle2
+    TLatex *text1 = new TLatex(angle1, fFFunction->Eval(angle1) + 0.05,
+                               Form("#color[1]{%.0f^{#circ}}", angle1));
+    text1->SetTextAlign(22);  // Center alignment
+    text1->Draw();
+
+    TLatex *text2 = new TLatex(angle2, fFFunction->Eval(angle2) + 0.05,
+                               Form("#color[1]{%.0f^{#circ}}", angle2));
+    text2->SetTextAlign(22);
+    text2->Draw();
+
+    // Update canvas
+    cFunc->Update();
+
+    // Compute ratio between the PMT area and the total area [-90,90]
+    double geomCorr =
+        fFFunction->Integral(angle1, angle2) / fFFunction->Integral(-90., 90.);
     std::cout << std::fixed << std::setprecision(6)
-              << "\nCorrection factor for " << angle << "° (" << angle1 << "°–"
+              << "\nCorrection factor for " << angle << "° (" << angle1 << "°-"
               << angle2 << "°) = " << geomCorr << "\n\n";
 
     // Apply correction factor to Reflectance
@@ -504,12 +557,16 @@ void reflTransm() {
 
     std::array<std::string, 2> names{"Transmittance", "Reflectance"};
     for (size_t i = 0; i < names.size(); ++i) {
-      g[i]->SetMarkerStyle(markers[i]);
-      g[i]->SetMarkerColor(colours[i]);
-      g[i]->SetLineColor(colours[i]);
+      g[i]->SetMarkerStyle(20);
       g[i]->SetTitle(names[i].c_str());
       mg->Add(g[i], "LP");
     }
+
+    // Insert colours
+    g[0]->SetMarkerColor(kBlue);
+    g[0]->SetLineColor(kBlue);
+    g[1]->SetMarkerColor(kRed);
+    g[1]->SetLineColor(kRed);
 
     // Canvases
     TCanvas *cDeg = new TCanvas(Form("c%dDeg", angle),
@@ -559,11 +616,13 @@ void reflTransm() {
     mg->GetYaxis()->SetTitle("Probability");
     cDeg->BuildLegend(.70, .7, .9, .9, "Legend");
 
+    setFitStyle();
+
     // Transmittance vs Reflectance
     for (size_t i = 0; i < thicknesses.size(); ++i) {
       auto *gr = new TGraph();
       gr->AddPoint(probR[i], probT[i]);
-      gr->SetMarkerStyle(markers[i]);
+      gr->SetMarkerStyle(20);
       gr->SetMarkerSize(2);
       gr->SetMarkerColor(colours[i]);
       gr->SetLineColor(colours[i]);
@@ -581,8 +640,12 @@ void reflTransm() {
 
     // Save to file
     reflTransmAnalysis->cd();
+    cFunc->Write();
+    cFunc->Close();
     cDeg->Write();
+    cDeg->Close();
     cReflVsTransm->Write();
+    cReflVsTransm->Close();
     reflTransmAnalysis->Close();
   }
 
@@ -590,43 +653,51 @@ void reflTransm() {
   std::vector<double> angleVals(angles.begin(), angles.end());
 
   // Draw a canvas for probabilities as function of angle fixing thicknesses
-  TCanvas *cAngle = new TCanvas("cAngle", "Probabilities vs Angle", 1500, 700);
+  TCanvas *cAngle = new TCanvas("cAngle", "Probabilities vs angle", 1500, 700);
   cAngle->Divide(4, 2);
+
+  // Create vectors for graphs
+  std::vector<TGraph *> gTs;
+  std::vector<TGraph *> gRs;
 
   // Loop over thicknesses
   for (size_t i = 0; i < thicknesses.size(); ++i) {
-    cAngle->cd(i + 1);
-
     // Extract probabilities for this thickness across different angles
     double probT[3] = {prob30T[i], prob45T[i], prob60T[i]};
     double probR[3] = {prob30R[i], prob45R[i], prob60R[i]};
 
-    // Create graphs
-    TGraph *gT = new TGraph(3, angleVals.data(), probT);
-    TGraph *gR = new TGraph(3, angleVals.data(), probR);
-    gT->SetMarkerStyle(20);
-    gT->SetMarkerColor(kBlue);
-    gT->SetLineColor(kBlue);
-    gT->SetLineWidth(2);
-    gT->SetTitle(Form("Thickness %.2f mm", thicknesses[i]));
-    gR->SetMarkerStyle(21);
-    gR->SetMarkerColor(kRed);
-    gR->SetLineColor(kRed);
-    gR->SetLineWidth(2);
+    // Push graphs into vectors
+    gTs.push_back(new TGraph(3, angleVals.data(), probT));
+    gRs.push_back(new TGraph(3, angleVals.data(), probR));
+  }
 
-    // Draw graphs
-    cAngle->Update();
-    cAngle->cd();
-    gT->Draw("ALP");
-    gT->GetXaxis()->SetTitle("Angle [^{#circ}]");
-    gT->GetYaxis()->SetTitle("Probability");
+  // Draw graphs in vectors
+  for (size_t i = 0; i < gTs.size(); ++i) {
+    cAngle->cd(i + 1);
+    gTs[i]->GetYaxis()->SetRangeUser(0., 1.);
+    gTs[i]->GetXaxis()->SetTitle("Angle [deg]");
+    gTs[i]->GetYaxis()->SetTitle("Probability");
+    gTs[i]->GetYaxis()->SetTitleOffset(1.2);
+    gTs[i]->SetTitle(Form("Thickness %.2f mm", thicknesses[i]));
+    gTs[i]->SetMarkerStyle(20);
+    gTs[i]->SetMarkerColor(kBlue);
+    gTs[i]->SetLineColor(kBlue);
+    gTs[i]->SetLineWidth(2);
+    gTs[i]->Draw("ALP");
 
-    gR->Draw("LP SAME");
+    // Draw the reflected graph
+    gRs[i]->SetMarkerStyle(21);
+    gRs[i]->SetMarkerColor(kRed);
+    gRs[i]->SetLineColor(kRed);
+    gRs[i]->SetLineWidth(2);
+    gRs[i]->Draw("LP SAME");
+
+    gPad->Update();
 
     // Legend
-    TLegend *legend = new TLegend(0.65, 0.75, 0.9, 0.9);
-    legend->AddEntry(gT, "Transmittance", "L P");
-    legend->AddEntry(gR, "Reflectance", "L P");
+    TLegend *legend = new TLegend(.70, .7, .9, .9, "Legend");
+    legend->AddEntry(gTs[i], "Transmittance", "L P");
+    legend->AddEntry(gRs[i], "Reflectance", "L P");
     legend->Draw();
   }
 
@@ -681,6 +752,7 @@ void reflTransm() {
   // Save canvas
   fileAngleAnalysis->cd();
   cAngle->Write();
+  cAngle->Close();
   fileAngleAnalysis->Close();
 }
 
