@@ -212,3 +212,31 @@ $$rateCorrRefl_{R}=RATE^{correct}-RATE_{IncR​}$$
 Another issue is **geometric acceptance**. PMTs see only a fraction set by the solid angle they subtend at the emission point. To compute a possible correction function, I've used what is in this paper [here](https://repositorium.uni-muenster.de/document/miami/42495273-2cc7-4632-99af-accf074921e7/diss_levy.pdf). There's a function (Eq. $6.17$) that models the reflections off a PTFE layer of 5 mm thickness. In particular, I'm analysing the function by choosing a specific value of 45° angle of incidence between the light beam and the normal to the PTFE surface. The code then computes the geometrical correction factor by integrating the angular response function F(x) over the PMT acceptance window (e.g. 40°–50°) and normalizing to the full angular range (–90° to 90°). In practice, this ratio represents the fraction of reflected photons effectively detected by the PMT, accounting for its limited angular acceptance.
 
 What I have decided to do is divide reflectance computation by this fraction here, to account for the fact that the reflected PMT sees less light.
+
+# 25/08/2025
+In our setup, we compute the fraction of reflected photons hitting the PMT as:
+$$
+f_{\text{geom}} = \frac{\int_{\theta_{\min}}^{\theta_{\max}} F(\theta) \, d\theta}{\int_{-90^\circ}^{90^\circ} F(\theta) \, d\theta}$$
+where \(F(\theta)\) is the **angular reflection function** derived from the PTFE paper.
+
+However, the PMT is **circular**, not square. This introduces a non-uniform acceptance across the azimuthal angle: photons at larger polar angles hit the circular photocathode with different probabilities. To account for this, we define an effective acceptance correction \(C(x)\) as:
+$$
+C(x) = \sqrt{1 - \left(\frac{x-a}{R}\right)^2}$$
+where:  
+- \(R = 25^\circ\) represents **half of the PMT angular acceptance**,  
+- \(a\) is the incidence angle of the PMT,  
+- \(x\) is the polar angle of the photon.
+
+## Computation of \(C(x)\)
+The factor \(C(x)\) is derived from the **geometry of a circle**: it is the ratio between the length of the chord at a given distance from the center and the full diameter of the circle. For a circular PMT:
+$$
+\text{chord length} = 2 \sqrt{R^2 - (x-a)^2} \quad \Rightarrow \quad C(x) = \frac{\text{chord length}}{2R} = \sqrt{1 - \left(\frac{x-a}{R}\right)^2}$$
+This captures how the **effective acceptance decreases** for photons hitting away from the center of the PMT.
+The corrected transmission function is then:
+$$
+T(x) = F(x) \cdot C(x)$$
+so that the geometrically weighted fraction becomes:
+$$
+f_{\text{geom}} = \frac{\int_{x_1}^{x_2} T(x) \, dx}{\int_{-90^\circ}^{90^\circ} F(x) \, dx}$$
+
+This approach effectively accounts for the **circular geometry of the PMT**, providing a realistic estimate of the photons that contribute to the PMT signal.
