@@ -225,7 +225,7 @@ C(x) = \sqrt{1 - \left(\frac{x-a}{R}\right)^2}$$
 where:  
 - \(R = 25^\circ\) represents **half of the PMT angular acceptance**,  
 - \(a\) is the incidence angle of the PMT,  
-- \(x\) is the polar angle of the photon.
+- \(x\) is the azimuthal angle of the photon.
 
 ## Computation of \(C(x)\)
 The factor \(C(x)\) is derived from the **geometry of a circle**: it is the ratio between the length of the chord at a given distance from the center and the full diameter of the circle. For a circular PMT:
