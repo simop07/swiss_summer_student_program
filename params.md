@@ -245,7 +245,7 @@ B           = 0.236 ± 0.080
 ## 7th data taking
 *(fit transmittance up to 5.3 mm, 60k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance and correction with C(x) function, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
 
-## Results in trigger region for 30°  
+### Results in trigger region for 30°  
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
 | 0.200          | 0.471  | 0.255  |
@@ -257,7 +257,7 @@ B           = 0.236 ± 0.080
 | 4.100          | 0.067  | 0.585  |
 | 5.150          | 0.056  | 0.499  |
 
-## Results in trigger region for 45°  
+### Results in trigger region for 45°  
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
 | 0.200          | 0.603  | 0.218  |
@@ -269,7 +269,7 @@ B           = 0.236 ± 0.080
 | 4.100          | 0.080  | 0.479  |
 | 5.150          | 0.069  | 0.464  |
 
-## Results in trigger region for 60°  
+### Results in trigger region for 60°  
 | Thickness [mm] | Prob_T | Prob_R |
 |----------------|--------|--------|
 | 0.200          | 1.448  | 0.473  |
@@ -306,6 +306,75 @@ B           = 0.236 ± 0.080
 -Fit result 30°: p0 = 0.641 ± 0.022
 -Fit result 45°: p0 = 0.621 ± 0.037
 -Fit result 60°: p0 = 1.512 ± 0.143
+
+## 8th data taking
+*(fit transmittance up to 5.3 mm, 60k waveforms, 2 sigmas in the trigger region, corrected geometry with $\pm25^{\circ}$ acceptance and correction with C(x) function, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+
+### 30°  
+| Thickness [mm] | Prob_T | ErrT | Prob_R | ErrR |
+|----------------|--------|------|--------|------|
+| 0.200          | 0.469  | 0.004| 0.227  | 0.006|
+| 0.800          | 0.223  | 0.003| 0.429  | 0.008|
+| 1.550          | 0.198  | 0.002| 0.476  | 0.008|
+| 2.050          | 0.131  | 0.002| 0.504  | 0.008|
+| 3.100          | 0.105  | 0.002| 0.570  | 0.009|
+| 3.600          | 0.080  | 0.001| 0.547  | 0.009|
+| 4.100          | 0.065  | 0.001| 0.584  | 0.009|
+| 5.150          | 0.057  | 0.001| 0.592  | 0.009|
+
+### 45°  
+| Thickness [mm] | Prob_T | ErrT | Prob_R | ErrR |
+|----------------|--------|------|--------|------|
+| 0.200          | 0.613  | 0.006| 0.219  | 0.012|
+| 0.800          | 0.283  | 0.004| 0.404  | 0.014|
+| 1.550          | 0.250  | 0.003| 0.530  | 0.015|
+| 2.050          | 0.165  | 0.002| 0.541  | 0.015|
+| 3.100          | 0.124  | 0.002| 0.448  | 0.014|
+| 3.600          | 0.100  | 0.002| 0.496  | 0.014|
+| 4.100          | 0.083  | 0.002| 0.628  | 0.015|
+| 5.150          | 0.071  | 0.001| 0.492  | 0.014|
+
+### 60°  
+| Thickness [mm] | Prob_T | ErrT | Prob_R | ErrR |
+|----------------|--------|------|--------|------|
+| 0.200          | 1.406  | 0.022| 0.503  | 0.062|
+| 0.800          | 0.613  | 0.011| 0.396  | 0.060|
+| 1.550          | 0.559  | 0.010| 0.859  | 0.065|
+| 2.050          | 0.346  | 0.008| 0.806  | 0.065|
+| 3.100          | 0.288  | 0.006| 0.933  | 0.067|
+| 3.600          | 0.217  | 0.005| 0.565  | 0.063|
+| 4.100          | 0.173  | 0.005| 1.499  | 0.073|
+| 5.150          | 0.151  | 0.005| 0.899  | 0.067|
+**Fit results**
+### 30°  
+- A           = 0.433 ± 0.005  
+- $\lambda_t$ = 1.213 ± 0.022 mm  
+- B           = 0.055 ± 0.001  
+
+### 45°  
+- A           = 0.552 ± 0.007  
+- $\lambda_t$ = 1.186 ± 0.025 mm  
+- B           = 0.069 ± 0.002  
+
+### 60°  
+- A           = 1.220 ± 0.025  
+- $\lambda_t$ = 1.162 ± 0.040 mm  
+- B           = 0.153 ± 0.005  
+
+### Correction Factors
+| Angle | Correction | Correction with Geo |
+|-------|------------|-------------------|
+| 30°   | 0.462      | 0.385             |
+| 45°   | 0.472      | 0.410             |
+| 60°   | 0.505      | 0.459             |
+
+### Additional Fit Results
+| Angle | p0 |
+|-------|------|
+| 30°   | 0.657 ± 0.004 |
+| 45°   | 0.671 ± 0.006 |
+| 60°   | 1.239 ± 0.026 |
+
 
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
