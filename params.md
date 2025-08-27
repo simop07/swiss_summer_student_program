@@ -242,6 +242,71 @@ B           = 0.236 ± 0.080
 -Fit result 45°: p0 = 0.621 ± 0.037
 -Fit result 60°: p0 = 1.512 ± 0.143
 
+## 7th data taking
+*(fit transmittance up to 5.3 mm, 60k waveforms, corrected geometry with $\pm25^{\circ}$ acceptance and correction with C(x) function, final update on [waveformAnalysis.cpp](waveformAnalysis.cpp) parameters)*
+
+## Results in trigger region for 30°  
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.471  | 0.255  |
+| 0.800          | 0.221  | 0.437  |
+| 1.550          | 0.196  | 0.474  |
+| 2.050          | 0.132  | 0.500  |
+| 3.100          | 0.103  | 0.583  |
+| 3.600          | 0.080  | 0.472  |
+| 4.100          | 0.067  | 0.585  |
+| 5.150          | 0.056  | 0.499  |
+
+## Results in trigger region for 45°  
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 0.603  | 0.218  |
+| 0.800          | 0.279  | 0.456  |
+| 1.550          | 0.235  | 0.394  |
+| 2.050          | 0.169  | 0.402  |
+| 3.100          | 0.121  | 0.425  |
+| 3.600          | 0.099  | 0.477  |
+| 4.100          | 0.080  | 0.479  |
+| 5.150          | 0.069  | 0.464  |
+
+## Results in trigger region for 60°  
+| Thickness [mm] | Prob_T | Prob_R |
+|----------------|--------|--------|
+| 0.200          | 1.448  | 0.473  |
+| 0.800          | 0.619  | 0.932  |
+| 1.550          | 0.578  | 1.442  |
+| 2.050          | 0.367  | 0.861  |
+| 3.100          | 0.288  | 1.094  |
+| 3.600          | 0.213  | 0.626  |
+| 4.100          | 0.174  | 1.690  |
+| 5.150          | 0.146  | 1.141  |
+**Fit results for 30°**
+-A           = 0.480 ± 0.049
+-lambda_t    = 0.891 ± 0.226 mm
+-B           = 0.072 ± 0.020
+
+**Fit results for 45°**
+-A           = 0.627 ± 0.061
+-lambda_t    = 0.849 ± 0.201 mm
+-B           = 0.091 ± 0.023
+
+**Fit results for 60°**
+-A           = 1.533 ± 0.186
+-lambda_t    = 0.813 ± 0.241 mm
+-B           = 0.206 ± 0.068
+
+-Correction factor for 30° = 0.462
+-Correction factor for 45° = 0.472
+-Correction factor for 60° = 0.505
+
+-Correction factor with geo correction for 30° = 0.385
+-Correction factor with geo correction for 45° = 0.410
+-Correction factor with geo correction for 60° = 0.459
+
+-Fit result 30°: p0 = 0.641 ± 0.022
+-Fit result 45°: p0 = 0.621 ± 0.037
+-Fit result 60°: p0 = 1.512 ± 0.143
+
 ## Oscilloscope data for [4LayersA.txt](./data/4LayersA.txt)
 ```
   // Bin for hPhotoelectron = 60
