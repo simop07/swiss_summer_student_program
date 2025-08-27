@@ -19,6 +19,8 @@ struct PhotonData {
 struct Point {
   double x{};
   double y{};
+  double xErr{};
+  double yErr{};
 };
 
 #endif
