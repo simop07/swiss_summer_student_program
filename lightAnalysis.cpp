@@ -90,6 +90,33 @@ Double_t FFunc(Double_t *x, Double_t *par) {
   return fitVal;
 }
 
+// C(x) function for PMT geometry
+Double_t CFunc(Double_t *x, Double_t *par) {
+  // par[0] = Angle (degrees)
+
+  Double_t xVal = x[0];
+
+  Double_t fitVal =
+      TMath::Sqrt(1 - ((xVal - par[0]) / (25.)) * ((xVal - par[0]) / (25.)));
+
+  return fitVal;
+}
+
+// T(x) = C(x) * F(x)
+Double_t TFunc(Double_t *x, Double_t *par) {
+  // Parameters:
+  // par[0] = R_1
+  // par[1] = Angle (degrees)
+  // par[2] = sigma
+  // par[3] = R_2
+  // par[4] = Norm factor
+
+  Double_t fVal = FFunc(x, par);      // Uses par[0]-par[4]
+  Double_t cVal = CFunc(x, &par[1]);  // Pass only the center angle for C
+
+  return fVal * cVal;
+}
+
 Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
                     std::string fileLightAnalysisName =
                         "./rootFiles/lightAnalysis45Deg3Layer.root") {
@@ -403,6 +430,19 @@ void reflTransm() {
   double a60{};
   double lambda60{};
   double b60{};
+  double a30Error{};
+  double lambda30Error{};
+  double b30Error{};
+  double a45Error{};
+  double lambda45Error{};
+  double b45Error{};
+  double a60Error{};
+  double lambda60Error{};
+  double b60Error{};
+  std::vector<double> geoFactors{};
+  std::vector<double> geoFactorsNew{};
+  std::vector<double> tPlusRfactors{};
+  std::vector<double> tPlusRfactorsErr{};
 
   // Loop on angles
   for (auto angle : angles) {
@@ -474,34 +514,56 @@ void reflTransm() {
         break;
     }
 
-    // Draw main function
-    fFFunction->SetLineColor(kBlue);
-    fFFunction->SetLineWidth(2);
-    cFunc->cd();
+    // Create T(x) = C(x)*F(x) with 5 params from F
+    TF1 *fTFunction = new TF1(Form("fTFunction%d", angle), TFunc, -90., 90., 5);
+    for (int i = 0; i < 5; i++) {
+      fTFunction->FixParameter(i, fFFunction->GetParameter(i));
+    }
 
-    // Create shaded area for angle1-angle2
-    TF1 *f1Range = (TF1 *)fFFunction->Clone();
-    f1Range->SetRange(angle1, angle2);
-    f1Range->SetFillColor(kRed);
-    f1Range->SetFillStyle(1001);
+    // Draw F function
+    fFFunction->SetLineColor(kBlue + 2);
+    fFFunction->SetLineWidth(2);
+
+    // Draw T function
+    fTFunction->SetLineColor(kRed + 2);
+    fTFunction->SetLineWidth(2);
+
+    // Create shaded region for F(x)
+    TF1 *fFRange = (TF1 *)fFFunction->Clone();
+    fFRange->SetRange(angle1, angle2);
+    fFRange->SetFillColor(kBlue + 2);
+    fFRange->SetFillStyle(1001);
+
+    // Create shaded region for T(x)
+    TF1 *fTRange = (TF1 *)fTFunction->Clone();
+    fTRange->SetRange(angle1, angle2);
+    fTRange->SetFillColor(kRed + 2);
+    fTRange->SetFillStyle(1001);
+
+    // Draw everything
     cFunc->cd();
     frame->Draw();
     frame->Draw("SAME AXIS");
     fFFunction->Draw("SAME");
-    f1Range->Draw("SAME FC");
+    fTFunction->Draw("SAME");
+    fFRange->Draw("SAME FC");
+    fTRange->Draw("SAME FC");
 
     // Add legend
-    TLegend *leg = new TLegend(.70, .7, .9, .9, "Legend");
-    leg->AddEntry(f1Range, "Shaded region", "F");
+    TLegend *leg = new TLegend(.70, .7, .9, .9);
+    leg->AddEntry(fFFunction, "F(x) Reflectance", "L");
+    leg->AddEntry(fTFunction, "T(x) = C(x)F(x)", "L");
+    leg->AddEntry(fFRange, "Integration region (F)", "F");
+    leg->AddEntry(fTRange, "Integration region (T)", "F");
     leg->Draw();
 
     // Add text labels for angle1 and angle2
-    TLatex *text1 = new TLatex(angle1, fFFunction->Eval(angle1) + 0.05,
+    TLatex *text1 = new TLatex(angle1, fTFunction->Eval(angle1) + 0.05,
                                Form("#color[1]{%.0f^{#circ}}", angle1));
     text1->SetTextAlign(22);  // Center alignment
     text1->Draw();
 
-    TLatex *text2 = new TLatex(angle2, fFFunction->Eval(angle2) + 0.05,
+    TLatex *text2 = new TLatex(angle2, fTFunction->Eval(angle2) + 0.05,
                                Form("#color[1]{%.0f^{#circ}}", angle2));
     text2->SetTextAlign(22);
     text2->Draw();
@@ -509,16 +571,29 @@ void reflTransm() {
     // Update canvas
     cFunc->Update();
 
-    // Compute ratio between the PMT area and the total area [-90,90]
-    double geomCorr =
-        fFFunction->Integral(angle1, angle2) / fFFunction->Integral(-90., 90.);
+    // Compute denominators
+    double denomF = fFFunction->Integral(-90., 90.);
+
+    // Compute numerators
+    double numF = fFFunction->Integral(angle1, angle2);
+    double numT = fTFunction->Integral(angle1, angle2);
+
+    // Ratios
+    double corrF = numF / denomF;  // Old factor
+    double corrT = numT / denomF;  // New factor
+
+    // Store / print results
+    geoFactors.push_back(corrF);
+    geoFactorsNew.push_back(corrT);
     std::cout << std::fixed << std::setprecision(6)
-              << "\nCorrection factor for " << angle << "° (" << angle1 << "°-"
-              << angle2 << "°) = " << geomCorr << "\n\n";
+              << "\nCorrection factor F for " << angle << "° (" << angle1
+              << "°-" << angle2 << "°) = " << corrF << "\n";
+    std::cout << "Correction factor T for " << angle << "° (" << angle1 << "°-"
+              << angle2 << "°) = " << corrT << "\n\n";
 
     // Apply correction factor to Reflectance
     std::transform(probR.begin(), probR.end(), probR.begin(),
-                   [geomCorr](double r) { return r / geomCorr; });
+                   [corrT](double r) { return r / corrT; });
 
     // Save probabilities into vectors
     switch (angle) {
@@ -568,16 +643,13 @@ void reflTransm() {
     g[1]->SetMarkerColor(kRed);
     g[1]->SetLineColor(kRed);
 
-    // Canvases
-    TCanvas *cDeg = new TCanvas(Form("c%dDeg", angle),
-                                Form("%d degrees", angle), 1500, 700);
+    // Draw canvas
     TCanvas *cReflVsTransm = new TCanvas(Form("cReflVsTransm%d", angle),
                                          "Refl vs transm", 1500, 700);
 
     // Fit transmittance
-    cDeg->cd();
     TF1 *beerLambertTransm =
-        new TF1(Form("beerLambert%dTransm", angle), beerLambert, 0.1, 4.2, 3);
+        new TF1(Form("beerLambert%dTransm", angle), beerLambert, 0.1, 5.3, 3);
     beerLambertTransm->SetLineColor(kRed);
     beerLambertTransm->SetLineWidth(4);
     beerLambertTransm->SetLineStyle(2);
@@ -594,27 +666,115 @@ void reflTransm() {
         a30 = beerLambertTransm->GetParameter(0);
         lambda30 = beerLambertTransm->GetParameter(1);
         b30 = beerLambertTransm->GetParameter(2);
+        a30Error = beerLambertTransm->GetParError(0);
+        lambda30Error = beerLambertTransm->GetParError(1);
+        b30Error = beerLambertTransm->GetParError(2);
         break;
 
       case 45:
         a45 = beerLambertTransm->GetParameter(0);
         lambda45 = beerLambertTransm->GetParameter(1);
         b45 = beerLambertTransm->GetParameter(2);
+        a45Error = beerLambertTransm->GetParError(0);
+        lambda45Error = beerLambertTransm->GetParError(1);
+        b45Error = beerLambertTransm->GetParError(2);
         break;
 
       case 60:
         a60 = beerLambertTransm->GetParameter(0);
         lambda60 = beerLambertTransm->GetParameter(1);
         b60 = beerLambertTransm->GetParameter(2);
+        a60Error = beerLambertTransm->GetParError(0);
+        lambda60Error = beerLambertTransm->GetParError(1);
+        b60Error = beerLambertTransm->GetParError(2);
         break;
     }
 
+    // Draw canvas
+    TCanvas *cDeg = new TCanvas(Form("c%dDeg", angle),
+                                Form("%d degrees", angle), 1500, 900);
+
+    // Top pad
+    TPad *pad1 = new TPad("pad1", "Main", 0.0, 0.35, 1.0, 1.0);  // Make top 65%
+    pad1->SetBottomMargin(0.02);
+    pad1->Draw();
+    pad1->cd();
+
+    // Draw main multigraph here
     mg->Draw("ALP");
-    mg->SetTitle(Form("%d degrees probability", angle));
-    mg->SetName(Form("mg%dDeg", angle));
+    mg->SetTitle(Form("%d^{#circ} probability", angle));
     mg->GetXaxis()->SetTitle("Thickness [mm]");
+    mg->GetXaxis()->SetLabelSize(0);  // Hide labels on top graph
+    mg->GetXaxis()->SetTitleSize(0);  // Hide title on top graph
     mg->GetYaxis()->SetTitle("Probability");
-    cDeg->BuildLegend(.70, .7, .9, .9, "Legend");
+    mg->GetYaxis()->SetTitleOffset(0.8);
+    mg->GetYaxis()->SetLabelSize(0.035);  // Smaller y labels
+    mg->GetYaxis()->SetTitleSize(0.04);   // Smaller y title
+
+    TLegend *legend2 = new TLegend(.70, .7, .9, .9);
+    legend2->SetTextSize(0.035);  // Make legend text smaller
+    legend2->AddEntry(g[0], "Transmittance", "LP");
+    legend2->AddEntry(g[1], "Reflectance", "LP");
+    legend2->Draw();
+
+    cDeg->cd();
+
+    // Bottom pad
+    TPad *pad2 = new TPad("pad2", "Sum", 0.0, 0.0, 1.0, 0.35);
+    // bottom 35%
+    pad2->SetTopMargin(0.02);
+    pad2->SetBottomMargin(0.3);  // More room for x-axis labels
+    pad2->Draw();
+    pad2->cd();
+
+    // Build the sum graph
+    std::vector<double> probSum(thicknesses.size());
+    for (size_t i = 0; i < thicknesses.size(); ++i) {
+      probSum[i] = probT[i] + probR[i];
+    }
+    TGraph *gSum =
+        new TGraph(thicknesses.size(), thicknesses.data(), probSum.data());
+    gSum->SetLineColor(kGreen + 2);
+    gSum->SetMarkerColor(kGreen + 2);
+    gSum->SetMarkerStyle(21);
+
+    double xmin = 0.0, xmax = 5.3;
+    mg->GetXaxis()->SetLimits(xmin, xmax);    // For multigraph
+    gSum->GetXaxis()->SetLimits(xmin, xmax);  // For bottom graph
+    gSum->Draw("ALP");
+    gSum->SetTitle("");
+    gSum->GetXaxis()->SetTitle("Thickness [mm]");
+    gSum->GetXaxis()->SetLabelSize(0.07);  // Slightly bigger (bottom axis only)
+    gSum->GetXaxis()->SetTitleSize(0.08);
+    gSum->GetYaxis()->SetTitle("T+R");
+    gSum->GetYaxis()->SetTitleOffset(0.3);
+    gSum->GetYaxis()->SetLabelSize(0.07);
+    gSum->GetYaxis()->SetTitleSize(0.08);
+
+    // Define constant fit function (just p0)
+    TF1 *fConst = new TF1("fConst", "[0]", 0.1, 5.2);
+    fConst->SetLineColor(kRed);
+    fConst->SetLineStyle(2);
+    fConst->SetLineWidth(3);
+    fConst->SetParameter(0, 1.0);  // initial guess
+
+    // Draw and fit
+    gSum->Draw("ALP");
+    gSum->Fit(fConst, "R");  // "R" restricts to function range
+
+    // Add legend for bottom pad
+    TLegend *legendBottom = new TLegend(.70, .7, .9, .9);
+    legendBottom->SetTextSize(0.06);
+    legendBottom->AddEntry(gSum, "T + R", "LP");
+    legendBottom->AddEntry(fConst, "Constant fit", "L");
+    legendBottom->Draw();
+
+    // Optionally print the result
+    double p0 = fConst->GetParameter(0);
+    double p0err = fConst->GetParError(0);
+    std::cout << "Fit result: p0 = " << p0 << " ± " << p0err << std::endl;
+    tPlusRfactors.push_back(p0);
+    tPlusRfactorsErr.push_back(p0err);
 
     setFitStyle();
 
@@ -626,7 +786,7 @@ void reflTransm() {
       gr->SetMarkerSize(2);
       gr->SetMarkerColor(colours[i]);
       gr->SetLineColor(colours[i]);
-      gr->SetTitle(Form("%.2f", thicknesses[i]));
+      gr->SetTitle(Form("%.2f mm", thicknesses[i]));
       mgReflVsTransm->Add(gr, "P");
     }
 
@@ -636,6 +796,7 @@ void reflTransm() {
     mgReflVsTransm->SetName("mgReflVsTransm");
     mgReflVsTransm->GetXaxis()->SetTitle("Reflectance prob");
     mgReflVsTransm->GetYaxis()->SetTitle("Transm prob");
+    mgReflVsTransm->GetYaxis()->SetTitleOffset(1.2);
     cReflVsTransm->BuildLegend(.70, .7, .9, .9, "Thickness");
 
     // Save to file
@@ -695,7 +856,7 @@ void reflTransm() {
     gPad->Update();
 
     // Legend
-    TLegend *legend = new TLegend(.70, .7, .9, .9, "Legend");
+    TLegend *legend = new TLegend(.70, .7, .9, .9);
     legend->AddEntry(gTs[i], "Transmittance", "L P");
     legend->AddEntry(gRs[i], "Reflectance", "L P");
     legend->Draw();
@@ -732,18 +893,44 @@ void reflTransm() {
   }
 
   // Transmittance fit results
-  std::cout << "\n\n** Fit results for 30° **\n";
-  std::cout << "A           = " << a30 << '\n';
-  std::cout << "lambda_t    = " << lambda30 << '\n';
-  std::cout << "B           = " << b30 << '\n';
-  std::cout << "\n\n** Fit results for 45° **\n";
-  std::cout << "A           = " << a45 << '\n';
-  std::cout << "lambda_t    = " << lambda45 << '\n';
-  std::cout << "B           = " << b45 << '\n';
-  std::cout << "\n\n** Fit results for 60° **\n";
-  std::cout << "A           = " << a60 << '\n';
-  std::cout << "lambda_t    = " << lambda60 << '\n';
-  std::cout << "B           = " << b60 << '\n';
+  std::cout << "\n\n**Fit results for 30°**\n";
+  std::cout << "-A           = " << a30 << " ± " << a30Error << '\n';
+  std::cout << "-lambda_t    = " << lambda30 << " ± " << lambda30Error
+            << " mm\n";
+  std::cout << "-B           = " << b30 << " ± " << b30Error << '\n';
+
+  std::cout << "\n**Fit results for 45°**\n";
+  std::cout << "-A           = " << a45 << " ± " << a45Error << '\n';
+  std::cout << "-lambda_t    = " << lambda45 << " ± " << lambda45Error
+            << " mm\n";
+  std::cout << "-B           = " << b45 << " ± " << b45Error << '\n';
+
+  std::cout << "\n**Fit results for 60°**\n";
+  std::cout << "-A           = " << a60 << " ± " << a60Error << '\n';
+  std::cout << "-lambda_t    = " << lambda60 << " ± " << lambda60Error
+            << " mm\n";
+  std::cout << "-B           = " << b60 << " ± " << b60Error << '\n';
+
+  // Print correction factors
+  std::cout << "\n-Correction factor for 30° = " << geoFactors[0] << '\n';
+  std::cout << "-Correction factor for 45° = " << geoFactors[1] << '\n';
+  std::cout << "-Correction factor for 60° = " << geoFactors[2] << '\n';
+
+  // Print new correction factors
+  std::cout << "\n-Correction factor with geo correction for 30° = "
+            << geoFactorsNew[0] << '\n';
+  std::cout << "-Correction factor with geo correction for 45° = "
+            << geoFactorsNew[1] << '\n';
+  std::cout << "-Correction factor with geo correction for 60° = "
+            << geoFactorsNew[2] << '\n';
+
+  // Print transmittance + reflectance factors
+  std::cout << "\n-Fit result 30°: p0 = " << tPlusRfactors[0] << " ± "
+            << tPlusRfactorsErr[0] << std::endl;
+  std::cout << "-Fit result 45°: p0 = " << tPlusRfactors[1] << " ± "
+            << tPlusRfactorsErr[1] << std::endl;
+  std::cout << "-Fit result 60°: p0 = " << tPlusRfactors[2] << " ± "
+            << tPlusRfactorsErr[2] << std::endl;
 
   // Creating ROOT File
   TFile *fileAngleAnalysis =
