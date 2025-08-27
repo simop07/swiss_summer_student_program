@@ -240,3 +240,73 @@ $$
 f_{\text{geom}} = \frac{\int_{x_{min}}^{x_{max}} F(x) \cdot C(x) \, dx}{\int_{-90^\circ}^{90^\circ} F(x) \, dx}$$
 
 This approach effectively accounts for the **circular geometry of the PMT**, providing a realistic estimate of the photons that contribute to the PMT signal.
+
+# 27/08/2025
+The "transmission coefficient" or effective attenuation length (λ) you see in papers for PTFE is not a fundamental constant. It varies significantly because it's an effective property that depends heavily on both the specific physical structure of the PTFE sample and its surrounding environment.
+
+Here’s why the values are different, especially when used with xenon:
+
+---
+
+## 1. It's Not Really the Beer-Lambert Law
+First, let's clarify the physics. While researchers might use the term for convenience, the Beer-Lambert law  
+\( I = I_0 e^{-\alpha z} \) technically only applies to absorption in a transparent medium.  
+
+In PTFE, the light intensity drops primarily because of intense scattering.
+
+So, the coefficient they are measuring is an **effective attenuation length** \( L_{\text{att}} \).  
+It describes the combined effect of some absorption \( \mu_a \) and a lot of scattering \( \mu_s \).  
+It's a practical parameter that tells you how far light generally penetrates, but it's not a true absorption coefficient.
+
+---
+
+## 2. The Surrounding Medium is Critical (Xenon vs. Air)
+This is the most important factor based on your question. PTFE is a porous, sintered material filled with microscopic voids. The scattering happens at the interface between the PTFE polymer and whatever is filling these voids.
+
+The amount of scattering depends on the mismatch in the index of refraction (n) at this interface.
+
+- **In Air**:  
+  The voids are filled with air (\( n_{\text{air}} \approx 1.0 \)).  
+  The refractive index of PTFE is \( n_{\text{PTFE}} \approx 1.35 \).  
+  The mismatch (1.35 vs. 1.0) is large, causing very strong scattering.  
+  → High reflectivity, shorter attenuation length.
+
+- **In Liquid Xenon (LXe)**:  
+  The voids become filled with liquid xenon (\( n_{\text{LXe}} \approx 1.6 \)).  
+  The mismatch is now between PTFE (1.35) and LXe (1.6).  
+  → Reduced scattering, longer attenuation length.
+
+- **In Gaseous Xenon (GXe)**:  
+  The gas will have an index higher than air, again changing the scattering conditions.
+
+Essentially, when you immerse PTFE in a liquid or dense gas, you change what's inside its pores, which fundamentally alters how it scatters light.  
+A medium with a refractive index closer to that of PTFE will reduce scattering and make the material appear more transparent, increasing the attenuation length.
+
+---
+
+## 3. Not All PTFE is Created Equal
+Even if tested in the same medium, the PTFE itself can vary significantly:
+
+- **Density and Porosity**:  
+  The primary factor. PTFE is made by sintering (compressing and heating) a powder.  
+  Higher sintering pressure → denser material → fewer/smaller voids.  
+  Denser PTFE has less internal surface area for scattering → generally increases attenuation length.  
+  (Papers often report the density of their PTFE, e.g. g/cm³, for this reason.)
+
+- **Manufacturing Process**:  
+  The brand (e.g., *Teflon®*, *Spectralon®*), preparation (sintered, extruded), and surface finish (machined smooth, left rough) all change the microstructure and, therefore, the scattering properties.
+
+- **Purity**:  
+  Industrial-grade PTFE may contain contaminants that absorb light, decreasing the measured transmission.
+
+---
+
+## In Summary
+You're seeing different values because researchers are measuring **different physical systems**.  
+The "PTFE" is just one component. The complete system includes:
+
+- the material's specific density,  
+- its purity,  
+- and the liquid or gas it's immersed in.  
+
+Each combination will yield a different, but valid, effective attenuation length.
