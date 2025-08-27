@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -13,6 +14,7 @@
 #include "TF1.h"
 #include "TFile.h"
 #include "TGraph.h"
+#include "TGraphErrors.h"
 #include "TH1F.h"
 #include "TLatex.h"
 #include "TLegend.h"
@@ -117,6 +119,26 @@ Double_t TFunc(Double_t *x, Double_t *par) {
   return fVal * cVal;
 }
 
+Double_t Integrand(Double_t *xx, Double_t *par) {
+  // par[0] = R_1
+  // par[1] = Angle (degrees)
+  // par[2] = sigma
+  // par[3] = R_2
+  // par[4] = Norm factor
+
+  Double_t xVal = xx[0];
+
+  Double_t fVal = FFunc(xx, par);      // Uses par[0]-par[4]
+  Double_t cVal = CFunc(xx, &par[1]);  // Pass only the center angle for C
+
+  Double_t dx = xVal - par[1];
+  Double_t dx2 = dx * dx;
+
+  // Final integrand
+  Double_t integrand = fVal * dx2 / (25. * 25. * 25. * cVal);
+  return integrand;
+}
+
 Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
                     std::string fileLightAnalysisName =
                         "./rootFiles/lightAnalysis45Deg3Layer.root") {
@@ -158,7 +180,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
     // Define and draw graphs
     mg[i] = (TMultiGraph *)files[i]->Get("Regions of pulses");
     canvases[i]->cd();
-    mg[i]->Draw("ALP");
+    mg[i]->Draw("ALPE");
     mg[i]->SetTitle("Pulses");
     mg[i]->SetName("Regions of pulses");
     mg[i]->GetXaxis()->SetTitle("Time since \"trigger\" [#mus]");
@@ -222,11 +244,24 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
   transm.reserve(nRegions);
   refl.reserve(nRegions);
 
+  // Define errors for reflectance and transmittance
+  std::vector<double> incTErrors{};
+  std::vector<double> incRErrors{};
+  std::vector<double> transmErrors{};
+  std::vector<double> reflErrors{};
+  incTErrors.reserve(nRegions);
+  incRErrors.reserve(nRegions);
+  transmErrors.reserve(nRegions);
+  reflErrors.reserve(nRegions);
+
   // Print region properties
   int counter{};
   double rate{};
   double rateCorr{};
   double rateCorrRefl{};
+  double rateError{};
+  double rateCorrError{};
+  double rateCorrReflError{};
 
   // Loop on files
   for (PhotonData const &pd : photondata) {
@@ -238,6 +273,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
       switch (i) {
         case 0:
           rate = (pd.preTrigger.PECounter) / (pd.preTrigger.deltaT);
+          rateError = std::sqrt(pd.preTrigger.PECounter) / pd.preTrigger.deltaT;
           std::cout << "\nPre trigger region" << '\n';
           std::cout << " Rate          = " << rate << " PE/ns\n";
           std::cout << " PE counter    = " << pd.preTrigger.PECounter
@@ -248,20 +284,26 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           switch (counter) {
             case 0:
               incT.push_back(rate);
+              incTErrors.push_back(rateError);
               break;
 
             case 1:
               incR.push_back(rate);
+              incRErrors.push_back(rateError);
               break;
 
             case 2:
               transm.push_back(rate);
+              transmErrors.push_back(rateError);
               break;
 
             case 3:
               rateCorrRefl = rate - incR[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
+              rateCorrReflError = rateError + incRErrors[i];
+              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n";
               refl.push_back(rateCorrRefl);
+              reflErrors.push_back(rateCorrReflError);
               break;
           }
           break;
@@ -271,6 +313,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           std::cout << " PE counter    = " << pd.inTrigger.PECounter << " PE\n";
           rateCorr = (pd.inTrigger.PECounter - (rate * pd.inTrigger.deltaT)) /
                      pd.inTrigger.deltaT;
+          rateCorrError =
+              (std::sqrt(pd.inTrigger.PECounter) / pd.inTrigger.deltaT) +
+              rateError;
           std::cout << " Rate          = "
                     << (pd.inTrigger.PECounter) / (pd.inTrigger.deltaT)
                     << " PE/ns\n";
@@ -281,20 +326,26 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
+              incTErrors.push_back(rateCorrError);
               break;
 
             case 1:
               incR.push_back(rateCorr);
+              incRErrors.push_back(rateCorrError);
               break;
 
             case 2:
               transm.push_back(rateCorr);
+              transmErrors.push_back(rateCorrError);
               break;
 
             case 3:
               rateCorrRefl = rateCorr - incR[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
+              rateCorrReflError = rateCorrError + incRErrors[i];
+              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n";
               refl.push_back(rateCorrRefl);
+              reflErrors.push_back(rateCorrReflError);
               break;
           }
           break;
@@ -306,6 +357,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           rateCorr =
               (pd.postTrigger1.PECounter - (rate * pd.postTrigger1.deltaT)) /
               pd.postTrigger1.deltaT;
+          rateCorrError =
+              (std::sqrt(pd.postTrigger1.PECounter) / pd.postTrigger1.deltaT) +
+              rateError;
           std::cout << " Rate          = "
                     << (pd.postTrigger1.PECounter) / (pd.postTrigger1.deltaT)
                     << " PE/ns\n";
@@ -316,20 +370,26 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
+              incTErrors.push_back(rateCorrError);
               break;
 
             case 1:
               incR.push_back(rateCorr);
+              incRErrors.push_back(rateCorrError);
               break;
 
             case 2:
               transm.push_back(rateCorr);
+              transmErrors.push_back(rateCorrError);
               break;
 
             case 3:
               rateCorrRefl = rateCorr - incR[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
+              rateCorrReflError = rateCorrError + incRErrors[i];
+              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n";
               refl.push_back(rateCorrRefl);
+              reflErrors.push_back(rateCorrReflError);
               break;
           }
           break;
@@ -341,6 +401,9 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           rateCorr =
               (pd.postTrigger2.PECounter - (rate * pd.postTrigger2.deltaT)) /
               pd.postTrigger2.deltaT;
+          rateCorrError =
+              (std::sqrt(pd.postTrigger2.PECounter) / pd.postTrigger2.deltaT) +
+              rateError;
           std::cout << " Rate          = "
                     << (pd.postTrigger2.PECounter) / (pd.postTrigger2.deltaT)
                     << " PE/ns\n";
@@ -351,20 +414,26 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
+              incTErrors.push_back(rateCorrError);
               break;
 
             case 1:
               incR.push_back(rateCorr);
+              incRErrors.push_back(rateCorrError);
               break;
 
             case 2:
               transm.push_back(rateCorr);
+              transmErrors.push_back(rateCorrError);
               break;
 
             case 3:
               rateCorrRefl = rateCorr - incR[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " PE/ns\n";
+              rateCorrReflError = rateCorrError + incRErrors[i];
+              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n";
               refl.push_back(rateCorrRefl);
+              reflErrors.push_back(rateCorrReflError);
               break;
           }
           break;
@@ -374,9 +443,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
   }
 
   // Print photon information in each region
-  std::string titles[7] = {"Region",         "Inc_T [PE/ns]", "Inc_R [PE/ns]",
-                           "Transm [PE/ns]", "Refl [PE/ns]",  "Prob_T",
-                           "Prob_R"};
+  std::string titles[11] = {"Region",        "Inc_T [PE/ns]", "err(Inc_T)",
+                            "Inc_R [PE/ns]", "err(Inc_R)",    "Transm [PE/ns]",
+                            "err(Transm)",   "Refl [PE/ns]",  "err(Refl)",
+                            "Prob_T",        "Prob_R"};
   std::cout << "\n\n" << std::left << std::fixed << std::setprecision(3);
   for (auto const &str : titles) {
     std::cout << std::setw(20) << str;
@@ -387,14 +457,22 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
     double probR = refl[i] / incT[i];
     std::cout << std::fixed << std::setprecision(3) << std::left;
     std::cout << std::setw(20) << namesR[i] << std::setw(20) << incT[i]
-              << std::setw(20) << incR[i] << std::setw(20) << transm[i]
-              << std::setw(20) << refl[i] << std::setw(20) << probT
+              << std::setw(20) << incTErrors[i] << std::setw(20) << incR[i]
+              << std::setw(20) << incRErrors[i] << std::setw(20) << transm[i]
+              << std::setw(20) << transmErrors[i] << std::setw(20) << refl[i]
+              << std::setw(20) << reflErrors[i] << std::setw(20) << probT
               << std::setw(20) << probR << '\n';
   }
   std::cout << "\n\n";
 
-  // Create point (Prob_T, Prob_R)
-  Point p{transm[1] / incT[1], refl[1] / incT[1]};
+  // Create point (Prob_T, Prob_R) with errors
+  Point p;
+  p.x = transm[1] / incT[1];
+  p.y = refl[1] / incT[1];
+  p.xErr = (transmErrors[1] / incT[1]) +
+           (transm[1] * incTErrors[1]) / (incT[1] * incT[1]);
+  p.yErr = (reflErrors[1] / incT[1]) +
+           (refl[1] * incTErrors[1]) / (incT[1] * incT[1]);
 
   return p;
 }
@@ -419,6 +497,12 @@ void reflTransm() {
   std::vector<double> prob45R;
   std::vector<double> prob60T;
   std::vector<double> prob60R;
+  std::vector<double> prob30TErr;
+  std::vector<double> prob30RErr;
+  std::vector<double> prob45TErr;
+  std::vector<double> prob45RErr;
+  std::vector<double> prob60TErr;
+  std::vector<double> prob60RErr;
 
   // Store fit parameters for transmittance
   double a30{};
@@ -462,11 +546,13 @@ void reflTransm() {
     }
 
     // Create refl and transm probability vectors
-    std::vector<double> probT;
-    std::vector<double> probR;
+    std::vector<double> probT, probTErr;
+    std::vector<double> probR, probRErr;
     for (auto &p : points) {
       probT.push_back(p.x);
+      probTErr.push_back(p.xErr);
       probR.push_back(p.y);
+      probRErr.push_back(p.yErr);
     }
 
     // Define angles for shaded region
@@ -498,6 +584,7 @@ void reflTransm() {
         fFFunction->FixParameter(3, 48.99);
         fFFunction->FixParameter(4, 83.24086);
         break;
+
       case 45:
         fFFunction->FixParameter(0, 90.0);
         fFFunction->FixParameter(1, (double)angle);
@@ -505,6 +592,7 @@ void reflTransm() {
         fFFunction->FixParameter(3, 50.18);
         fFFunction->FixParameter(4, 125.6324);
         break;
+
       case 60:
         fFFunction->FixParameter(0, 240);
         fFFunction->FixParameter(1, (double)angle);
@@ -582,6 +670,13 @@ void reflTransm() {
     double corrF = numF / denomF;  // Old factor
     double corrT = numT / denomF;  // New factor
 
+    // Build integrand function
+    TF1 *fIntegrand =
+        new TF1(Form("fIntegrand%d", angle), Integrand, -90., 90., 5);
+    for (int i = 0; i < 5; i++) {
+      fIntegrand->FixParameter(i, fFFunction->GetParameter(i));
+    }
+
     // Store / print results
     geoFactors.push_back(corrF);
     geoFactorsNew.push_back(corrT);
@@ -591,25 +686,43 @@ void reflTransm() {
     std::cout << "Correction factor T for " << angle << "° (" << angle1 << "°-"
               << angle2 << "°) = " << corrT << "\n\n";
 
-    // Apply correction factor to Reflectance
-    std::transform(probR.begin(), probR.end(), probR.begin(),
-                   [corrT](double r) { return r / corrT; });
+    // Apply correction factor to reflectance
+    for (size_t i = 0; i < probR.size(); ++i) {
+      double R = probR[i];
+      double sigmaR = probRErr[i];
+      double sigmaCorrT =
+          1. * std::abs(fIntegrand->Integral(angle1, angle2) / denomF);
+      probR[i] = R / corrT;
+      probRErr[i] = (sigmaR / corrT) + (R * sigmaCorrT / (corrT * corrT));
+    }
 
     // Save probabilities into vectors
     switch (angle) {
       case 30:
         std::copy(probT.begin(), probT.end(), std::back_inserter(prob30T));
         std::copy(probR.begin(), probR.end(), std::back_inserter(prob30R));
+        std::copy(probTErr.begin(), probTErr.end(),
+                  std::back_inserter(prob30TErr));
+        std::copy(probRErr.begin(), probRErr.end(),
+                  std::back_inserter(prob30RErr));
         break;
 
       case 45:
         std::copy(probT.begin(), probT.end(), std::back_inserter(prob45T));
         std::copy(probR.begin(), probR.end(), std::back_inserter(prob45R));
+        std::copy(probTErr.begin(), probTErr.end(),
+                  std::back_inserter(prob45TErr));
+        std::copy(probRErr.begin(), probRErr.end(),
+                  std::back_inserter(prob45RErr));
         break;
 
       case 60:
         std::copy(probT.begin(), probT.end(), std::back_inserter(prob60T));
         std::copy(probR.begin(), probR.end(), std::back_inserter(prob60R));
+        std::copy(probTErr.begin(), probTErr.end(),
+                  std::back_inserter(prob60TErr));
+        std::copy(probRErr.begin(), probRErr.end(),
+                  std::back_inserter(prob60RErr));
         break;
     }
 
@@ -619,17 +732,19 @@ void reflTransm() {
               << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
     for (size_t i = 0; i < thicknesses.size(); ++i) {
       std::cout << std::fixed << std::setprecision(3);
-      std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-                << probT[i] << std::setw(20) << probR[i] << '\n';
+      std::cout << std::setw(20) << thicknesses[i] << std::setw(20) << probT[i]
+                << " ± " << probTErr[i] << std::setw(20) << probR[i] << " ± "
+                << probRErr[i] << '\n';
     }
 
     // Multigraphs
     TMultiGraph *mg = new TMultiGraph();
     TMultiGraph *mgReflVsTransm = new TMultiGraph();
-    std::array<TGraph *, 2> g{
-        new TGraph(thicknesses.size(), thicknesses.data(), probT.data()),
-        new TGraph(thicknesses.size(), thicknesses.data(), probR.data())};
-
+    std::array<TGraphErrors *, 2> g{
+        new TGraphErrors(thicknesses.size(), thicknesses.data(), probT.data(),
+                         nullptr, probTErr.data()),
+        new TGraphErrors(thicknesses.size(), thicknesses.data(), probR.data(),
+                         nullptr, probRErr.data())};
     std::array<std::string, 2> names{"Transmittance", "Reflectance"};
     for (size_t i = 0; i < names.size(); ++i) {
       g[i]->SetMarkerStyle(20);
@@ -701,7 +816,7 @@ void reflTransm() {
     pad1->cd();
 
     // Draw main multigraph here
-    mg->Draw("ALP");
+    mg->Draw("ALPE");
     mg->SetTitle(Form("%d^{#circ} probability", angle));
     mg->GetXaxis()->SetTitle("Thickness [mm]");
     mg->GetXaxis()->SetLabelSize(0);  // Hide labels on top graph
@@ -713,8 +828,8 @@ void reflTransm() {
 
     TLegend *legend2 = new TLegend(.70, .7, .9, .9);
     legend2->SetTextSize(0.035);  // Make legend text smaller
-    legend2->AddEntry(g[0], "Transmittance", "LP");
-    legend2->AddEntry(g[1], "Reflectance", "LP");
+    legend2->AddEntry(g[0], "Transmittance", "LEP");
+    legend2->AddEntry(g[1], "Reflectance", "LEP");
     legend2->Draw();
 
     cDeg->cd();
@@ -729,11 +844,14 @@ void reflTransm() {
 
     // Build the sum graph
     std::vector<double> probSum(thicknesses.size());
+    std::vector<double> probSumErr(thicknesses.size());
     for (size_t i = 0; i < thicknesses.size(); ++i) {
       probSum[i] = probT[i] + probR[i];
+      probSumErr[i] = probTErr[i] + probRErr[i];
     }
-    TGraph *gSum =
-        new TGraph(thicknesses.size(), thicknesses.data(), probSum.data());
+    TGraphErrors *gSum =
+        new TGraphErrors(thicknesses.size(), thicknesses.data(), probSum.data(),
+                         nullptr, probSumErr.data());
     gSum->SetLineColor(kGreen + 2);
     gSum->SetMarkerColor(kGreen + 2);
     gSum->SetMarkerStyle(21);
@@ -741,7 +859,7 @@ void reflTransm() {
     double xmin = 0.0, xmax = 5.3;
     mg->GetXaxis()->SetLimits(xmin, xmax);    // For multigraph
     gSum->GetXaxis()->SetLimits(xmin, xmax);  // For bottom graph
-    gSum->Draw("ALP");
+    gSum->Draw("ALPE");
     gSum->SetTitle("");
     gSum->GetXaxis()->SetTitle("Thickness [mm]");
     gSum->GetXaxis()->SetLabelSize(0.07);  // Slightly bigger (bottom axis only)
@@ -759,13 +877,13 @@ void reflTransm() {
     fConst->SetParameter(0, 1.0);  // initial guess
 
     // Draw and fit
-    gSum->Draw("ALP");
+    gSum->Draw("ALPE");
     gSum->Fit(fConst, "R");  // "R" restricts to function range
 
     // Add legend for bottom pad
     TLegend *legendBottom = new TLegend(.70, .7, .9, .9);
     legendBottom->SetTextSize(0.06);
-    legendBottom->AddEntry(gSum, "T + R", "LP");
+    legendBottom->AddEntry(gSum, "T + R", "LEP");
     legendBottom->AddEntry(fConst, "Constant fit", "L");
     legendBottom->Draw();
 
@@ -780,8 +898,9 @@ void reflTransm() {
 
     // Transmittance vs Reflectance
     for (size_t i = 0; i < thicknesses.size(); ++i) {
-      auto *gr = new TGraph();
-      gr->AddPoint(probR[i], probT[i]);
+      auto *gr = new TGraphErrors();
+      gr->SetPoint(0, probR[i], probT[i]);
+      gr->SetPointError(0, probRErr[i], probTErr[i]);
       gr->SetMarkerStyle(20);
       gr->SetMarkerSize(2);
       gr->SetMarkerColor(colours[i]);
@@ -791,13 +910,21 @@ void reflTransm() {
     }
 
     cReflVsTransm->cd();
-    mgReflVsTransm->Draw("ALP");
+    mgReflVsTransm->Draw("ALPE");
     mgReflVsTransm->SetTitle("Transmittance vs Reflectance");
     mgReflVsTransm->SetName("mgReflVsTransm");
     mgReflVsTransm->GetXaxis()->SetTitle("Reflectance prob");
     mgReflVsTransm->GetYaxis()->SetTitle("Transm prob");
     mgReflVsTransm->GetYaxis()->SetTitleOffset(1.2);
-    cReflVsTransm->BuildLegend(.70, .7, .9, .9, "Thickness");
+
+    // Build legend
+    TLegend *leg2 = new TLegend(0.70, 0.70, 0.90, 0.90, "Thickness");
+    TIter next(mgReflVsTransm->GetListOfGraphs());
+    TGraphErrors *graph = nullptr;
+    while ((graph = (TGraphErrors *)next())) {
+      leg2->AddEntry(graph, graph->GetTitle(), "EP");
+    }
+    leg2->Draw();
 
     // Save to file
     reflTransmAnalysis->cd();
@@ -818,18 +945,22 @@ void reflTransm() {
   cAngle->Divide(4, 2);
 
   // Create vectors for graphs
-  std::vector<TGraph *> gTs;
-  std::vector<TGraph *> gRs;
+  std::vector<TGraphErrors *> gTs;
+  std::vector<TGraphErrors *> gRs;
 
   // Loop over thicknesses
   for (size_t i = 0; i < thicknesses.size(); ++i) {
     // Extract probabilities for this thickness across different angles
-    double probT[3] = {prob30T[i], prob45T[i], prob60T[i]};
-    double probR[3] = {prob30R[i], prob45R[i], prob60R[i]};
+    double newProbT[3] = {prob30T[i], prob45T[i], prob60T[i]};
+    double newProbR[3] = {prob30R[i], prob45R[i], prob60R[i]};
+    double newProbTErr[3] = {prob30TErr[i], prob45TErr[i], prob60TErr[i]};
+    double newProbRErr[3] = {prob30RErr[i], prob45RErr[i], prob60RErr[i]};
 
     // Push graphs into vectors
-    gTs.push_back(new TGraph(3, angleVals.data(), probT));
-    gRs.push_back(new TGraph(3, angleVals.data(), probR));
+    gTs.push_back(
+        new TGraphErrors(3, angleVals.data(), newProbT, nullptr, newProbTErr));
+    gRs.push_back(
+        new TGraphErrors(3, angleVals.data(), newProbR, nullptr, newProbRErr));
   }
 
   // Draw graphs in vectors
@@ -844,92 +975,98 @@ void reflTransm() {
     gTs[i]->SetMarkerColor(kBlue);
     gTs[i]->SetLineColor(kBlue);
     gTs[i]->SetLineWidth(2);
-    gTs[i]->Draw("ALP");
+    gTs[i]->Draw("ALPE");
 
     // Draw the reflected graph
     gRs[i]->SetMarkerStyle(21);
     gRs[i]->SetMarkerColor(kRed);
     gRs[i]->SetLineColor(kRed);
     gRs[i]->SetLineWidth(2);
-    gRs[i]->Draw("LP SAME");
+    gRs[i]->Draw("LPE SAME");
 
     gPad->Update();
 
     // Legend
     TLegend *legend = new TLegend(.70, .7, .9, .9);
-    legend->AddEntry(gTs[i], "Transmittance", "L P");
-    legend->AddEntry(gRs[i], "Reflectance", "L P");
+    legend->AddEntry(gTs[i], "Transmittance", "L E P");
+    legend->AddEntry(gRs[i], "Reflectance", "L E P");
     legend->Draw();
   }
 
-  // Print table with (Prob_T, Prob_R) and thicknesses for 30°
+  // Print table with (Prob_T ± err, Prob_R ± err) for 30°
   std::cout << "\n\n*** Results in trigger region for 30° ***\n";
   std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
-            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+            << "Prob_T" << std::setw(20) << "ErrT" << std::setw(20) << "Prob_R"
+            << "ErrR" << '\n';
   for (size_t i = 0; i < thicknesses.size(); ++i) {
     std::cout << std::fixed << std::setprecision(3);
     std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-              << prob30T[i] << std::setw(20) << prob30R[i] << '\n';
+              << (prob30T[i]) << std::setw(20) << prob30TErr[i] << std::setw(20)
+              << (prob30R[i]) << std::setw(20) << prob30RErr[i] << '\n';
   }
 
-  // Print table with (Prob_T, Prob_R) and thicknesses for 45°
+  // Print table with (Prob_T ± err, Prob_R ± err) for 45°
   std::cout << "\n\n*** Results in trigger region for 45° ***\n";
   std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
-            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+            << "Prob_T" << std::setw(20) << "ErrT" << std::setw(20) << "Prob_R"
+            << "ErrR" << '\n';
   for (size_t i = 0; i < thicknesses.size(); ++i) {
     std::cout << std::fixed << std::setprecision(3);
     std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-              << prob45T[i] << std::setw(20) << prob45R[i] << '\n';
+              << (prob45T[i]) << std::setw(20) << prob45TErr[i] << std::setw(20)
+              << (prob45R[i]) << std::setw(20) << prob45RErr[i] << '\n';
   }
 
-  // Print table with (Prob_T, Prob_R) and thicknesses for 60°
+  // Print table with (Prob_T ± err, Prob_R ± err) for 60°
   std::cout << "\n\n*** Results in trigger region for 60° ***\n";
   std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
-            << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
+            << "Prob_T" << std::setw(20) << "ErrT" << std::setw(20) << "Prob_R"
+            << "ErrR" << '\n';
   for (size_t i = 0; i < thicknesses.size(); ++i) {
     std::cout << std::fixed << std::setprecision(3);
     std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-              << prob60T[i] << std::setw(20) << prob60R[i] << '\n';
+              << (prob60T[i]) << std::setw(20) << prob60TErr[i] << std::setw(20)
+              << (prob60R[i]) << std::setw(20) << prob60RErr[i] << '\n';
   }
 
   // Transmittance fit results
   std::cout << "\n\n**Fit results for 30°**\n";
-  std::cout << "-A           = " << a30 << " ± " << a30Error << '\n';
-  std::cout << "-lambda_t    = " << lambda30 << " ± " << lambda30Error
+  std::cout << "- A           = " << a30 << " ± " << a30Error << '\n';
+  std::cout << "- lambda_t    = " << lambda30 << " ± " << lambda30Error
             << " mm\n";
-  std::cout << "-B           = " << b30 << " ± " << b30Error << '\n';
+  std::cout << "- B           = " << b30 << " ± " << b30Error << '\n';
 
   std::cout << "\n**Fit results for 45°**\n";
-  std::cout << "-A           = " << a45 << " ± " << a45Error << '\n';
-  std::cout << "-lambda_t    = " << lambda45 << " ± " << lambda45Error
+  std::cout << "- A           = " << a45 << " ± " << a45Error << '\n';
+  std::cout << "- lambda_t    = " << lambda45 << " ± " << lambda45Error
             << " mm\n";
-  std::cout << "-B           = " << b45 << " ± " << b45Error << '\n';
+  std::cout << "- B           = " << b45 << " ± " << b45Error << '\n';
 
   std::cout << "\n**Fit results for 60°**\n";
-  std::cout << "-A           = " << a60 << " ± " << a60Error << '\n';
-  std::cout << "-lambda_t    = " << lambda60 << " ± " << lambda60Error
+  std::cout << "- A           = " << a60 << " ± " << a60Error << '\n';
+  std::cout << "- lambda_t    = " << lambda60 << " ± " << lambda60Error
             << " mm\n";
-  std::cout << "-B           = " << b60 << " ± " << b60Error << '\n';
+  std::cout << "- B           = " << b60 << " ± " << b60Error << '\n';
 
   // Print correction factors
-  std::cout << "\n-Correction factor for 30° = " << geoFactors[0] << '\n';
-  std::cout << "-Correction factor for 45° = " << geoFactors[1] << '\n';
-  std::cout << "-Correction factor for 60° = " << geoFactors[2] << '\n';
+  std::cout << "\n- Correction factor for 30° = " << geoFactors[0] << '\n';
+  std::cout << "- Correction factor for 45° = " << geoFactors[1] << '\n';
+  std::cout << "- Correction factor for 60° = " << geoFactors[2] << '\n';
 
   // Print new correction factors
-  std::cout << "\n-Correction factor with geo correction for 30° = "
+  std::cout << "\n- Correction factor with geo correction for 30° = "
             << geoFactorsNew[0] << '\n';
-  std::cout << "-Correction factor with geo correction for 45° = "
+  std::cout << "- Correction factor with geo correction for 45° = "
             << geoFactorsNew[1] << '\n';
-  std::cout << "-Correction factor with geo correction for 60° = "
+  std::cout << "- Correction factor with geo correction for 60° = "
             << geoFactorsNew[2] << '\n';
 
   // Print transmittance + reflectance factors
-  std::cout << "\n-Fit result 30°: p0 = " << tPlusRfactors[0] << " ± "
+  std::cout << "\n- Fit result 30°: p0 = " << tPlusRfactors[0] << " ± "
             << tPlusRfactorsErr[0] << std::endl;
-  std::cout << "-Fit result 45°: p0 = " << tPlusRfactors[1] << " ± "
+  std::cout << "- Fit result 45°: p0 = " << tPlusRfactors[1] << " ± "
             << tPlusRfactorsErr[1] << std::endl;
-  std::cout << "-Fit result 60°: p0 = " << tPlusRfactors[2] << " ± "
+  std::cout << "- Fit result 60°: p0 = " << tPlusRfactors[2] << " ± "
             << tPlusRfactorsErr[2] << std::endl;
 
   // Creating ROOT File
