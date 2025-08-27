@@ -216,7 +216,7 @@ What I have decided to do is divide reflectance computation by this fraction her
 # 25/08/2025
 In our setup, we compute the fraction of reflected photons hitting the PMT as:
 $$
-f_{\text{geom}} = \frac{\int_{\theta_{\min}}^{\theta_{\max}} F(\theta) \, d\theta}{\int_{-90^\circ}^{90^\circ} F(\theta) \, d\theta}$$
+f_{\text{geom}} = \frac{\int_{\theta_{\min}}^{\theta_{\max}} F(\theta)  d\theta}{\int_{-90^\circ}^{90^\circ} F(\theta)  d\theta}$$
 where \(F(\theta)\) is the **angular reflection function** derived from the PTFE paper.
 
 However, the PMT is **circular**, not square. This introduces a non-uniform acceptance across the azimuthal angle: photons at larger polar angles hit the circular hole with different probabilities. To account for this, we define an effective acceptance correction \(C(x)\) as:
@@ -237,7 +237,7 @@ $$
 T(x) = F(x) \cdot C(x)$$
 so that the geometrically weighted fraction becomes:
 $$
-f_{\text{geom}} = \frac{\int_{x_{min}}^{x_{max}} F(x) \cdot C(x) \, dx}{\int_{-90^\circ}^{90^\circ} F(x) \, dx}$$
+f_{\text{geom}} = \frac{\int_{x_{min}}^{x_{max}} F(x) \cdot C(x)  dx}{\int_{-90^\circ}^{90^\circ} F(x)  dx}$$
 
 This approach effectively accounts for the **circular geometry of the PMT**, providing a realistic estimate of the photons that contribute to the PMT signal.
 
@@ -310,3 +310,16 @@ The "PTFE" is just one component. The complete system includes:
 - and the liquid or gas it's immersed in.  
 
 Each combination will yield a different, but valid, effective attenuation length.
+
+# 28/08/2025
+I've added error propagation. Errors are poissonian in the numbers of photoelectrons (just sqrt of the number of photoelectrons), then we have an error just on the 25° parameter in the C(x) function, which represents half of the angular acceptance of the PMT.
+We compute  
+$$\text{corrT} = \frac{1}{D} \int_{\theta_1}^{\theta_2} F(x) \frac{(x - \theta_\text{refl})^2}{a^3 C(x)} dx,$$
+where  
+$$D = \int_{-90}^{90} F(x) dx, \quad
+C(x) = \sqrt{1 - \left(\frac{x - a}{R}\right)^2}, \quad
+\theta_\text{refl} = \theta_\text{inc}, \quad a = 25.$$
+The linear error due to uncertainty \(\delta a\) in \(a\) is  
+$$\delta(\text{corrT}) = \left| \frac{d(\text{corrT})}{da} \right| \delta a,$$
+with  
+$$\frac{d(\text{corrT})}{da} = \frac{1}{D} \int_{\theta_1}^{\theta_2} F(x) \frac{(x - \theta_\text{refl})^2}{a^3 C(x)}  dx.$$
