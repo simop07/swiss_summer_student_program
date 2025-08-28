@@ -19,6 +19,12 @@ void convertCSVtoTXT(std::string const& folderPath) {
       std::filesystem::path txtPath = fileCSV.path();
       txtPath.replace_extension(".txt");
 
+      // Skip to next file if already converted
+      if (std::filesystem::exists(txtPath)) {
+        std::cout << "Skipping (already converted): " << fileCSV.path() << '\n';
+        continue;
+      }
+
       // Create output .txt file
       std::ofstream outFile(txtPath);
       if (!outFile.is_open()) {
@@ -53,7 +59,7 @@ void convertCSVtoTXT(std::string const& folderPath) {
 }
 
 int main() {
-  convertCSVtoTXT("/mnt/c/Users/Simone/Desktop/ConversionFolder");
+  convertCSVtoTXT("/mnt/c/Users/Simone/Desktop/DAQScreen");
 
   return EXIT_SUCCESS;
 }
