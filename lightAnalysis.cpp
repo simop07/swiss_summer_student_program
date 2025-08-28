@@ -770,8 +770,8 @@ void reflTransm() {
     beerLambertTransm->SetLineStyle(2);
     beerLambertTransm->SetTitle("Transmittance fit");
     beerLambertTransm->SetParNames("A", "#lambda_t", "B");
-    beerLambertTransm->SetParameter(0, 0.5);
-    beerLambertTransm->SetParameter(1, 350e-3);
+    beerLambertTransm->SetParameter(0, 1.);
+    beerLambertTransm->SetParameter(1, 0.7);
     beerLambertTransm->SetParameter(2, 0.0);
     g[0]->Fit(beerLambertTransm, "R");
 
