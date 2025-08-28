@@ -59,7 +59,7 @@ void convertCSVtoTXT(std::string const& folderPath) {
 }
 
 int main() {
-  convertCSVtoTXT("/mnt/c/Users/Simone/Desktop/DAQScreen");
+  convertCSVtoTXT("/mnt/c/Users/Simone/Desktop/ConversionFolder");
 
   return EXIT_SUCCESS;
 }
