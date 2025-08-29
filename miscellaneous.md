@@ -304,11 +304,14 @@ The "PTFE" is just one component. The complete system includes:
 Each combination will yield a different, but valid, effective attenuation length.
 
 # 28/08/2025
+# Reflectance Correction and Error Propagation
+
 I've added error propagation for the reflectance correction. The sources of uncertainty are:
 
 1. **Poissonian errors** in the number of photoelectrons \(N_\text{PE}\), computed as \(\sqrt{N_\text{PE}}\).  
 2. **Geometrical errors** associated with the parameter \(a = 25^\circ\) in the `C(x)` function, representing half of the PMT angular acceptance.  
-3. **Angular uncertainty** in the angle of incidence/reflection, \(\theta_\text{inc} = \theta_\text{refl}\).
+3. **Angular uncertainty** in the angle of incidence/reflection, \(\theta_\text{inc} = \theta_\text{refl}\).  
+4. **Parameter uncertainties** in the fit function \(F(x)\): \(R_1\), \(R_2\), and \(\sigma\).
 
 ## Definition of the Correction Factor
 
@@ -324,15 +327,20 @@ D = \int_{-90}^{90} F(x)  dx, \quad
 C(x) = \sqrt{1 - \left(\frac{x - a}{R}\right)^2}, \quad
 \theta_\text{refl} = \theta_\text{inc}, \quad a = 25.
 $$
+
 ## Linear Error Propagation
 
-We apply **linear propagation** (first-order approximation) for the uncertainties in \(a\) and \(\theta_\text{refl}\):
+We apply **linear propagation** (first-order approximation) for the uncertainties in \(a\), \(\theta_\text{refl}\), \(R_1\), \(R_2\), and \(\sigma\):
 $$
 \delta(\text{corrT}) \approx \frac{1}{D} \left[
 \delta a \int_{\theta_1}^{\theta_2} \frac{\partial T(x)}{\partial a} dx
 + \delta \theta_\text{refl} \int_{\theta_1}^{\theta_2} \frac{\partial T(x)}{\partial \theta_\text{refl}} dx
++ \delta R_1 \int_{\theta_1}^{\theta_2} \frac{\partial T(x)}{\partial R_1} dx
++ \delta R_2 \int_{\theta_1}^{\theta_2} \frac{\partial T(x)}{\partial R_2} dx
++ \delta \sigma \int_{\theta_1}^{\theta_2} \frac{\partial T(x)}{\partial \sigma} dx
 \right]
 $$
+
 ### Partial derivatives
 
 1. **Derivative w.r.t \(a\) (PMT acceptance):**
@@ -341,24 +349,37 @@ $$
 \quad
 \frac{\partial C(x)}{\partial a} = \frac{(x - a)^2}{a^3 \sqrt{1 - ((x - a)/a)^2}}
 $$
+
 2. **Derivative w.r.t \(\theta_\text{refl}\) (angle of incidence):**
 $$
 \frac{\partial T(x)}{\partial \theta_\text{refl}} = F(x) \cdot \frac{\partial C(x)}{\partial \theta_\text{refl}}, 
 \quad
 \frac{\partial C(x)}{\partial \theta_\text{refl}} = \frac{(x - \theta_\text{refl})}{a^2 \sqrt{1 - ((x - \theta_\text{refl})/a)^2}}
 $$
-### Total linear error contribution
 
-The **linear propagated error** of `probR` corrected by `corrT` is:
+3. **Derivative w.r.t \(R_1\), \(R_2\), and \(\sigma\) (fit parameters):**
+
+- **Derivative with respect to \(R_1\):**
 $$
-\sigma_{R_\text{corr}} = \frac{\sigma_R}{\text{corrT}} + \frac{R  \delta(\text{corrT})}{\text{corrT}^2}
+\frac{\partial T(x)}{\partial R_1} = C(x) \cdot \frac{\partial F(x)}{\partial R_1}, \quad
+\frac{\partial F(x)}{\partial R_1} = \frac{1}{\text{Norm}} \exp\Bigg[-\frac{\alpha(x, \theta)^2}{2 \sigma^2}\Bigg]
 $$
-where \(\sigma_R\) is the Poissonian error of the original reflectance measurement.
 
-### Implementation Notes
+- **Derivative with respect to \(R_2\):**
+$$
+\frac{\partial T(x)}{\partial R_2} = C(x) \cdot \frac{\partial F(x)}{\partial R_2}, \quad
+\frac{\partial F(x)}{\partial R_2} = \frac{1}{\text{Norm}} \cos\theta
+$$
 
-- `fIntegrand` corresponds to the derivative w.r.t \(a\).  
-- `fIntegrand2` corresponds to the derivative w.r.t \(\theta_\text{refl}\).  
-- Integrals are computed numerically over \([\theta_1, \theta_2]\).  
-- The total error is **linear**, not summed in quadrature.  
-- Absolute values may be used to avoid cancellation, but strictly linear propagation should respect the derivative signs.
+- **Derivative with respect to \(\sigma\):**
+$$
+\frac{\partial T(x)}{\partial \sigma} = C(x) \cdot \frac{\partial F(x)}{\partial \sigma}, \quad
+\frac{\partial F(x)}{\partial \sigma} = \frac{R_1 \exp[-\alpha(x,\theta)^2 / (2\sigma^2)] \, \alpha(x,\theta)^2}{\sigma^3 \, \text{Norm}}
+$$
+
+where:  
+
+- \(C(x)\) is the geometrical acceptance function.  
+- \(\alpha(x, \theta) = \alphaFunc(x, \theta)\) is the argument inside the exponential of the fit function.  
+- \(\text{Norm}\) is the normalization factor of the fit.  
+- \(\theta\) is the angle of incidence/reflection.
