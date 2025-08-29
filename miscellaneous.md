@@ -383,3 +383,56 @@ where:
 - \(\alpha(x, \theta) = \alphaFunc(x, \theta)\) is the argument inside the exponential of the fit function.  
 - \(\text{Norm}\) is the normalization factor of the fit.  
 - \(\theta\) is the angle of incidence/reflection.
+
+# Computation of the Average Pulse Rate
+
+When computing the **rate of pulses** in a given time region, it is important to normalize correctly by the total **observation time**.
+
+## 1. Simple rate per waveform
+
+If you just sum the pulse areas in a region of a single waveform, the rate would be:
+$$
+R_\text{simple} = \frac{\text{Total pulse area in region}}{\Delta t_\text{region}}
+$$
+
+where:
+
+- \(\Delta t_\text{region}\) is the duration of the time window (e.g., pre-trigger, trigger, post-trigger).  
+
+**Problem:** This ignores how many waveforms you analyzed and overestimates the true average rate.
+
+## 2. Corrected average rate
+
+The **correct rate** should account for all the waveforms analyzed. If you have:
+
+- \(\Delta t_\text{region}\) = duration of the time region,  
+- \(N_\text{waveforms}\) = number of waveforms analyzed (including those without pulses in the region),  
+- \(\text{Area}_i\) = total pulse area in the region for the \(i\)-th waveform,  
+
+then the **average rate** is:
+$$
+R_\text{avg} = \frac{\sum_{i=1}^{N_\text{waveforms}} \text{Area}_i}{\Delta t_\text{region} \cdot N_\text{waveforms}}
+$$
+
+### 3. Explanation
+
+1. **Numerator:** sum of pulse areas only in the chosen region (e.g., trigger region) across all waveforms.  
+2. **Denominator:** total “lifetime” or total observation time in that region:
+$$
+t_\text{total} = \Delta t_\text{region} \cdot N_\text{waveforms}
+$$
+
+3. **Why include all waveforms:**  
+   - Waveforms without pulses still count as “observed time” during which no signal occurred.  
+   - Excluding them would **overestimate the rate**, because you would ignore the silent periods.
+
+### 4. Summary
+
+- **Step 1:** For each waveform, sum the areas of pulses in the region.  
+- **Step 2:** Sum these areas over all waveforms.  
+- **Step 3:** Divide by the total observation time (\(\Delta t_\text{region} \times N_\text{waveforms}\)) to get the average rate:
+$$
+\boxed{R_\text{avg} = \frac{\sum_{i=1}^{N_\text{waveforms}} \text{Area}_i}{\Delta t_\text{region} \cdot N_\text{waveforms}}}
+$$
+
+This gives the **true average pulse rate per unit time**, including both waveforms with and without pulses.
