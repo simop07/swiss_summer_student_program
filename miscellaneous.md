@@ -435,4 +435,4 @@ $$
 \boxed{R_\text{avg} = \frac{\sum_{i=1}^{N_\text{waveforms}} \text{Area}_i}{\Delta t_\text{region} \cdot N_\text{waveforms}}}
 $$
 
-This gives the **true average pulse rate per unit time**, including both waveforms with and without pulses.
+This gives the **true average pulse rate per unit time**, including **both waveforms with and without pulses**. This measurement indeed needs to include also "all the pulses we should've observed".
