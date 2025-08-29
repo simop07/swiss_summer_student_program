@@ -328,7 +328,7 @@ C(x) = \sqrt{1 - \left(\frac{x - a}{R}\right)^2}, \quad
 \theta_\text{refl} = \theta_\text{inc}, \quad a = 25.
 $$
 
-## Linear Error Propagation
+## Linear Error Propagation (note that linear propagation is only applied to find the error on the correction factor, otherwise uncertainties are computed with the usual squared sum of errors)
 
 We apply **linear propagation** (first-order approximation) for the uncertainties in \(a\), \(\theta_\text{refl}\), \(R_1\), \(R_2\), and \(\sigma\):
 $$
