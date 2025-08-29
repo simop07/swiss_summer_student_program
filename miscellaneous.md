@@ -246,8 +246,6 @@ The "transmission coefficient" or effective attenuation length (λ) you see in p
 
 Here’s why the values are different, especially when used with xenon:
 
----
-
 ## 1. It's Not Really the Beer-Lambert Law
 First, let's clarify the physics. While researchers might use the term for convenience, the Beer-Lambert law  
 \( I = I_0 e^{-\alpha z} \) technically only applies to absorption in a transparent medium.  
@@ -257,8 +255,6 @@ In PTFE, the light intensity drops primarily because of intense scattering.
 So, the coefficient they are measuring is an **effective attenuation length** \( L_{\text{att}} \).  
 It describes the combined effect of some absorption \( \mu_a \) and a lot of scattering \( \mu_s \).  
 It's a practical parameter that tells you how far light generally penetrates, but it's not a true absorption coefficient.
-
----
 
 ## 2. The Surrounding Medium is Critical (Xenon vs. Air)
 This is the most important factor based on your question. PTFE is a porous, sintered material filled with microscopic voids. The scattering happens at the interface between the PTFE polymer and whatever is filling these voids.
@@ -282,8 +278,6 @@ The amount of scattering depends on the mismatch in the index of refraction (n) 
 Essentially, when you immerse PTFE in a liquid or dense gas, you change what's inside its pores, which fundamentally alters how it scatters light.  
 A medium with a refractive index closer to that of PTFE will reduce scattering and make the material appear more transparent, increasing the attenuation length.
 
----
-
 ## 3. Not All PTFE is Created Equal
 Even if tested in the same medium, the PTFE itself can vary significantly:
 
@@ -299,8 +293,6 @@ Even if tested in the same medium, the PTFE itself can vary significantly:
 - **Purity**:  
   Industrial-grade PTFE may contain contaminants that absorb light, decreasing the measured transmission.
 
----
-
 ## In Summary
 You're seeing different values because researchers are measuring **different physical systems**.  
 The "PTFE" is just one component. The complete system includes:
@@ -312,14 +304,61 @@ The "PTFE" is just one component. The complete system includes:
 Each combination will yield a different, but valid, effective attenuation length.
 
 # 28/08/2025
-I've added error propagation. Errors are poissonian in the numbers of photoelectrons (just sqrt of the number of photoelectrons), then we have an error just on the 25° parameter in the C(x) function, which represents half of the angular acceptance of the PMT.
-We compute  
-$$\text{corrT} = \frac{1}{D} \int_{\theta_1}^{\theta_2} F(x) \frac{(x - \theta_\text{refl})^2}{a^3 C(x)} dx,$$
-where  
-$$D = \int_{-90}^{90} F(x) dx, \quad
+I've added error propagation for the reflectance correction. The sources of uncertainty are:
+
+1. **Poissonian errors** in the number of photoelectrons \(N_\text{PE}\), computed as \(\sqrt{N_\text{PE}}\).  
+2. **Geometrical errors** associated with the parameter \(a = 25^\circ\) in the `C(x)` function, representing half of the PMT angular acceptance.  
+3. **Angular uncertainty** in the angle of incidence/reflection, \(\theta_\text{inc} = \theta_\text{refl}\).
+
+## Definition of the Correction Factor
+
+The transmittance correction factor is defined as:
+$$
+\text{corrT} = \frac{1}{D} \int_{\theta_1}^{\theta_2} T(x)  dx, 
+\quad
+T(x) = F(x) \cdot C(x)
+$$
+where:
+$$
+D = \int_{-90}^{90} F(x)  dx, \quad
 C(x) = \sqrt{1 - \left(\frac{x - a}{R}\right)^2}, \quad
-\theta_\text{refl} = \theta_\text{inc}, \quad a = 25.$$
-The linear error due to uncertainty \(\delta a\) in \(a\) is  
-$$\delta(\text{corrT}) = \left| \frac{d(\text{corrT})}{da} \right| \delta a,$$
-with  
-$$\frac{d(\text{corrT})}{da} = \frac{1}{D} \int_{\theta_1}^{\theta_2} F(x) \frac{(x - \theta_\text{refl})^2}{a^3 C(x)}  dx.$$
+\theta_\text{refl} = \theta_\text{inc}, \quad a = 25.
+$$
+## Linear Error Propagation
+
+We apply **linear propagation** (first-order approximation) for the uncertainties in \(a\) and \(\theta_\text{refl}\):
+$$
+\delta(\text{corrT}) \approx \frac{1}{D} \left[
+\delta a \int_{\theta_1}^{\theta_2} \frac{\partial T(x)}{\partial a} dx
++ \delta \theta_\text{refl} \int_{\theta_1}^{\theta_2} \frac{\partial T(x)}{\partial \theta_\text{refl}} dx
+\right]
+$$
+### Partial derivatives
+
+1. **Derivative w.r.t \(a\) (PMT acceptance):**
+$$
+\frac{\partial T(x)}{\partial a} = F(x) \cdot \frac{\partial C(x)}{\partial a}, 
+\quad
+\frac{\partial C(x)}{\partial a} = \frac{(x - a)^2}{a^3 \sqrt{1 - ((x - a)/a)^2}}
+$$
+2. **Derivative w.r.t \(\theta_\text{refl}\) (angle of incidence):**
+$$
+\frac{\partial T(x)}{\partial \theta_\text{refl}} = F(x) \cdot \frac{\partial C(x)}{\partial \theta_\text{refl}}, 
+\quad
+\frac{\partial C(x)}{\partial \theta_\text{refl}} = \frac{(x - \theta_\text{refl})}{a^2 \sqrt{1 - ((x - \theta_\text{refl})/a)^2}}
+$$
+### Total linear error contribution
+
+The **linear propagated error** of `probR` corrected by `corrT` is:
+$$
+\sigma_{R_\text{corr}} = \frac{\sigma_R}{\text{corrT}} + \frac{R  \delta(\text{corrT})}{\text{corrT}^2}
+$$
+where \(\sigma_R\) is the Poissonian error of the original reflectance measurement.
+
+### Implementation Notes
+
+- `fIntegrand` corresponds to the derivative w.r.t \(a\).  
+- `fIntegrand2` corresponds to the derivative w.r.t \(\theta_\text{refl}\).  
+- Integrals are computed numerically over \([\theta_1, \theta_2]\).  
+- The total error is **linear**, not summed in quadrature.  
+- Absolute values may be used to avoid cancellation, but strictly linear propagation should respect the derivative signs.
