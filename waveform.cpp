@@ -37,7 +37,7 @@
 
 // Define global constants
 constexpr int nMinAnalysedRows{1};      // Minimum rows EXCLUDED
-constexpr int nMaxAnalysedRows{30000};  // Maximum rows INCLUDED
+constexpr int nMaxAnalysedRows{60000};  // Maximum rows INCLUDED
 
 // Asymmetric gaussian functions
 
@@ -494,6 +494,180 @@ void setFitStyle() {
   // gStyle->SetPadBottomMargin(-9.);
   // gStyle->SetPadLeftMargin(-9.);
   // gStyle->SetTitleW(0.5f);
+}
+
+/// Create a binned histogram from the pulse sum graph within a fixed window
+TH1F *BinPulseSum(TGraph *gPulseSum, double globalStart, double globalEnd,
+                  int N, const char *name) {
+  TH1F *h = new TH1F(name, Form("%s; Time [ns]; Counts", name), N, globalStart,
+                     globalEnd);
+
+  int nPoints = gPulseSum->GetN();
+  double *x = gPulseSum->GetX();
+  double *y = gPulseSum->GetY();
+
+  for (int i = 0; i < nPoints; ++i) {
+    if (x[i] >= globalStart && x[i] <= globalEnd) {
+      h->Fill(x[i], y[i]);  // Fill using binning of h
+      // optionally: h->AddBinContent(h->FindBin(x[i]), y[i]);
+    }
+  }
+
+  return h;
+}
+
+/// Extract pulse sum graph from file
+TGraph *sumPulseAnalysis(const std::string &infileName) {
+  double const samplePeriod = 2.0;  // ns
+  std::ifstream infile(infileName.c_str());
+  std::string line;
+  std::map<int, double> map{};
+  int row{0}, rowSum{0};
+
+  while (std::getline(infile, line)) {
+    if (rowSum < nMinAnalysedRows) {
+      ++rowSum;
+      continue;
+    }
+    if (rowSum >= nMaxAnalysedRows) break;
+
+    std::stringstream ss(line);
+    std::string item;
+    std::vector<double> samples;
+    double timestamp = 0.;
+    int column = 1;
+
+    while (std::getline(ss, item, '\t')) {
+      if (item.empty()) continue;
+      if (column == 3)
+        timestamp = std::stod(item);
+      else if (column >= 7)
+        samples.push_back(std::stod(item));
+      ++column;
+    }
+
+    WaveformAnalysisPos wf(samples, timestamp, samplePeriod);
+    const auto &pulses = wf.getPulses();
+
+    for (const auto &p : pulses) {
+      if (p.peakValue > 15900.) continue;
+      for (size_t j = 0; j < p.times.size(); ++j) {
+        map[p.times[j]] += p.values[j];
+      }
+    }
+    ++rowSum;
+  }
+
+  // Convert map -> TGraph
+  std::vector<double> times, values;
+  for (auto &kv : map) {
+    times.push_back(kv.first);
+    values.push_back(kv.second);
+  }
+  return new TGraph(times.size(), times.data(), values.data());
+}
+
+/// Fit Gaussian to get mean & sigma for a graph
+std::pair<double, double> FitTriggerRegion(TGraph *gPulseSum) {
+  // Find max bin
+  int maxId = TMath::LocMax(gPulseSum->GetN(), gPulseSum->GetY());
+  double sigmaId = gPulseSum->GetRMS();
+  double startPoint = gPulseSum->GetX()[maxId] - 0.5 * sigmaId;
+  double endPoint = gPulseSum->GetX()[maxId] + 0.5 * sigmaId;
+
+  // Fit with Gaussian
+  TF1 *fGaus = new TF1("fGaus", "gaus", startPoint, endPoint);
+  fGaus->SetLineColor(kRed);
+  fGaus->SetLineWidth(2);
+  fGaus->SetLineStyle(2);
+  fGaus->SetParameter(0, gPulseSum->GetY()[maxId]);  // amplitude
+  fGaus->SetParameter(1, gPulseSum->GetX()[maxId]);  // mean
+  fGaus->SetParameter(2, sigmaId);                   // sigma
+  gPulseSum->Fit(fGaus, "RQ0");                      // Quiet, no draw
+
+  return {fGaus->GetParameter(1), fGaus->GetParameter(2)};  // mean, sigma
+}
+
+/// Process three files and combine into final histogram
+void ProcessFilesAndCombine(const std::string &fileI, const std::string &fileR,
+                            const std::string &fileIR, int Nbins, TH1F *&hI,
+                            TH1F *&hR, TH1F *&hIR, TH1F *&hFinal) {
+  auto gI = sumPulseAnalysis(fileI);
+  auto gR = sumPulseAnalysis(fileR);
+  auto gIR = sumPulseAnalysis(fileIR);
+
+  // --- Gaussian fits for trigger regions ---
+  auto [meanI, sigmaI] = FitTriggerRegion(gI);
+  auto [meanR, sigmaR] = FitTriggerRegion(gR);
+  auto [meanIR, sigmaIR] = FitTriggerRegion(gIR);
+
+  double startI = meanI - 1.8 * sigmaI, endI = meanI + 1.8 * sigmaI;
+  double startR = meanR - 1.8 * sigmaR, endR = meanR + 1.8 * sigmaR;
+  double startIR = meanIR - 1.8 * sigmaIR, endIR = meanIR + 1.8 * sigmaIR;
+
+  // Global trigger window
+  double globalStart = std::min({startI, startR, startIR});
+  double globalEnd = std::max({endI, endR, endIR});
+
+  std::cout << ">>> Trigger windows:" << std::endl;
+  std::cout << "    I   : [" << startI << ", " << endI << "]" << std::endl;
+  std::cout << "    R   : [" << startR << ", " << endR << "]" << std::endl;
+  std::cout << "    IR  : [" << startIR << ", " << endIR << "]" << std::endl;
+  std::cout << ">>> Global: [" << globalStart << ", " << globalEnd << "]"
+            << std::endl;
+
+  // --- Bin graphs in same window ---
+  hI = BinPulseSum(gI, globalStart, globalEnd, Nbins, "hI");
+  hR = BinPulseSum(gR, globalStart, globalEnd, Nbins, "hR");
+  hIR = BinPulseSum(gIR, globalStart, globalEnd, Nbins, "hIR");
+
+  // --- Subtract & normalize ---
+  TH1F *hRcorr = (TH1F *)hR->Clone("hRcorr");
+  hRcorr->Add(hIR, -1.0);
+
+  hFinal = (TH1F *)hRcorr->Clone("hFinal");
+  hFinal->Divide(hI);
+}
+
+void runAnalysis() {
+  std::string fileI =
+      "./data/60Degrees/CH0_3PTFE-LED_60_1.3_2-3.5_70_INC_TRANSM.txt";
+  std::string fileR =
+      "./data/60Degrees/5.15mm/"
+      "DataF_CH1@DT5730S_59483_run_60_5.15_TRANSM_REFL.txt";
+  std::string fileIR =
+      "./data/60Degrees/CH1_3PTFE-LED_60_1.3_2-3.5_70_INC_REFL.txt";
+
+  // Histograms
+  TH1F *hI, *hR, *hIR, *hFinal;
+
+  // Build histograms
+  ProcessFilesAndCombine(fileI, fileR, fileIR, 10., hI, hR, hIR, hFinal);
+
+  // ==== Draw everything on separate canvases ====
+  TCanvas *c1 = new TCanvas("c1", "Incident", 800, 600);
+  hI->SetLineColor(kRed);
+  hI->SetLineWidth(2);
+  hI->Draw("HIST");
+  c1->SaveAs("./plots/dig/incident.png");
+
+  TCanvas *c2 = new TCanvas("c2", "Reflected (raw)", 800, 600);
+  hR->SetLineColor(kBlue);
+  hR->SetLineWidth(2);
+  hR->Draw("HIST");
+  c2->SaveAs("./plots/dig/reflected_raw.png");
+
+  TCanvas *c3 = new TCanvas("c3", "Incident Reflected (IR)", 800, 600);
+  hIR->SetLineColor(kGreen + 2);
+  hIR->SetLineWidth(2);
+  hIR->Draw("HIST");
+  c3->SaveAs("./plots/dig/incident_reflected.png");
+
+  TCanvas *c4 = new TCanvas("c4", "Final corrected (R - IR)/I", 800, 600);
+  hFinal->SetLineColor(kMagenta);
+  hFinal->SetLineWidth(2);
+  hFinal->Draw("HIST");
+  c4->SaveAs("./plots/dig/final_result.png");
 }
 
 // This function analyses the waveform by building areaVStime, Noise, PE
