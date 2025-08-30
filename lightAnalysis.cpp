@@ -139,6 +139,90 @@ Double_t Integrand(Double_t *xx, Double_t *par) {
   return integrand;
 }
 
+Double_t Integrand2(Double_t *xx, Double_t *par) {
+  // par[0] = R_1
+  // par[1] = Angle (degrees)
+  // par[2] = sigma
+  // par[3] = R_2
+  // par[4] = Norm factor
+
+  Double_t xVal = xx[0];
+
+  // F(x)
+  Double_t fVal = FFunc(xx, par);
+
+  // C(x)
+  Double_t cVal = CFunc(xx, &par[1]);  // Only the center angle
+
+  Double_t dx = xVal - par[1];
+
+  // Derivative term dC/dtheta = (x - theta) / (L^2 * sqrt(1 - ((x-theta)/L)^2))
+  Double_t derivC = dx / (25. * 25. * cVal);
+
+  // Final integrand
+  Double_t integrand = fVal * derivC;
+
+  return integrand;
+}
+
+// dF/dR1 contribution
+Double_t IntegrandR1(Double_t *xx, Double_t *par) {
+  // par[0] = R1
+  // par[1] = angle (deg)
+  // par[2] = sigma
+  // par[3] = R2
+  // par[4] = Norm
+  Double_t f = TMath::Exp(-TMath::Power(alphaFunc(xx[0], par[1]), 2) /
+                          (2.0 * TMath::Power(par[2], 2)));
+  Double_t c = CFunc(xx, &par[1]);
+  return (f / par[4]) * c;  // C(x) * dF/dR1
+}
+
+// dF/dR2 contribution
+Double_t IntegrandR2(Double_t *xx, Double_t *par) {
+  Double_t c = CFunc(xx, &par[1]);
+  Double_t f = TMath::Cos(xx[0] * TMath::Pi() / 180.0);
+  return (f / par[4]) * c;  // C(x) * dF/dR2
+}
+
+// dF/dsigma contribution
+Double_t IntegrandSigma(Double_t *xx, Double_t *par) {
+  Double_t alpha = alphaFunc(xx[0], par[1]);
+  Double_t expo =
+      TMath::Exp(-TMath::Power(alpha, 2) / (2.0 * TMath::Power(par[2], 2)));
+  Double_t term = par[0] * expo * (alpha * alpha) /
+                  (TMath::Power(par[2], 3) * par[4]);  // dF/dsigma
+  Double_t c = CFunc(xx, &par[1]);
+  return term * c;  // C(x) * dF/dsigma
+}
+
+// Print information
+void printResults(std::string const &angleLabel,
+                  std::array<double, 8> const &thicknesses,
+                  std::vector<double> const &probT,
+                  std::vector<double> const &probTErr,
+                  std::vector<double> const &probR,
+                  std::vector<double> const &probRErr,
+                  std::vector<double> const &probRErrStat,
+                  std::vector<double> const &probRErrSys) {
+  std::cout << "\n\n*** Results in trigger region for " << angleLabel
+            << " ***\n";
+  std::cout << std::setw(15) << std::left << "Thickness[mm]" << std::setw(15)
+            << "Prob_T" << std::setw(15) << "ErrT" << std::setw(15) << "Prob_R"
+            << std::setw(15) << "ErrR" << std::setw(15) << "ErrR(stat)"
+            << std::setw(15) << "ErrR(sys)" << std::setw(15) << "FracR(stat)"
+            << std::setw(15) << "FracR(sys)" << '\n';
+  for (size_t i = 0; i < thicknesses.size(); ++i) {
+    std::cout << std::fixed << std::setprecision(3) << std::setw(15)
+              << thicknesses[i] << std::setw(15) << probT[i] << std::setw(15)
+              << probTErr[i] << std::setw(15) << probR[i] << std::setw(15)
+              << probRErr[i] << std::setw(15) << probRErrStat[i]
+              << std::setw(15) << probRErrSys[i] << std::setw(15)
+              << probRErrStat[i] / probR[i] << std::setw(15)
+              << probRErrSys[i] / probR[i] << '\n';
+  }
+}
+
 Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
                     std::string fileLightAnalysisName =
                         "./rootFiles/lightAnalysis45Deg3Layer.root") {
@@ -178,18 +262,18 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
                               Form("Pulses %s", namesF[i].c_str()), 1500, 700);
 
     // Define and draw graphs
-    mg[i] = (TMultiGraph *)files[i]->Get("Regions of pulses");
-    canvases[i]->cd();
-    mg[i]->Draw("ALPE");
-    mg[i]->SetTitle("Pulses");
-    mg[i]->SetName("Regions of pulses");
-    mg[i]->GetXaxis()->SetTitle("Time since \"trigger\" [#mus]");
-    mg[i]->GetYaxis()->SetTitle("Voltage [mV]");
+    /*   mg[i] = (TMultiGraph *)files[i]->Get("Regions of pulses");
+      canvases[i]->cd();
+      mg[i]->Draw("ALPE");
+      mg[i]->SetTitle("Pulses");
+      mg[i]->SetName("Regions of pulses");
+      mg[i]->GetXaxis()->SetTitle("Time since \"trigger\" [#mus]");
+      mg[i]->GetYaxis()->SetTitle("Voltage [mV]");
 
-    // Write canvases on file
-    fileLightAnalysis->cd();
-    canvases[i]->Write();
-    canvases[i]->Close();
+      // Write canvases on file
+      fileLightAnalysis->cd();
+      canvases[i]->Write();
+      canvases[i]->Close(); */
 
     // Define trees
     trees[i] = (TTree *)files[i]->Get("variablesRegion");
@@ -274,13 +358,14 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
         case 0:
           rate = (pd.preTrigger.PECounter) / (pd.preTrigger.deltaT);
           rateError = std::sqrt(pd.preTrigger.PECounter) / pd.preTrigger.deltaT;
-          std::cout << "\nPre trigger region" << '\n';
+          /* std::cout << "\nPre trigger region" << '\n';
           std::cout << " Rate          = " << rate << " PE/ns\n";
           std::cout << " PE counter    = " << pd.preTrigger.PECounter
                     << " PE\n";
           std::cout << " PE per pulse  = " << pd.preTrigger.PEPulses
                     << " PE/pulse\n";
           std::cout << " Delta time    = " << pd.preTrigger.deltaT << " ns\n";
+        */
           switch (counter) {
             case 0:
               incT.push_back(rate);
@@ -299,9 +384,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 
             case 3:
               rateCorrRefl = rate - incR[i];
-              rateCorrReflError = rateError + incRErrors[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n";
+              rateCorrReflError = std::sqrt(rateError * rateError +
+                                            incRErrors[i] * incRErrors[i]);
+              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
@@ -309,20 +395,22 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           break;
 
         case 1:
-          std::cout << "\nTrigger region" << '\n';
+          /* std::cout << "\nTrigger region" << '\n';
           std::cout << " PE counter    = " << pd.inTrigger.PECounter << " PE\n";
+        */
           rateCorr = (pd.inTrigger.PECounter - (rate * pd.inTrigger.deltaT)) /
                      pd.inTrigger.deltaT;
-          rateCorrError =
-              (std::sqrt(pd.inTrigger.PECounter) / pd.inTrigger.deltaT) +
-              rateError;
-          std::cout << " Rate          = "
+          rateCorrError = std::sqrt(
+              (std::sqrt(pd.inTrigger.PECounter) / pd.inTrigger.deltaT) *
+                  (std::sqrt(pd.inTrigger.PECounter) / pd.inTrigger.deltaT) +
+              rateError * rateError);
+          /* std::cout << " Rate          = "
                     << (pd.inTrigger.PECounter) / (pd.inTrigger.deltaT)
                     << " PE/ns\n";
           std::cout << " Rate correct  = " << rateCorr << " PE/ns\n";
           std::cout << " PE per pulse  = " << pd.inTrigger.PEPulses
                     << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n";
+          std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n"; */
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
@@ -341,9 +429,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 
             case 3:
               rateCorrRefl = rateCorr - incR[i];
-              rateCorrReflError = rateCorrError + incRErrors[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n";
+              rateCorrReflError = std::sqrt(rateCorrError * rateCorrError +
+                                            incRErrors[i] * incRErrors[i]);
+              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
@@ -351,22 +440,25 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           break;
 
         case 2:
-          std::cout << "\nPost trigger region 1" << '\n';
+          /* std::cout << "\nPost trigger region 1" << '\n';
           std::cout << " PE counter    = " << pd.postTrigger1.PECounter
-                    << " PE\n";
+                    << " PE\n"; */
           rateCorr =
               (pd.postTrigger1.PECounter - (rate * pd.postTrigger1.deltaT)) /
               pd.postTrigger1.deltaT;
-          rateCorrError =
-              (std::sqrt(pd.postTrigger1.PECounter) / pd.postTrigger1.deltaT) +
-              rateError;
-          std::cout << " Rate          = "
+          rateCorrError = std::sqrt(
+              (std::sqrt(pd.postTrigger1.PECounter) / pd.postTrigger1.deltaT) *
+                  (std::sqrt(pd.postTrigger1.PECounter) /
+                   pd.postTrigger1.deltaT) +
+              rateError * rateError);
+          /*std::cout << " Rate          = "
                     << (pd.postTrigger1.PECounter) / (pd.postTrigger1.deltaT)
                     << " PE/ns\n";
           std::cout << " Rate correct  = " << rateCorr << " PE/ns\n";
           std::cout << " PE per pulse  = " << pd.postTrigger1.PEPulses
                     << " PE/pulse\n";
           std::cout << " Delta time    = " << pd.postTrigger1.deltaT << " ns\n";
+        */
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
@@ -385,9 +477,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 
             case 3:
               rateCorrRefl = rateCorr - incR[i];
-              rateCorrReflError = rateCorrError + incRErrors[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n";
+              rateCorrReflError = std::sqrt(rateCorrError * rateCorrError +
+                                            incRErrors[i] * incRErrors[i]);
+              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
@@ -395,22 +488,25 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
           break;
 
         case 3:
-          std::cout << "\nPost trigger region 2" << '\n';
+          /* std::cout << "\nPost trigger region 2" << '\n';
           std::cout << " PE counter    = " << pd.postTrigger2.PECounter
-                    << " PE\n";
+                    << " PE\n"; */
           rateCorr =
               (pd.postTrigger2.PECounter - (rate * pd.postTrigger2.deltaT)) /
               pd.postTrigger2.deltaT;
-          rateCorrError =
-              (std::sqrt(pd.postTrigger2.PECounter) / pd.postTrigger2.deltaT) +
-              rateError;
-          std::cout << " Rate          = "
+          rateCorrError = std::sqrt(
+              (std::sqrt(pd.postTrigger2.PECounter) / pd.postTrigger2.deltaT) *
+                  (std::sqrt(pd.postTrigger2.PECounter) /
+                   pd.postTrigger2.deltaT) +
+              rateError * rateError);
+          /* std::cout << " Rate          = "
                     << (pd.postTrigger2.PECounter) / (pd.postTrigger2.deltaT)
                     << " PE/ns\n";
           std::cout << " Rate correct  = " << rateCorr << " PE/ns\n";
           std::cout << " PE per pulse  = " << pd.postTrigger2.PEPulses
                     << " PE/pulse\n";
           std::cout << " Delta time    = " << pd.postTrigger2.deltaT << " ns\n";
+        */
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
@@ -429,9 +525,10 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 
             case 3:
               rateCorrRefl = rateCorr - incR[i];
-              rateCorrReflError = rateCorrError + incRErrors[i];
-              std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n";
+              rateCorrReflError = std::sqrt(rateCorrError * rateCorrError +
+                                            incRErrors[i] * incRErrors[i]);
+              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
+                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
@@ -443,7 +540,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
   }
 
   // Print photon information in each region
-  std::string titles[11] = {"Region",        "Inc_T [PE/ns]", "err(Inc_T)",
+  /* std::string titles[11] = {"Region",        "Inc_T [PE/ns]", "err(Inc_T)",
                             "Inc_R [PE/ns]", "err(Inc_R)",    "Transm [PE/ns]",
                             "err(Transm)",   "Refl [PE/ns]",  "err(Refl)",
                             "Prob_T",        "Prob_R"};
@@ -463,16 +560,20 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
               << std::setw(20) << reflErrors[i] << std::setw(20) << probT
               << std::setw(20) << probR << '\n';
   }
-  std::cout << "\n\n";
+  std::cout << "\n\n"; */
 
   // Create point (Prob_T, Prob_R) with errors
   Point p;
   p.x = transm[1] / incT[1];
   p.y = refl[1] / incT[1];
-  p.xErr = (transmErrors[1] / incT[1]) +
-           (transm[1] * incTErrors[1]) / (incT[1] * incT[1]);
-  p.yErr = (reflErrors[1] / incT[1]) +
-           (refl[1] * incTErrors[1]) / (incT[1] * incT[1]);
+  p.xErr =
+      p.x *
+      std::sqrt((transmErrors[1] / transm[1]) * (transmErrors[1] / transm[1]) +
+                (incTErrors[1] / incT[1]) * (incTErrors[1] / incT[1]));
+
+  p.yErr =
+      p.y * std::sqrt((reflErrors[1] / refl[1]) * (reflErrors[1] / refl[1]) +
+                      (incTErrors[1] / incT[1]) * (incTErrors[1] / incT[1]));
 
   return p;
 }
@@ -480,7 +581,7 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
 // Create plots using points (Prob_T, Prob_R) for different configurations
 void reflTransm() {
   // Define angle vector
-  std::vector<int> angles{30, 45, 60};
+  std::vector<int> angles{30, 45, 60, 61, 62};
 
   // Define useful vector for thicknesses and colours
   std::array<double, 8> thicknesses{0.20, 0.80, 1.55, 2.05,
@@ -497,12 +598,30 @@ void reflTransm() {
   std::vector<double> prob45R;
   std::vector<double> prob60T;
   std::vector<double> prob60R;
+  std::vector<double> prob61T;
+  std::vector<double> prob61R;
+  std::vector<double> prob62T;
+  std::vector<double> prob62R;
   std::vector<double> prob30TErr;
   std::vector<double> prob30RErr;
+  std::vector<double> prob30RErrStat;
+  std::vector<double> prob30RErrSys;
   std::vector<double> prob45TErr;
   std::vector<double> prob45RErr;
+  std::vector<double> prob45RErrStat;
+  std::vector<double> prob45RErrSys;
   std::vector<double> prob60TErr;
   std::vector<double> prob60RErr;
+  std::vector<double> prob60RErrStat;
+  std::vector<double> prob60RErrSys;
+  std::vector<double> prob61TErr;
+  std::vector<double> prob61RErr;
+  std::vector<double> prob61RErrStat;
+  std::vector<double> prob61RErrSys;
+  std::vector<double> prob62TErr;
+  std::vector<double> prob62RErr;
+  std::vector<double> prob62RErrStat;
+  std::vector<double> prob62RErrSys;
 
   // Store fit parameters for transmittance
   double a30{};
@@ -514,6 +633,12 @@ void reflTransm() {
   double a60{};
   double lambda60{};
   double b60{};
+  double a61{};
+  double lambda61{};
+  double b61{};
+  double a62{};
+  double lambda62{};
+  double b62{};
   double a30Error{};
   double lambda30Error{};
   double b30Error{};
@@ -523,10 +648,20 @@ void reflTransm() {
   double a60Error{};
   double lambda60Error{};
   double b60Error{};
+  double a61Error{};
+  double lambda61Error{};
+  double b61Error{};
+  double a62Error{};
+  double lambda62Error{};
+  double b62Error{};
   std::vector<double> geoFactors{};
   std::vector<double> geoFactorsNew{};
   std::vector<double> tPlusRfactors{};
   std::vector<double> tPlusRfactorsErr{};
+  std::vector<double> pValuesBeerLambert{};
+  std::vector<double> chiReducedBeerLambert{};
+  std::vector<double> chiReducedConstantFit{};
+  std::vector<double> pValuesConstantFit{};
 
   // Loop on angles
   for (auto angle : angles) {
@@ -548,6 +683,7 @@ void reflTransm() {
     // Create refl and transm probability vectors
     std::vector<double> probT, probTErr;
     std::vector<double> probR, probRErr;
+    std::vector<double> probRErrStat, probRErrSys;
     for (auto &p : points) {
       probT.push_back(p.x);
       probTErr.push_back(p.xErr);
@@ -556,8 +692,15 @@ void reflTransm() {
     }
 
     // Define angles for shaded region
-    double angle1 = angle - 25.;
-    double angle2 = angle + 25.;
+    double angle1{};
+    double angle2{};
+    if (angle == 61 || angle == 62) {
+      angle1 = 60. - 25.;
+      angle2 = 60. + 25.;
+    } else {
+      angle1 = angle - 25.;
+      angle2 = angle + 25.;
+    }
 
     // Create canvas
     TCanvas *cFunc = new TCanvas("cFunc", "Angular Correction", 800, 600);
@@ -596,6 +739,22 @@ void reflTransm() {
       case 60:
         fFFunction->FixParameter(0, 240);
         fFFunction->FixParameter(1, (double)angle);
+        fFFunction->FixParameter(2, 0.1314);
+        fFFunction->FixParameter(3, 66.51);
+        fFFunction->FixParameter(4, 273.37408);
+        break;
+
+      case 61:
+        fFFunction->FixParameter(0, 240);
+        fFFunction->FixParameter(1, 60.);
+        fFFunction->FixParameter(2, 0.1314);
+        fFFunction->FixParameter(3, 66.51);
+        fFFunction->FixParameter(4, 273.37408);
+        break;
+
+      case 62:
+        fFFunction->FixParameter(0, 240);
+        fFFunction->FixParameter(1, 60.);
         fFFunction->FixParameter(2, 0.1314);
         fFFunction->FixParameter(3, 66.51);
         fFFunction->FixParameter(4, 273.37408);
@@ -670,30 +829,88 @@ void reflTransm() {
     double corrF = numF / denomF;  // Old factor
     double corrT = numT / denomF;  // New factor
 
-    // Build integrand function
+    // Define errors for the parameters
+    double deltaA{1.};
+    double deltaTheta{1.};
+    double deltaR1{};
+    double deltaR2{};
+    double deltaSigma{};
+    if (angle == 30) {
+      deltaR1 = 2.711;
+      deltaR2 = 2.067;
+      deltaSigma = 0.01768;
+    } else if (angle == 45) {
+      deltaR1 = 0.3002;
+      deltaR2 = 1.483;
+      deltaSigma = 0.006123;
+    } else if (angle == 60) {
+      deltaR1 = 0.2845;
+      deltaR2 = 3.84;
+      deltaSigma = 0.003067;
+    } else if (angle == 61) {
+      deltaR1 = 0.2845;
+      deltaR2 = 3.84;
+      deltaSigma = 0.003067;
+    } else if (angle == 62) {
+      deltaR1 = 0.2845;
+      deltaR2 = 3.84;
+      deltaSigma = 0.003067;
+    }
+
+    // Build integrand functions
     TF1 *fIntegrand =
         new TF1(Form("fIntegrand%d", angle), Integrand, -90., 90., 5);
+    TF1 *fIntegrand2 =
+        new TF1(Form("fIntegrand2%d", angle), Integrand2, -90., 90., 5);
+    TF1 *fIntegrandR1 =
+        new TF1(Form("fIntegrandR1%d", angle), IntegrandR1, -90., 90., 5);
+    TF1 *fIntegrandR2 =
+        new TF1(Form("fIntegrandR2%d", angle), IntegrandR2, -90., 90., 5);
+    TF1 *fIntegrandSigma =
+        new TF1(Form("fIntegrandSigma%d", angle), IntegrandSigma, -90., 90., 5);
+
+    // Insert parameters
     for (int i = 0; i < 5; i++) {
       fIntegrand->FixParameter(i, fFFunction->GetParameter(i));
+      fIntegrand2->FixParameter(i, fFFunction->GetParameter(i));
+      fIntegrandR1->FixParameter(i, fFFunction->GetParameter(i));
+      fIntegrandR2->FixParameter(i, fFFunction->GetParameter(i));
+      fIntegrandSigma->FixParameter(i, fFFunction->GetParameter(i));
     }
 
     // Store / print results
     geoFactors.push_back(corrF);
     geoFactorsNew.push_back(corrT);
-    std::cout << std::fixed << std::setprecision(6)
-              << "\nCorrection factor F for " << angle << "° (" << angle1
-              << "°-" << angle2 << "°) = " << corrF << "\n";
-    std::cout << "Correction factor T for " << angle << "° (" << angle1 << "°-"
-              << angle2 << "°) = " << corrT << "\n\n";
+    /*   std::cout << std::fixed << std::setprecision(6)
+                << "\nCorrection factor F for " << angle << "° (" << angle1
+                << "°-" << angle2 << "°) = " << corrF << "\n";
+      std::cout << "Correction factor T for " << angle << "° (" << angle1 <<
+      "°-"
+                << angle2 << "°) = " << corrT << "\n\n"; */
 
     // Apply correction factor to reflectance
     for (size_t i = 0; i < probR.size(); ++i) {
       double R = probR[i];
       double sigmaR = probRErr[i];
       double sigmaCorrT =
-          1. * std::abs(fIntegrand->Integral(angle1, angle2) / denomF);
+          (1.0 / denomF) *
+          (std::abs(fIntegrand->Integral(angle1, angle2)) * deltaA  // δa
+           + std::abs(fIntegrand2->Integral(angle1, angle2, 1e-11)) *
+                 deltaTheta                                              // δθ
+           + std::abs(fIntegrandR1->Integral(angle1, angle2)) * deltaR1  // δR1
+           + std::abs(fIntegrandR2->Integral(angle1, angle2)) * deltaR2  // δR2
+           + std::abs(fIntegrandSigma->Integral(angle1, angle2)) *
+                 deltaSigma  // δσ
+          );
       probR[i] = R / corrT;
-      probRErr[i] = (sigmaR / corrT) + (R * sigmaCorrT / (corrT * corrT));
+
+      // Propagate stat and sys errors separately, then total
+      double stat = sigmaR / corrT;
+      double sys = (R * sigmaCorrT) / (corrT * corrT);
+
+      probRErr[i] = sqrt(stat * stat + sys * sys);
+      probRErrStat.push_back(stat);
+      probRErrSys.push_back(sys);
     }
 
     // Save probabilities into vectors
@@ -705,6 +922,10 @@ void reflTransm() {
                   std::back_inserter(prob30TErr));
         std::copy(probRErr.begin(), probRErr.end(),
                   std::back_inserter(prob30RErr));
+        std::copy(probRErrStat.begin(), probRErrStat.end(),
+                  std::back_inserter(prob30RErrStat));
+        std::copy(probRErrSys.begin(), probRErrSys.end(),
+                  std::back_inserter(prob30RErrSys));
         break;
 
       case 45:
@@ -714,6 +935,10 @@ void reflTransm() {
                   std::back_inserter(prob45TErr));
         std::copy(probRErr.begin(), probRErr.end(),
                   std::back_inserter(prob45RErr));
+        std::copy(probRErrStat.begin(), probRErrStat.end(),
+                  std::back_inserter(prob45RErrStat));
+        std::copy(probRErrSys.begin(), probRErrSys.end(),
+                  std::back_inserter(prob45RErrSys));
         break;
 
       case 60:
@@ -723,11 +948,41 @@ void reflTransm() {
                   std::back_inserter(prob60TErr));
         std::copy(probRErr.begin(), probRErr.end(),
                   std::back_inserter(prob60RErr));
+        std::copy(probRErrStat.begin(), probRErrStat.end(),
+                  std::back_inserter(prob60RErrStat));
+        std::copy(probRErrSys.begin(), probRErrSys.end(),
+                  std::back_inserter(prob60RErrSys));
+        break;
+
+      case 61:
+        std::copy(probT.begin(), probT.end(), std::back_inserter(prob61T));
+        std::copy(probR.begin(), probR.end(), std::back_inserter(prob61R));
+        std::copy(probTErr.begin(), probTErr.end(),
+                  std::back_inserter(prob61TErr));
+        std::copy(probRErr.begin(), probRErr.end(),
+                  std::back_inserter(prob61RErr));
+        std::copy(probRErrStat.begin(), probRErrStat.end(),
+                  std::back_inserter(prob61RErrStat));
+        std::copy(probRErrSys.begin(), probRErrSys.end(),
+                  std::back_inserter(prob61RErrSys));
+        break;
+
+      case 62:
+        std::copy(probT.begin(), probT.end(), std::back_inserter(prob62T));
+        std::copy(probR.begin(), probR.end(), std::back_inserter(prob62R));
+        std::copy(probTErr.begin(), probTErr.end(),
+                  std::back_inserter(prob62TErr));
+        std::copy(probRErr.begin(), probRErr.end(),
+                  std::back_inserter(prob62RErr));
+        std::copy(probRErrStat.begin(), probRErrStat.end(),
+                  std::back_inserter(prob62RErrStat));
+        std::copy(probRErrSys.begin(), probRErrSys.end(),
+                  std::back_inserter(prob62RErrSys));
         break;
     }
 
     // Print table with (Prob_T, Prob_R) and thicknesses
-    std::cout << "\n\n*** Results in trigger region ***\n\n";
+    /* std::cout << "\n\n*** Results in trigger region ***\n\n";
     std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
               << "Prob_T" << std::setw(20) << "Prob_R" << '\n';
     for (size_t i = 0; i < thicknesses.size(); ++i) {
@@ -736,7 +991,7 @@ void reflTransm() {
                 << " ± " << probTErr[i] << std::setw(20) << probR[i] << " ± "
                 << probRErr[i] << '\n';
     }
-
+ */
     // Multigraphs
     TMultiGraph *mg = new TMultiGraph();
     TMultiGraph *mgReflVsTransm = new TMultiGraph();
@@ -803,7 +1058,31 @@ void reflTransm() {
         lambda60Error = beerLambertTransm->GetParError(1);
         b60Error = beerLambertTransm->GetParError(2);
         break;
+
+      case 61:
+        a61 = beerLambertTransm->GetParameter(0);
+        lambda61 = beerLambertTransm->GetParameter(1);
+        b61 = beerLambertTransm->GetParameter(2);
+        a61Error = beerLambertTransm->GetParError(0);
+        lambda61Error = beerLambertTransm->GetParError(1);
+        b61Error = beerLambertTransm->GetParError(2);
+        break;
+
+      case 62:
+        a62 = beerLambertTransm->GetParameter(0);
+        lambda62 = beerLambertTransm->GetParameter(1);
+        b62 = beerLambertTransm->GetParameter(2);
+        a62Error = beerLambertTransm->GetParError(0);
+        lambda62Error = beerLambertTransm->GetParError(1);
+        b62Error = beerLambertTransm->GetParError(2);
+        break;
     }
+
+    // Compute chi2 and p-value
+    double chi2BL = beerLambertTransm->GetChisquare();
+    int ndfBL = beerLambertTransm->GetNDF();
+    chiReducedBeerLambert.push_back(chi2BL / ndfBL);
+    pValuesBeerLambert.push_back(beerLambertTransm->GetProb());
 
     // Draw canvas
     TCanvas *cDeg = new TCanvas(Form("c%dDeg", angle),
@@ -830,6 +1109,7 @@ void reflTransm() {
     legend2->SetTextSize(0.035);  // Make legend text smaller
     legend2->AddEntry(g[0], "Transmittance", "LEP");
     legend2->AddEntry(g[1], "Reflectance", "LEP");
+    legend2->AddEntry(beerLambertTransm, "Exponential fit", "L");
     legend2->Draw();
 
     cDeg->cd();
@@ -847,7 +1127,8 @@ void reflTransm() {
     std::vector<double> probSumErr(thicknesses.size());
     for (size_t i = 0; i < thicknesses.size(); ++i) {
       probSum[i] = probT[i] + probR[i];
-      probSumErr[i] = probTErr[i] + probRErr[i];
+      probSumErr[i] =
+          std::sqrt(probTErr[i] * probTErr[i] + probRErr[i] * probRErr[i]);
     }
     TGraphErrors *gSum =
         new TGraphErrors(thicknesses.size(), thicknesses.data(), probSum.data(),
@@ -890,9 +1171,15 @@ void reflTransm() {
     // Optionally print the result
     double p0 = fConst->GetParameter(0);
     double p0err = fConst->GetParError(0);
-    std::cout << "Fit result: p0 = " << p0 << " ± " << p0err << std::endl;
+    // std::cout << "Fit result: p0 = " << p0 << " ± " << p0err << std::endl;
     tPlusRfactors.push_back(p0);
     tPlusRfactorsErr.push_back(p0err);
+
+    // Compute chi2 and p-value for constant fit
+    double chi2Const = fConst->GetChisquare();
+    int ndfConst = fConst->GetNDF();
+    chiReducedConstantFit.push_back(chi2Const / ndfConst);
+    pValuesConstantFit.push_back(fConst->GetProb());
 
     setFitStyle();
 
@@ -938,7 +1225,7 @@ void reflTransm() {
   }
 
   // Cast int into doubles
-  std::vector<double> angleVals(angles.begin(), angles.end());
+  std::vector<double> angleVals(angles.begin(), angles.begin() + 3);
 
   // Draw a canvas for probabilities as function of angle fixing thicknesses
   TCanvas *cAngle = new TCanvas("cAngle", "Probabilities vs angle", 1500, 700);
@@ -993,41 +1280,17 @@ void reflTransm() {
     legend->Draw();
   }
 
-  // Print table with (Prob_T ± err, Prob_R ± err) for 30°
-  std::cout << "\n\n*** Results in trigger region for 30° ***\n";
-  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
-            << "Prob_T" << std::setw(20) << "ErrT" << std::setw(20) << "Prob_R"
-            << "ErrR" << '\n';
-  for (size_t i = 0; i < thicknesses.size(); ++i) {
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-              << (prob30T[i]) << std::setw(20) << prob30TErr[i] << std::setw(20)
-              << (prob30R[i]) << std::setw(20) << prob30RErr[i] << '\n';
-  }
-
-  // Print table with (Prob_T ± err, Prob_R ± err) for 45°
-  std::cout << "\n\n*** Results in trigger region for 45° ***\n";
-  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
-            << "Prob_T" << std::setw(20) << "ErrT" << std::setw(20) << "Prob_R"
-            << "ErrR" << '\n';
-  for (size_t i = 0; i < thicknesses.size(); ++i) {
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-              << (prob45T[i]) << std::setw(20) << prob45TErr[i] << std::setw(20)
-              << (prob45R[i]) << std::setw(20) << prob45RErr[i] << '\n';
-  }
-
-  // Print table with (Prob_T ± err, Prob_R ± err) for 60°
-  std::cout << "\n\n*** Results in trigger region for 60° ***\n";
-  std::cout << std::setw(20) << std::left << "Thickness [mm]" << std::setw(20)
-            << "Prob_T" << std::setw(20) << "ErrT" << std::setw(20) << "Prob_R"
-            << "ErrR" << '\n';
-  for (size_t i = 0; i < thicknesses.size(); ++i) {
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << std::setw(20) << std::left << thicknesses[i] << std::setw(20)
-              << (prob60T[i]) << std::setw(20) << prob60TErr[i] << std::setw(20)
-              << (prob60R[i]) << std::setw(20) << prob60RErr[i] << '\n';
-  }
+  // Print info for each angle
+  printResults("30°", thicknesses, prob30T, prob30TErr, prob30R, prob30RErr,
+               prob30RErrStat, prob30RErrSys);
+  printResults("45°", thicknesses, prob45T, prob45TErr, prob45R, prob45RErr,
+               prob45RErrStat, prob45RErrSys);
+  printResults("60°", thicknesses, prob60T, prob60TErr, prob60R, prob60RErr,
+               prob60RErrStat, prob60RErrSys);
+  printResults("61°", thicknesses, prob61T, prob61TErr, prob61R, prob61RErr,
+               prob61RErrStat, prob61RErrSys);
+  printResults("62°", thicknesses, prob62T, prob62TErr, prob62R, prob62RErr,
+               prob62RErrStat, prob62RErrSys);
 
   // Transmittance fit results
   std::cout << "\n\n**Fit results for 30°**\n";
@@ -1048,10 +1311,40 @@ void reflTransm() {
             << " mm\n";
   std::cout << "- B           = " << b60 << " ± " << b60Error << '\n';
 
+  std::cout << "\n**Fit results for 61°**\n";
+  std::cout << "- A           = " << a61 << " ± " << a61Error << '\n';
+  std::cout << "- lambda_t    = " << lambda61 << " ± " << lambda61Error
+            << " mm\n";
+  std::cout << "- B           = " << b61 << " ± " << b61Error << '\n';
+
+  std::cout << "\n**Fit results for 62°**\n";
+  std::cout << "- A           = " << a62 << " ± " << a60Error << '\n';
+  std::cout << "- lambda_t    = " << lambda62 << " ± " << lambda60Error
+            << " mm\n";
+  std::cout << "- B           = " << b62 << " ± " << b60Error << '\n';
+
+  // Print chi squared and p values
+  std::cout << std::fixed << std::setprecision(10);
+  std::cout << "\n=== Beer-Lambert Fit ===\n";
+  for (size_t i = 0; i < chiReducedBeerLambert.size(); ++i) {
+    std::cout << "Angle " << angles[i] << "° -> "
+              << "Chi2/NDF = " << chiReducedBeerLambert[i]
+              << ", p-value = " << pValuesBeerLambert[i] << "\n";
+  }
+
+  std::cout << "\n=== Constant Fit ===\n";
+  for (size_t i = 0; i < chiReducedConstantFit.size(); ++i) {
+    std::cout << "Angle " << angles[i] << "° -> "
+              << "Chi2/NDF = " << chiReducedConstantFit[i]
+              << ", p-value = " << pValuesConstantFit[i] << "\n";
+  }
+
   // Print correction factors
   std::cout << "\n- Correction factor for 30° = " << geoFactors[0] << '\n';
   std::cout << "- Correction factor for 45° = " << geoFactors[1] << '\n';
   std::cout << "- Correction factor for 60° = " << geoFactors[2] << '\n';
+  std::cout << "- Correction factor for 61° = " << geoFactors[3] << '\n';
+  std::cout << "- Correction factor for 62° = " << geoFactors[4] << '\n';
 
   // Print new correction factors
   std::cout << "\n- Correction factor with geo correction for 30° = "
@@ -1060,6 +1353,10 @@ void reflTransm() {
             << geoFactorsNew[1] << '\n';
   std::cout << "- Correction factor with geo correction for 60° = "
             << geoFactorsNew[2] << '\n';
+  std::cout << "- Correction factor with geo correction for 61° = "
+            << geoFactorsNew[3] << '\n';
+  std::cout << "- Correction factor with geo correction for 62° = "
+            << geoFactorsNew[4] << '\n';
 
   // Print transmittance + reflectance factors
   std::cout << "\n- Fit result 30°: p0 = " << tPlusRfactors[0] << " ± "
@@ -1068,6 +1365,10 @@ void reflTransm() {
             << tPlusRfactorsErr[1] << std::endl;
   std::cout << "- Fit result 60°: p0 = " << tPlusRfactors[2] << " ± "
             << tPlusRfactorsErr[2] << std::endl;
+  std::cout << "- Fit result 61°: p0 = " << tPlusRfactors[3] << " ± "
+            << tPlusRfactorsErr[3] << std::endl;
+  std::cout << "- Fit result 62°: p0 = " << tPlusRfactors[4] << " ± "
+            << tPlusRfactorsErr[4] << std::endl;
 
   // Creating ROOT File
   TFile *fileAngleAnalysis =
