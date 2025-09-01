@@ -10,8 +10,8 @@
 
 void setFitStyle() {
   gROOT->SetStyle("Plain");
-  gStyle->SetOptStat(10);
-  gStyle->SetOptFit(0);  // It was 1111
+  gStyle->SetOptStat(0);  // It was 10
+  gStyle->SetOptFit(0);   // It was 1111
   gStyle->SetPalette(57);
   gStyle->SetOptTitle(1);
   gStyle->SetStatY(0.9);
@@ -22,9 +22,11 @@ void setFitStyle() {
   gStyle->SetTitleY(0.98);
   gStyle->SetTitleAlign(23);
   gStyle->SetTitleBorderSize(0);
-  gStyle->SetTitleXOffset(1.2f);
-  gStyle->SetTitleYOffset(1.1f);
+  gStyle->SetTitleXOffset(0.9f);
+  gStyle->SetTitleYOffset(1.0f);
   gStyle->SetLineScalePS(1);
+  gStyle->SetTitleXSize(0.05);
+  gStyle->SetTitleYSize(0.05);
   // gStyle->SetPadTopMargin(-9.);
   // gStyle->SetPadRightMargin(-9.);
   // gStyle->SetPadBottomMargin(-9.);
@@ -34,11 +36,12 @@ void setFitStyle() {
 
 void compareDig() {
   // Loading ROOT File
-  TFile *file1 = new TFile("./rootFiles/waveformAnalysis.root", "READ");
-  TFile *file2 = new TFile("./rootFiles/waveformAnalysis2.root", "READ");
+  TFile *file1 = new TFile("./rootFiles/miscellaneous/wfAnalysis.root", "READ");
+  TFile *file2 = new TFile("./rootFiles/miscellaneous/wfAnalysis.root", "READ");
 
   // Creating ROOT File
-  TFile *fileCompare = new TFile("./rootFiles/compareDig.root", "RECREATE");
+  TFile *fileCompare =
+      new TFile("./rootFiles/miscellaneous/compareDig.root", "RECREATE");
 
   // Reading histos from canvas
   int const nPulseParam{14};
