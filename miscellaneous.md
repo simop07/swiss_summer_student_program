@@ -138,16 +138,16 @@ Measuring multiple observables simultaneously improves signal discrimination (al
 	- LXe Skin: outer volume used as a veto, looking for coincident signals that may indicate background particles entering the detector
 
 # 17/07/2025
-- Aim: measure reflectance and absorbance of light in PTFEs by observing the scintillation signal size detected by PMTs when shining light from a blue LED.
+- Aim: measure reflectance and transmittance of light in PTFEs by observing the scintillation signal size detected by PMTs when shining light from a blue LED.
 - Experimental setup:
     - Pulse generator used to light a blue LED with:
-    - Frequency: 5000 Hz
-    - High Level: 4.0 V
-    - Low Level: 2.3 V
+    - Frequency: 600 Hz
+    - High Level: 3.5 V
+    - Low Level: 2.0 V
     - Delay: 0 ns
     - Width: 70.0 ns
     - Trail 3.0 ns
-    - High voltage generator set at 1100 V
+    - High voltage generator set at 1300 V
     - PMTs
     - LED and PTFE holders. To improve the geometry of the LED holder, a better option was to simply leave one side of the box open so that Teflon could be simply inserted in instead of "being pushed" into the cave box.
     - Wires to connect everything – note that the trigger happens on the TTL logic cable correspondent with the pulse signal.
