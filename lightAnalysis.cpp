@@ -1381,6 +1381,144 @@ void reflTransm() {
   fileAngleAnalysis->Close();
 }
 
+void reflTransmNew() {
+  std::string basePath = "./rootFiles/45DegreesNew";
+
+  // Metal and scraped configs
+  std::vector<std::string> metalConfigs{"metal_1", "metal_2", "metal_3",
+                                        "metal_4"};
+  std::vector<std::string> scrapedConfigs{"scraped_", "scraped__1",
+                                          "scraped__2", "scraped__3"};
+
+  // Angle for correction
+  int angle = 45;
+  double angle1 = angle - 25.;
+  double angle2 = angle + 25.;
+
+  // F and T functions for 45°
+  TF1 *fFFunction = new TF1("fFFunction45", FFunc, -90., 90., 5);
+  fFFunction->FixParameter(0, 90.0);
+  fFFunction->FixParameter(1, 45.);
+  fFFunction->FixParameter(2, -0.1469);
+  fFFunction->FixParameter(3, 50.18);
+  fFFunction->FixParameter(4, 125.6324);
+
+  TF1 *fTFunction = new TF1("fTFunction45", TFunc, -90., 90., 5);
+  for (int i = 0; i < 5; i++)
+    fTFunction->FixParameter(i, fFFunction->GetParameter(i));
+
+  double denomF = fFFunction->Integral(-90., 90.);
+  double numT = fTFunction->Integral(angle1, angle2);
+  double corrFactor45 = numT / denomF;
+
+  // Integrand functions for reflectance correction
+  double deltaA = 1., deltaTheta = 1., deltaR1 = 0.3002, deltaR2 = 1.483,
+         deltaSigma = 0.006123;
+  TF1 *fIntegrand = new TF1("fIntegrand45", Integrand, -90., 90., 5);
+  TF1 *fIntegrand2 = new TF1("fIntegrand2_45", Integrand2, -90., 90., 5);
+  TF1 *fIntegrandR1 = new TF1("fIntegrandR1_45", IntegrandR1, -90., 90., 5);
+  TF1 *fIntegrandR2 = new TF1("fIntegrandR2_45", IntegrandR2, -90., 90., 5);
+  TF1 *fIntegrandSigma =
+      new TF1("fIntegrandSigma_45", IntegrandSigma, -90., 90., 5);
+  for (int i = 0; i < 5; i++) {
+    fIntegrand->FixParameter(i, fFFunction->GetParameter(i));
+    fIntegrand2->FixParameter(i, fFFunction->GetParameter(i));
+    fIntegrandR1->FixParameter(i, fFFunction->GetParameter(i));
+    fIntegrandR2->FixParameter(i, fFFunction->GetParameter(i));
+    fIntegrandSigma->FixParameter(i, fFFunction->GetParameter(i));
+  }
+
+  // Ccollect probT and probR (with correction)
+  auto collectProbs = [&](std::vector<std::string> configs,
+                          std::vector<double> &probT,
+                          std::vector<double> &probR,
+                          std::vector<double> &probTerr,
+                          std::vector<double> &probRerr) {
+    for (auto &conf : configs) {
+      std::string folderPath = basePath + "/" + conf + "/w";
+      Point p = lightAnalysis(folderPath, "");
+
+      probT.push_back(p.x);
+      probTerr.push_back(p.xErr);
+
+      double R = p.y;
+      double sigmaR = p.yErr;
+
+      // Apply 45° correction as before
+      double sigmaCorrT =
+          (1.0 / denomF) *
+          (std::abs(fIntegrand->Integral(angle1, angle2)) * deltaA +
+           std::abs(fIntegrand2->Integral(angle1, angle2, 1e-11)) * deltaTheta +
+           std::abs(fIntegrandR1->Integral(angle1, angle2)) * deltaR1 +
+           std::abs(fIntegrandR2->Integral(angle1, angle2)) * deltaR2 +
+           std::abs(fIntegrandSigma->Integral(angle1, angle2)) * deltaSigma);
+
+      probR.push_back(R / corrFactor45);
+      probRerr.push_back(
+          sqrt(sigmaR * sigmaR / (corrFactor45 * corrFactor45) +
+               sigmaCorrT * sigmaCorrT / (corrFactor45 * corrFactor45)));
+
+      // Print table header
+      std::cout << std::setw(12) << "Config" << std::setw(15) << "Prob_T"
+                << std::setw(15) << "Err_T" << std::setw(15) << "Prob_R"
+                << std::setw(15) << "Err_R" << std::endl;
+      std::cout << std::string(72, '-') << std::endl;
+
+      // Print values
+      for (size_t i = 0; i < configs.size(); ++i) {
+        std::cout << std::setw(12) << configs[i] << std::setw(15) << std::fixed
+                  << std::setprecision(6) << probT[i] << std::setw(15)
+                  << probTerr[i] << std::setw(15) << probR[i] << std::setw(15)
+                  << probRerr[i] << std::endl;
+      }
+    }
+  };
+
+  // --- Collect for metal ---
+  std::vector<double> probT_metal, probR_metal, probTerr_metal, probRerr_metal;
+  collectProbs(metalConfigs, probT_metal, probR_metal, probTerr_metal,
+               probRerr_metal);
+
+  // --- Collect for scraped ---
+  std::vector<double> probT_scraped, probR_scraped, probTerr_scraped,
+      probRerr_scraped;
+  collectProbs(scrapedConfigs, probT_scraped, probR_scraped, probTerr_scraped,
+               probRerr_scraped);
+
+  // --- Make multigraphs ---
+  TFile *outFile = new TFile("./rootFiles/reflTransm_45Deg.root", "RECREATE");
+
+  auto makeGraph = [&](std::vector<double> &probT, std::vector<double> &probR,
+                       std::string name) {
+    TMultiGraph *mg = new TMultiGraph();
+    int n = probT.size();
+    std::vector<double> x(n), ex(n, 0.);
+    for (int i = 0; i < n; i++) x[i] = i + 1;
+    TGraphErrors *gT = new TGraphErrors(n, x.data(), probT.data(), ex.data(),
+                                        probTerr_metal.data());
+    TGraphErrors *gR = new TGraphErrors(n, x.data(), probR.data(), ex.data(),
+                                        probRerr_metal.data());
+    gT->SetMarkerStyle(20);
+    gT->SetMarkerColor(kBlue);
+    gT->SetLineColor(kBlue);
+    gT->SetTitle("Transmittance");
+    gR->SetMarkerStyle(21);
+    gR->SetMarkerColor(kRed);
+    gR->SetLineColor(kRed);
+    gR->SetTitle("Reflectance");
+    mg->Add(gT, "LP");
+    mg->Add(gR, "LP");
+    mg->SetTitle(name.c_str());
+    mg->Draw("A");
+    mg->Write(name.c_str());
+  };
+
+  makeGraph(probT_metal, probR_metal, "MetalConfigs");
+  makeGraph(probT_scraped, probR_scraped, "ScrapedConfigs");
+
+  outFile->Close();
+}
+
 int main() {
   reflTransm();
 
