@@ -34,6 +34,7 @@ void convertCSVtoTXT(std::string const& folderPath) {
 
       // Read input file lines
       std::string line;
+      int row{};
       while (std::getline(infile, line)) {
         // Defining loop variables
         std::stringstream ss(line);
@@ -49,6 +50,10 @@ void convertCSVtoTXT(std::string const& folderPath) {
           first = false;
         }
         outFile << '\n';
+        ++row;
+        if (row > 65000) {
+          continue;
+        }
       }
       outFile.close();
 
@@ -59,7 +64,7 @@ void convertCSVtoTXT(std::string const& folderPath) {
 }
 
 int main() {
-  convertCSVtoTXT("/mnt/c/Users/Simone/Desktop/ConversionFolder");
+  convertCSVtoTXT("/mnt/c/Users/Simone/Desktop/DATA - Copia (2) - Copia");
 
   return EXIT_SUCCESS;
 }
