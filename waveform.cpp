@@ -1623,6 +1623,98 @@ void copyIncidentFiles() {
   }
 }
 
+// Analysis of scraped and metal measurements
+void rateAnalysis45() {
+  std::string dataPath = "./data/DATA/";
+  std::string rootBase = "./rootFiles/45DegreesNew/";
+  std::string thickness = "2.05";  // fixed thickness
+
+  // Create base folder
+  if (gSystem->AccessPathName(rootBase.c_str())) {
+    gSystem->mkdir(rootBase.c_str(), true);
+  }
+
+  // Incident references
+  waveformAnalysis(Transm,
+                   dataPath +
+                       "DataF_CH0@DT5730S_59483_run_3PTFE-LED_45_1.3_2-3.5_70_"
+                       "INC_TRANSM_SCRAPED.txt",
+                   rootBase + "w0.root");
+
+  waveformAnalysis(Refl,
+                   dataPath +
+                       "DataF_CH1@DT5730S_59483_run_3PTFE-LED_45_1.3_2-3.5_70_"
+                       "INC_REFL_SCRAPED.txt",
+                   rootBase + "w1.root");
+
+  // Transmission/Reflection configs
+  std::vector<std::string> scrapedConfigs = {"SCRAPED", "SCRAPED_1",
+                                             "SCRAPED_2", "SCRAPED_3"};
+  std::vector<std::string> metalConfigs = {"METAL_1", "METAL_2", "METAL_3",
+                                           "METAL_4"};
+
+  std::string prefix = "DataF_CH";
+
+  std::string w0 = rootBase + "w0.root";
+  std::string w1 = rootBase + "w1.root";
+
+  // Scraped configs
+  for (auto &cfg : scrapedConfigs) {
+    std::string cfgFolder = rootBase + "scraped_" + cfg.substr(7) + "/";
+
+    if (gSystem->AccessPathName(cfgFolder.c_str())) {
+      gSystem->mkdir(cfgFolder.c_str(), true);
+    }
+
+    // CH0
+    waveformAnalysis(Transm,
+                     dataPath + prefix + "0@DT5730S_59483_run_45_" + thickness +
+                         "_TRANSM_REFL_" + cfg + ".txt",
+                     cfgFolder + "w2.root");
+
+    // CH1
+    waveformAnalysis(Refl,
+                     dataPath + prefix + "1@DT5730S_59483_run_45_" + thickness +
+                         "_TRANSM_REFL_" + cfg + ".txt",
+                     cfgFolder + "w3.root");
+
+    // Copy incident reference files into the folder
+    if (copyFile(w0, cfgFolder + "w0.root")) {
+      std::cout << "Copied incident transm to " << cfgFolder + "w0.root"
+                << '\n';
+    } else {
+      std::cout << "Failed to copy incident transm into " << cfgFolder << '\n';
+    }
+
+    if (copyFile(w1, cfgFolder + "w1.root")) {
+      std::cout << "Copied incident refl to " << cfgFolder + "w1.root" << '\n';
+    } else {
+      std::cout << "Failed to copy incident refl into " << cfgFolder << '\n';
+    }
+  }
+
+  // Metal configs
+  for (auto &cfg : metalConfigs) {
+    std::string cfgFolder = rootBase + "metal_" + cfg.substr(6) + "/";
+
+    if (gSystem->AccessPathName(cfgFolder.c_str())) {
+      gSystem->mkdir(cfgFolder.c_str(), true);
+    }
+
+    // CH0
+    waveformAnalysis(Transm,
+                     dataPath + prefix + "0@DT5730S_59483_run_45_" + thickness +
+                         "_TRANSM_REFL_" + cfg + ".txt",
+                     cfgFolder + "w2.root");
+
+    // CH1
+    waveformAnalysis(Refl,
+                     dataPath + prefix + "1@DT5730S_59483_run_45_" + thickness +
+                         "_TRANSM_REFL_" + cfg + ".txt",
+                     cfgFolder + "w3.root");
+  }
+}
+
 // Plot working principle of pulse finder
 void plotWaveform(
     AreaConvFactor areaConv = Transm,
