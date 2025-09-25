@@ -47,7 +47,9 @@
 # Directories
 data/
 rootFiles/
-plots/
+plots/dig
+plots/osc
+!plots/s3p3_logo.png
 
 # Miscellaneous
 nicolasLoop.cpp
