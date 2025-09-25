@@ -39,9 +39,13 @@ void setFitStyle() {
   gStyle->SetTitleY(0.98);
   gStyle->SetTitleAlign(23);
   gStyle->SetTitleBorderSize(0);
-  gStyle->SetTitleXOffset(1.2f);
-  gStyle->SetTitleYOffset(1.1f);
+  gStyle->SetTitleXOffset(0.9f);
+  gStyle->SetTitleYOffset(0.7f);
   gStyle->SetLineScalePS(1);
+  gStyle->SetTitleXSize(0.05);
+  gStyle->SetTitleYSize(0.05);
+  // gStyle->SetPadTopMargin(0.02);
+  // gStyle->SetPadBottomMargin(0.6);  // More room for x-axis labels
   // gStyle->SetPadTopMargin(-9.);
   // gStyle->SetPadRightMargin(-9.);
   // gStyle->SetPadBottomMargin(-9.);
@@ -355,180 +359,135 @@ Point lightAnalysis(std::string filePath = "./rootFiles/45Degrees3Layer/wA",
     // Loop on regions
     for (int i{}; i < nRegions; ++i) {
       switch (i) {
-        case 0:
-          rate = (pd.preTrigger.PECounter) / (pd.preTrigger.deltaT);
-          rateError = std::sqrt(pd.preTrigger.PECounter) / pd.preTrigger.deltaT;
-          /* std::cout << "\nPre trigger region" << '\n';
-          std::cout << " Rate          = " << rate << " PE/ns\n";
-          std::cout << " PE counter    = " << pd.preTrigger.PECounter
-                    << " PE\n";
-          std::cout << " PE per pulse  = " << pd.preTrigger.PEPulses
-                    << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.preTrigger.deltaT << " ns\n";
-        */
+        case 0:  // Pre-trigger
+          rate = pd.preTrigger.PECounter / (pd.preTrigger.deltaT * 60000.0);
+          rateError = rate * std::sqrt((0.02 / 0.9) * (0.02 / 0.9) +
+                                       (0.03 / 0.9) * (0.03 / 0.9));
+
           switch (counter) {
             case 0:
               incT.push_back(rate);
               incTErrors.push_back(rateError);
               break;
-
             case 1:
               incR.push_back(rate);
               incRErrors.push_back(rateError);
               break;
-
             case 2:
               transm.push_back(rate);
               transmErrors.push_back(rateError);
               break;
-
             case 3:
               rateCorrRefl = rate - incR[i];
               rateCorrReflError = std::sqrt(rateError * rateError +
                                             incRErrors[i] * incRErrors[i]);
-              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
           }
           break;
 
-        case 1:
-          /* std::cout << "\nTrigger region" << '\n';
-          std::cout << " PE counter    = " << pd.inTrigger.PECounter << " PE\n";
-        */
-          rateCorr = (pd.inTrigger.PECounter - (rate * pd.inTrigger.deltaT)) /
-                     pd.inTrigger.deltaT;
+        case 1:  // Trigger
+          rateCorr = (pd.inTrigger.PECounter -
+                      (rate * pd.inTrigger.deltaT * 60000.0)) /
+                     (pd.inTrigger.deltaT * 60000.0);
           rateCorrError = std::sqrt(
-              (std::sqrt(pd.inTrigger.PECounter) / pd.inTrigger.deltaT) *
-                  (std::sqrt(pd.inTrigger.PECounter) / pd.inTrigger.deltaT) +
-              rateError * rateError);
-          /* std::cout << " Rate          = "
-                    << (pd.inTrigger.PECounter) / (pd.inTrigger.deltaT)
-                    << " PE/ns\n";
-          std::cout << " Rate correct  = " << rateCorr << " PE/ns\n";
-          std::cout << " PE per pulse  = " << pd.inTrigger.PEPulses
-                    << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.inTrigger.deltaT << " ns\n"; */
+              rateError * rateError +
+              (std::sqrt((0.02 / 0.9) * (0.02 / 0.9) +
+                         (0.03 / 0.9) * (0.03 / 0.9)) *
+               pd.inTrigger.PECounter / (60000. * pd.inTrigger.deltaT)) *
+                  (std::sqrt((0.02 / 0.9) * (0.02 / 0.9) +
+                             (0.03 / 0.9) * (0.03 / 0.9)) *
+                   pd.inTrigger.PECounter / (60000. * pd.inTrigger.deltaT)));
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
               incTErrors.push_back(rateCorrError);
               break;
-
             case 1:
               incR.push_back(rateCorr);
               incRErrors.push_back(rateCorrError);
               break;
-
             case 2:
               transm.push_back(rateCorr);
               transmErrors.push_back(rateCorrError);
               break;
-
             case 3:
               rateCorrRefl = rateCorr - incR[i];
               rateCorrReflError = std::sqrt(rateCorrError * rateCorrError +
                                             incRErrors[i] * incRErrors[i]);
-              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
           }
           break;
 
-        case 2:
-          /* std::cout << "\nPost trigger region 1" << '\n';
-          std::cout << " PE counter    = " << pd.postTrigger1.PECounter
-                    << " PE\n"; */
-          rateCorr =
-              (pd.postTrigger1.PECounter - (rate * pd.postTrigger1.deltaT)) /
-              pd.postTrigger1.deltaT;
+        case 2:  // Post trigger 1
+          rateCorr = (pd.postTrigger1.PECounter -
+                      (rate * pd.postTrigger1.deltaT * 60000.0)) /
+                     (pd.postTrigger1.deltaT * 60000.0);
           rateCorrError = std::sqrt(
-              (std::sqrt(pd.postTrigger1.PECounter) / pd.postTrigger1.deltaT) *
-                  (std::sqrt(pd.postTrigger1.PECounter) /
-                   pd.postTrigger1.deltaT) +
-              rateError * rateError);
-          /*std::cout << " Rate          = "
-                    << (pd.postTrigger1.PECounter) / (pd.postTrigger1.deltaT)
-                    << " PE/ns\n";
-          std::cout << " Rate correct  = " << rateCorr << " PE/ns\n";
-          std::cout << " PE per pulse  = " << pd.postTrigger1.PEPulses
-                    << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.postTrigger1.deltaT << " ns\n";
-        */
+              rateError * rateError +
+              (std::sqrt((0.02 / 0.9) * (0.02 / 0.9) +
+                         (0.03 / 0.9) * (0.03 / 0.9)) *
+               pd.postTrigger1.PECounter / (60000. * pd.postTrigger1.deltaT)) *
+                  (std::sqrt((0.02 / 0.9) * (0.02 / 0.9) +
+                             (0.03 / 0.9) * (0.03 / 0.9)) *
+                   pd.postTrigger1.PECounter /
+                   (60000. * pd.postTrigger1.deltaT)));
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
               incTErrors.push_back(rateCorrError);
               break;
-
             case 1:
               incR.push_back(rateCorr);
               incRErrors.push_back(rateCorrError);
               break;
-
             case 2:
               transm.push_back(rateCorr);
               transmErrors.push_back(rateCorrError);
               break;
-
             case 3:
               rateCorrRefl = rateCorr - incR[i];
               rateCorrReflError = std::sqrt(rateCorrError * rateCorrError +
                                             incRErrors[i] * incRErrors[i]);
-              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
           }
           break;
 
-        case 3:
-          /* std::cout << "\nPost trigger region 2" << '\n';
-          std::cout << " PE counter    = " << pd.postTrigger2.PECounter
-                    << " PE\n"; */
-          rateCorr =
-              (pd.postTrigger2.PECounter - (rate * pd.postTrigger2.deltaT)) /
-              pd.postTrigger2.deltaT;
+        case 3:  // Post trigger 2
+          rateCorr = (pd.postTrigger2.PECounter -
+                      (rate * pd.postTrigger2.deltaT * 60000.0)) /
+                     (pd.postTrigger2.deltaT * 60000.0);
           rateCorrError = std::sqrt(
-              (std::sqrt(pd.postTrigger2.PECounter) / pd.postTrigger2.deltaT) *
-                  (std::sqrt(pd.postTrigger2.PECounter) /
-                   pd.postTrigger2.deltaT) +
-              rateError * rateError);
-          /* std::cout << " Rate          = "
-                    << (pd.postTrigger2.PECounter) / (pd.postTrigger2.deltaT)
-                    << " PE/ns\n";
-          std::cout << " Rate correct  = " << rateCorr << " PE/ns\n";
-          std::cout << " PE per pulse  = " << pd.postTrigger2.PEPulses
-                    << " PE/pulse\n";
-          std::cout << " Delta time    = " << pd.postTrigger2.deltaT << " ns\n";
-        */
+              rateError * rateError +
+              (std::sqrt((0.02 / 0.9) * (0.02 / 0.9) +
+                         (0.03 / 0.9) * (0.03 / 0.9)) *
+               pd.postTrigger2.PECounter / (60000. * pd.postTrigger2.deltaT)) *
+                  (std::sqrt((0.02 / 0.9) * (0.02 / 0.9) +
+                             (0.03 / 0.9) * (0.03 / 0.9)) *
+                   pd.postTrigger2.PECounter /
+                   (60000. * pd.postTrigger2.deltaT)));
           switch (counter) {
             case 0:
               incT.push_back(rateCorr);
               incTErrors.push_back(rateCorrError);
               break;
-
             case 1:
               incR.push_back(rateCorr);
               incRErrors.push_back(rateCorrError);
               break;
-
             case 2:
               transm.push_back(rateCorr);
               transmErrors.push_back(rateCorrError);
               break;
-
             case 3:
               rateCorrRefl = rateCorr - incR[i];
               rateCorrReflError = std::sqrt(rateCorrError * rateCorrError +
                                             incRErrors[i] * incRErrors[i]);
-              /* std::cout << " Rate corr ref = " << rateCorrRefl << " ± "
-                        << rateCorrReflError << " PE/ns\n"; */
               refl.push_back(rateCorrRefl);
               reflErrors.push_back(rateCorrReflError);
               break;
@@ -586,6 +545,10 @@ void reflTransm() {
   // Define useful vector for thicknesses and colours
   std::array<double, 8> thicknesses{0.20, 0.80, 1.55, 2.05,
                                     3.10, 3.60, 4.10, 5.15};
+
+  // Errors on thicknesses
+  std::array<double, 8> thicknessesErr{0.05, 0.05, 0.05, 0.05,
+                                       0.05, 0.05, 0.05, 0.05};
 
   // Colour array
   int colours[8] = {kRed - 10, kRed - 9, kRed - 7, kRed - 4,
@@ -709,7 +672,7 @@ void reflTransm() {
     TH1F *frame =
         new TH1F("frame", Form("Correction function for %d^{#circ}", angle),
                  100, -90, 90);
-    frame->SetXTitle("Angle [deg]");
+    frame->SetXTitle("#theta_{refl} [deg]");
     frame->SetYTitle("Arbitrary units");
     frame->SetTitle(Form("Correction function for %d^{#circ}", angle));
     frame->SetMinimum(0);
@@ -798,10 +761,10 @@ void reflTransm() {
 
     // Add legend
     TLegend *leg = new TLegend(.70, .7, .9, .9);
-    leg->AddEntry(fFFunction, "F(x) Reflectance", "L");
-    leg->AddEntry(fTFunction, "T(x) = C(x)F(x)", "L");
-    leg->AddEntry(fFRange, "Integration region (F)", "F");
-    leg->AddEntry(fTRange, "Integration region (T)", "F");
+    leg->AddEntry(fFFunction, "F(#theta_{refl})", "L");
+    leg->AddEntry(fTFunction, "C(#theta_{refl})#timesF(#theta_{refl})", "L");
+    leg->AddEntry(fFRange, "Without C(#theta_{refl})", "F");
+    leg->AddEntry(fTRange, "With C(#theta_{refl})", "F");
     leg->Draw();
 
     // Add text labels for angle1 and angle2
@@ -997,12 +960,13 @@ void reflTransm() {
     TMultiGraph *mgReflVsTransm = new TMultiGraph();
     std::array<TGraphErrors *, 2> g{
         new TGraphErrors(thicknesses.size(), thicknesses.data(), probT.data(),
-                         nullptr, probTErr.data()),
+                         thicknessesErr.data(), probTErr.data()),
         new TGraphErrors(thicknesses.size(), thicknesses.data(), probR.data(),
-                         nullptr, probRErr.data())};
+                         thicknessesErr.data(), probRErr.data())};
     std::array<std::string, 2> names{"Transmittance", "Reflectance"};
     for (size_t i = 0; i < names.size(); ++i) {
       g[i]->SetMarkerStyle(20);
+      g[i]->SetLineWidth(2);
       g[i]->SetTitle(names[i].c_str());
       mg->Add(g[i], "LP");
     }
@@ -1103,7 +1067,7 @@ void reflTransm() {
     mg->GetYaxis()->SetTitle("Probability");
     mg->GetYaxis()->SetTitleOffset(0.8);
     mg->GetYaxis()->SetLabelSize(0.035);  // Smaller y labels
-    mg->GetYaxis()->SetTitleSize(0.04);   // Smaller y title
+    mg->GetYaxis()->SetTitleSize(0.06);   // Smaller y title
 
     TLegend *legend2 = new TLegend(.70, .7, .9, .9);
     legend2->SetTextSize(0.035);  // Make legend text smaller
@@ -1132,10 +1096,11 @@ void reflTransm() {
     }
     TGraphErrors *gSum =
         new TGraphErrors(thicknesses.size(), thicknesses.data(), probSum.data(),
-                         nullptr, probSumErr.data());
+                         thicknessesErr.data(), probSumErr.data());
     gSum->SetLineColor(kGreen + 2);
     gSum->SetMarkerColor(kGreen + 2);
     gSum->SetMarkerStyle(21);
+    gSum->SetLineWidth(2);
 
     double xmin = 0.0, xmax = 5.3;
     mg->GetXaxis()->SetLimits(xmin, xmax);    // For multigraph
@@ -1144,17 +1109,17 @@ void reflTransm() {
     gSum->SetTitle("");
     gSum->GetXaxis()->SetTitle("Thickness [mm]");
     gSum->GetXaxis()->SetLabelSize(0.07);  // Slightly bigger (bottom axis only)
-    gSum->GetXaxis()->SetTitleSize(0.08);
+    gSum->GetXaxis()->SetTitleSize(0.1);
     gSum->GetYaxis()->SetTitle("T+R");
     gSum->GetYaxis()->SetTitleOffset(0.3);
     gSum->GetYaxis()->SetLabelSize(0.07);
-    gSum->GetYaxis()->SetTitleSize(0.08);
+    gSum->GetYaxis()->SetTitleSize(0.1);
 
     // Define constant fit function (just p0)
     TF1 *fConst = new TF1("fConst", "[0]", 0.1, 5.2);
     fConst->SetLineColor(kRed);
     fConst->SetLineStyle(2);
-    fConst->SetLineWidth(3);
+    fConst->SetLineWidth(4);
     fConst->SetParameter(0, 1.0);  // initial guess
 
     // Draw and fit
@@ -1238,10 +1203,10 @@ void reflTransm() {
   // Loop over thicknesses
   for (size_t i = 0; i < thicknesses.size(); ++i) {
     // Extract probabilities for this thickness across different angles
-    double newProbT[3] = {prob30T[i], prob45T[i], prob60T[i]};
-    double newProbR[3] = {prob30R[i], prob45R[i], prob60R[i]};
-    double newProbTErr[3] = {prob30TErr[i], prob45TErr[i], prob60TErr[i]};
-    double newProbRErr[3] = {prob30RErr[i], prob45RErr[i], prob60RErr[i]};
+    double newProbT[3] = {prob30T[i], prob45T[i], prob61T[i]};
+    double newProbR[3] = {prob30R[i], prob45R[i], prob61R[i]};
+    double newProbTErr[3] = {prob30TErr[i], prob45TErr[i], prob61TErr[i]};
+    double newProbRErr[3] = {prob30RErr[i], prob45RErr[i], prob61RErr[i]};
 
     // Push graphs into vectors
     gTs.push_back(
@@ -1253,11 +1218,11 @@ void reflTransm() {
   // Draw graphs in vectors
   for (size_t i = 0; i < gTs.size(); ++i) {
     cAngle->cd(i + 1);
-    gTs[i]->GetYaxis()->SetRangeUser(0., 1.);
+    gTs[i]->GetYaxis()->SetRangeUser(0., 1.6);
     gTs[i]->GetXaxis()->SetTitle("Angle [deg]");
-    gTs[i]->GetYaxis()->SetTitle("Probability");
-    gTs[i]->GetYaxis()->SetTitleOffset(1.2);
-    gTs[i]->SetTitle(Form("Thickness %.2f mm", thicknesses[i]));
+    // gTs[i]->GetYaxis()->SetTitle("Probability");
+    gTs[i]->GetYaxis()->SetTitleOffset(1);
+    gTs[i]->SetTitle(Form("%.2f mm", thicknesses[i]));
     gTs[i]->SetMarkerStyle(20);
     gTs[i]->SetMarkerColor(kBlue);
     gTs[i]->SetLineColor(kBlue);
@@ -1324,7 +1289,7 @@ void reflTransm() {
   std::cout << "- B           = " << b62 << " ± " << b60Error << '\n';
 
   // Print chi squared and p values
-  std::cout << std::fixed << std::setprecision(10);
+  std::cout << std::fixed << std::setprecision(20);
   std::cout << "\n=== Beer-Lambert Fit ===\n";
   for (size_t i = 0; i < chiReducedBeerLambert.size(); ++i) {
     std::cout << "Angle " << angles[i] << "° -> "
