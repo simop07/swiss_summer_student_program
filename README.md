@@ -1,35 +1,26 @@
-# UZH Summer Student Program
+# UZH Swiss Summer Student Particle Physics Program
 
 [![DOI](https://zenodo.org/badge/1024295677.svg)](https://doi.org/10.5281/zenodo.16323819)
- [![GitHub 
-license](https://img.shields.io/github/license/simop07/swiss_summer_student_program)](https://github.com/simop07/swiss_summer_student_program/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/simop07/swiss_summer_student_program)](https://github.com/simop07/swiss_summer_student_program/blob/main/LICENSE)
 
-## Repository contents (work in progress)
-This repository contains the material developed during my time as Visiting Student at the [University of Zurich](https://www.uzh.ch/en.html) (UZH) as part of the [Swiss Summer Student Program](https://swiss.sspp.program.phys.ethz.ch/) in Particle Physics, held from 14 July to 14 September 2025.
+## Overview
+This repository contains material developed during my time as a Visiting Student at the [University of Zurich](https://www.uzh.ch/en.html) (UZH) as part of the [Swiss Summer Student Program](https://swiss.sspp.program.phys.ethz.ch/) in Particle Physics, held from 14 July to 14 September 2025.
 
-## Introduction
-The aim of my project is to analyse the reflectance and absorption of light in Polytetrafluoroethylene (PTFE), often referred to as _Teflon_ by the brand name. This material is commonly used in the construction of liquid xenon detectors due to its high diffuse reflectivity for VUV (Vacuum Ultra-Violet) scintillation light, a type of radiation primarily produced as a consequence of particle's interaction with noble gases. As liquid xenon detectors have proved effective in the search for rare processes, such as elastic scattering of dark matter particles off nuclei, they are largely utilised in dark matter research for their great sensitiviness and performance.
+## Summary
+Polytetrafluoroethylene (PTFE), often known by its brand name Teflon, is extensively used in rare event searches, including Dark Matter (DM) experiments. Indeed, to efficiently collect the Vacuum Ultra-Violet scintillation light ($\sim178$ nm) emitted by Liquid Xenon (LXe) detectors employed in DM research, PTFE reflectors are commonly utilized to surround LXe volumes due to their excellent diffuse reflectivity. The critical influence of reflectivity on detector performance, along with the growing interest in assembling thinner PTFE detector walls that maintain high collection efficiency while minimizing light leakages, motivates the need for accurate knowledge of PTFE transmittance $(T)$ and reflectance $(R)$ dependence on PTFE thickness. In this work, a `C++`/`ROOT` pulse analysis software is developed to determine $T$ and $R$ at the PTFE--air interface, by using a blue LED light source and PTFE discs of varying thicknesses (from $0.2\pm0.05$ to $5.15\pm0.05$ mm). Measurements are performed at incidence and reflection angles of $30^\circ$, $45^\circ$ and $60^\circ$. Attenuation coefficients are consistent across angles ($\lambda_T^{30^\circ}=(1.32\pm0.12)$ mm, $\lambda_T^{45^\circ}=(1.33\pm0.12)$ mm and $\lambda_T^{60^\circ}=(1.33\pm0.13)$ mm), while $R$ shows a strong angular dependence. These results will contribute to the future development of ALPINE detector, whose LXe TPC features a novel PTFE--metal--PTFE interface with light-tight properties yet to be comprehensively characterized.
 
-To efficiently collect the scintillation light produced by particles interacting with liquid xenon, VUV reflectors are required. While PTFE is excellent for this purpose, it is desired to decrease its overall amount in order to minimise the radiogenic background produced by its inherent impurity, without loosing light collection efficiency. Hence, the complete knowledge of the scintillation light transmitted in PTFE reveals fundamental, expecially in low-background experiments.
+## Pulse analysis
+The pulse analysis software extracts key parameters from photomultiplier (PMT) signals to determine PTFE transmittance and reflectance. The workflow includes:
 
-The first part of my project is devoted to measure the reflectance and absorption of light in PTFEs by measuring the scintillation light detected by PMTs when light is emitted from a blue LED. To analyse the signals measured by the PMTs, a waveform and pulse analysis is performed through a software based on `ROOT` framework and `C++`.
+- Processing digitized PMT waveforms.
+- Identifying and integrating pulses.
+- Applying geometric acceptance corrections.
+- Computing transmittance and reflectance for different PTFE thicknesses and angles.
 
-### Pulse analysis
-- [merge.cpp](merge.cpp) is just used to merge multiple waveforms (one per .scv or .xlsx file) into one single .txt file.
-
-- [compare.cpp](compare.cpp) is used to compare 1D histos retrieved from the analysis.
-
-- [lightAnalysis.cpp](lightAnalysis.cpp) is used to compute transmittance and reflectance in various time regions.
-
-To perform pulse analysis, two lines of development are followed depending on the used logic:
-- [waveformAnalysisPos.cpp](waveformAnalysisPos.cpp), pulses with positive logic;
-- [waveformAnalysisNeg.cpp](waveformAnalysisNeg.cpp), for pulses with negative logic.
-
-In addition, two main source files are presented depending on the used data:
-- [waveform.cpp](waveform.cpp), for digitised data;
-- [waveformOsc.cpp](waveformOsc.cpp), for data from the oscilloscope.
-- [waveformOscDownsample.cpp](waveformOscDownsample.cpp), for downsampled data from the oscilloscope.
-
-The aim of pulse analysis is to extrapolate several parameters of interest which will leter be used to find the reflectance and transmittance of light in PTFEs. You can see the definition of parameters of interest directly in [waveform.cpp](waveform.cpp) and [waveformOsc.cpp](waveformOsc.cpp).
-
-Graphs in [pulses.pdf](plots/pulses.pdf) and [pulses_osc.pdf](plots/pulses_osc.pdf) show pulses as functions of time since "trigger" time. An analysis region is added to compute the total numbers of photons inside it.
+## Repository Contents
+- `merge.cpp` $\rightarrow$ Merge multiple waveform files into a single dataset.
+- `compare.cpp` $\rightarrow$ Compare 1D histograms from the analysis.
+- `lightAnalysis.cpp` $\rightarrow$ Compute PTFE transmittance and reflectance.
+- `waveformAnalysisPos.cpp` / `waveformAnalysisNeg.cpp` $\rightarrow$ Analyze pulses depending on logic.
+- `waveform.cpp` / `waveformOsc.cpp` / `waveformOscDownsample.cpp` $\rightarrow$ Process digitized or oscilloscope data.
+- `plots/` $\rightarrow$ Graphical outputs of pulse analysis and final results.
