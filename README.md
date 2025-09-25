@@ -2,7 +2,7 @@
 
 # UZH Swiss Summer Student Particle Physics Program
 
-[![DOI](https://zenodo.org/badge/1024295677.svg)](https://doi.org/10.5281/zenodo.16323819)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17200120.svg)](https://doi.org/10.5281/zenodo.17200120)
 [![GitHub license](https://img.shields.io/github/license/simop07/swiss_summer_student_program)](https://github.com/simop07/swiss_summer_student_program/blob/main/LICENSE)
 
 ## Overview
