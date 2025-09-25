@@ -1,4 +1,4 @@
-<p align="center"> <img src="./plots/s3p3_logo.png" width="20%"> </p>
+<p align="center"> <img src="./plots/s3p3_logo.png" width="30%"> </p>
 
 # UZH Swiss Summer Student Particle Physics Program
 
