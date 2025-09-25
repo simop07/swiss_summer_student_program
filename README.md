@@ -25,9 +25,9 @@ The pulse analysis software extracts key parameters from photomultiplier (PMT) s
 - Computing transmittance and reflectance for different PTFE thicknesses and angles.
 
 ## Repository Contents
-- [`merge.cpp`](merge.cpp) $\rightarrow$ Merge multiple waveform files into a single dataset.
-- [`compare.cpp`](compare.cpp) $\rightarrow$ Compare 1D histograms for the analysis.
-- [`lightAnalysis.cpp`](lightAnalysis.cpp) $\rightarrow$ Compute PTFE transmittance and reflectance.
-- [`convertCSVtoTXT.cpp`](convertCSVtoTXT.cpp) $\rightarrow$ Convert files from .CSV to .txt.
-- [`waveformAnalysisPos.cpp`](waveformAnalysisPos.cpp) / [`waveformAnalysisNeg.cpp`](waveformAnalysisNeg.cpp) $\rightarrow$ Custom waveform analysis devoted to analyze pulse estraction and analysis.
-- [`waveform.cpp`](waveform.cpp) / [`waveformOsc.cpp`](waveformOsc.cpp) / [`waveformOscDownsample.cpp`](waveformOscDownsample.cpp) $\rightarrow$ Process digitized or oscilloscope data.
+- [`merge.cpp`](src/merge.cpp) $\rightarrow$ Merge multiple waveform files into a single dataset.
+- [`compare.cpp`](src/compare.cpp) $\rightarrow$ Compare 1D histograms for the analysis.
+- [`lightAnalysis.cpp`](src/lightAnalysis.cpp) $\rightarrow$ Compute PTFE transmittance and reflectance.
+- [`convertCSVtoTXT.cpp`](src/convertCSVtoTXT.cpp) $\rightarrow$ Convert files from .CSV to .txt.
+- [`waveformAnalysisPos.cpp`](src/waveformAnalysisPos.cpp) / [`waveformAnalysisNeg.cpp`](src/waveformAnalysisNeg.cpp) $\rightarrow$ Custom waveform analysis devoted to analyze pulse estraction and analysis.
+- [`waveform.cpp`](src/waveform.cpp) / [`waveformOsc.cpp`](src/waveformOsc.cpp) / [`waveformOscDownsample.cpp`](src/waveformOscDownsample.cpp) $\rightarrow$ Process digitized or oscilloscope data.
