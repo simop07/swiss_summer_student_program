@@ -1,12 +1,12 @@
 <p align="center"> <img src="./plots/s3p3_logo.png" width="30%"> </p>
 
-# UZH Summer Student Program
+# Transmission and reflection of light in PTFE for Dark Matter research
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17200120.svg)](https://doi.org/10.5281/zenodo.17200120)
 [![GitHub license](https://img.shields.io/github/license/simop07/swiss_summer_student_program)](https://github.com/simop07/swiss_summer_student_program/blob/main/LICENSE)
 
 ## Overview
-This repository contains material developed during my time as a Visiting Student at the [University of Zurich](https://www.uzh.ch/en.html) (UZH) as part of the [Swiss Summer Student Program](https://swiss.sspp.program.phys.ethz.ch/) in Particle Physics, held from 14 July to 14 September 2025.
+This repository contains material developed during my time as a Visiting Student at the [University of Zurich](https://www.uzh.ch/en.html) (UZH) as part of the [Swiss Summer Student Particle Physics Program](https://swiss.sspp.program.phys.ethz.ch/), held from 14 July to 14 September 2025.
 
 The work from this project has been fully described in:
 
