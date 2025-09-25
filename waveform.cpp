@@ -37,7 +37,7 @@
 
 // Define global constants
 constexpr int nMinAnalysedRows{1};      // Minimum rows EXCLUDED
-constexpr int nMaxAnalysedRows{60000};  // Maximum rows INCLUDED
+constexpr int nMaxAnalysedRows{60000};  // Maximum rows INCLUDED (60k to use)
 
 // Asymmetric gaussian functions
 
@@ -189,7 +189,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConst =
       new TF1("fTotalConst", asym2GaussiansConstrained, 0.5, 3., 8);
-  fTotalConst->SetLineColor(kOrange + 2);
+  fTotalConst->SetLineColor(kRed);
   fTotalConst->SetLineWidth(4);
   fTotalConst->SetLineStyle(2);
 
@@ -198,7 +198,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fTotalConst->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
                            "#sigma^{1}_{2}", "N^{2}", "#sigma^{2}_{1}",
                            "#sigma^{2}_{2}", "Background");
-  TFitResultPtr fitResultConst = hPhotoElectrons->Fit(fTotalConst, "S R+ N");
+  TFitResultPtr fitResultConst = hPhotoElectrons->Fit(fTotalConst, "S R+ ");
 
   // Get results
   std::cout
@@ -228,7 +228,7 @@ void fitPEHistoNoExp(TH1F *hPhotoElectrons) {
   fTotalConstSameSigmas->SetParNames("N^{1}", "#mu^{1}", "#sigma^{1}_{1}",
                                      "#sigma^{1}_{2}", "N^{2}", "Background");
   TFitResultPtr fitResultConstSameSigma =
-      hPhotoElectrons->Fit(fTotalConstSameSigmas, "S R+");
+      hPhotoElectrons->Fit(fTotalConstSameSigmas, "S R+ N");
 
   // Get results
   std::cout << "\n\n**** FIT RESULT TOTAL CONSTRAINED SAME SIGMA #mu ****\n\nP "
@@ -328,7 +328,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   fAsymmetric2PE->SetParameter(3, 0.5);  // #sigma^{2}_{2}
 
   // Define expo function for noise fit
-  TF1 *fExpo = new TF1("fExpo", "expo", 0.5, 3.);
+  TF1 *fExpo = new TF1("fExpo", "expo", 0.1, 3.);
   fExpo->SetLineColor(kGreen + 2);
   fExpo->SetLineWidth(4);
   fExpo->SetLineStyle(2);
@@ -336,7 +336,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   fExpo->SetParameter(1, -1.2);  // Slope
 
   // Define total function as sum of 1 PE + 2 PE
-  TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0.5, 3., 11);
+  TF1 *fTotal = new TF1("fTotal", asym2GaussiansExpo, 0.1, 3., 11);
   fTotal->SetLineColor(kGreen + 2);
   fTotal->SetLineWidth(4);
   fTotal->SetLineStyle(2);
@@ -409,7 +409,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
 
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConst =
-      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0.5, 3., 10);
+      new TF1("fTotalConst", asym2GaussiansExpoConstrained, 0.1, 3., 10);
   fTotalConst->SetLineColor(kOrange + 2);
   fTotalConst->SetLineWidth(4);
   fTotalConst->SetLineStyle(2);
@@ -440,7 +440,7 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
   // Define total function as sum of 1 PE + 2 PE
   TF1 *fTotalConstSameSigmas =
       new TF1("fTotalConstSameSigmas", asym2GaussiansExpoConstrainedSameSigma,
-              0.5, 3., 8);
+              0.1, 3., 8);
   fTotalConstSameSigmas->SetLineColor(kRed);
   fTotalConstSameSigmas->SetLineWidth(4);
   fTotalConstSameSigmas->SetLineStyle(2);
@@ -474,8 +474,8 @@ void fitPEHistoExp(TH1F *hPhotoElectrons) {
 
 void setFitStyle() {
   gROOT->SetStyle("Plain");
-  gStyle->SetOptStat(10);
-  gStyle->SetOptFit(0);  // It was 1111
+  gStyle->SetOptStat(0);  // It was 10
+  gStyle->SetOptFit(0);   // It was 1111
   gStyle->SetPalette(57);
   gStyle->SetOptTitle(1);
   gStyle->SetStatY(0.9);
@@ -486,9 +486,13 @@ void setFitStyle() {
   gStyle->SetTitleY(0.98);
   gStyle->SetTitleAlign(23);
   gStyle->SetTitleBorderSize(0);
-  gStyle->SetTitleXOffset(1.2f);
-  gStyle->SetTitleYOffset(1.1f);
-  gStyle->SetLineScalePS(1);
+  gStyle->SetTitleXOffset(0.8f);
+  gStyle->SetTitleYOffset(.7f);
+  // gStyle->SetLineScalePS(1);
+  gStyle->SetTitleXSize(0.05);
+  gStyle->SetTitleYSize(0.05);
+  // gStyle->SetPadTopMargin(0.02);
+  // gStyle->SetPadBottomMargin(0.6);  // More room for x-axis labels
   // gStyle->SetPadTopMargin(-9.);
   // gStyle->SetPadRightMargin(-9.);
   // gStyle->SetPadBottomMargin(-9.);
@@ -550,7 +554,7 @@ TGraph *sumPulseAnalysis(const std::string &infileName) {
     const auto &pulses = wf.getPulses();
 
     for (const auto &p : pulses) {
-      if (p.peakValue > 15900.) continue;
+      if (p.peakValue > 13000.) continue;
       for (size_t j = 0; j < p.times.size(); ++j) {
         map[p.times[j]] += p.values[j];
       }
@@ -588,7 +592,7 @@ std::pair<double, double> FitTriggerRegion(TGraph *gPulseSum) {
   return {fGaus->GetParameter(1), fGaus->GetParameter(2)};  // mean, sigma
 }
 
-/// Process three files and combine into final histogram
+// Process three files and combine into final histogram
 void ProcessFilesAndCombine(const std::string &fileI, const std::string &fileR,
                             const std::string &fileIR, int Nbins, TH1F *&hI,
                             TH1F *&hR, TH1F *&hIR, TH1F *&hFinal) {
@@ -596,14 +600,14 @@ void ProcessFilesAndCombine(const std::string &fileI, const std::string &fileR,
   auto gR = sumPulseAnalysis(fileR);
   auto gIR = sumPulseAnalysis(fileIR);
 
-  // --- Gaussian fits for trigger regions ---
+  // Gaussian fits for trigger regions
   auto [meanI, sigmaI] = FitTriggerRegion(gI);
   auto [meanR, sigmaR] = FitTriggerRegion(gR);
   auto [meanIR, sigmaIR] = FitTriggerRegion(gIR);
 
-  double startI = meanI - 1.8 * sigmaI, endI = meanI + 1.8 * sigmaI;
-  double startR = meanR - 1.8 * sigmaR, endR = meanR + 1.8 * sigmaR;
-  double startIR = meanIR - 1.8 * sigmaIR, endIR = meanIR + 1.8 * sigmaIR;
+  double startI = 0., endI = 450.;
+  double startR = meanR - 3. * sigmaR, endR = meanR + 3. * sigmaR;
+  double startIR = meanIR - 3. * sigmaIR, endIR = meanIR + 3. * sigmaIR;
 
   // Global trigger window
   double globalStart = std::min({startI, startR, startIR});
@@ -616,12 +620,12 @@ void ProcessFilesAndCombine(const std::string &fileI, const std::string &fileR,
   std::cout << ">>> Global: [" << globalStart << ", " << globalEnd << "]"
             << std::endl;
 
-  // --- Bin graphs in same window ---
+  // Bin graphs in same window
   hI = BinPulseSum(gI, globalStart, globalEnd, Nbins, "hI");
   hR = BinPulseSum(gR, globalStart, globalEnd, Nbins, "hR");
   hIR = BinPulseSum(gIR, globalStart, globalEnd, Nbins, "hIR");
 
-  // --- Subtract & normalize ---
+  // Subtract & normalize
   TH1F *hRcorr = (TH1F *)hR->Clone("hRcorr");
   hRcorr->Add(hIR, -1.0);
 
@@ -629,49 +633,143 @@ void ProcessFilesAndCombine(const std::string &fileI, const std::string &fileR,
   hFinal->Divide(hI);
 }
 
+// Use:
+// std::string fileI =
+//     "./data/61Degrees/CH0_3PTFE-LED_61_1.3_2-3.5_70_INC_TRANSM.txt";
+// std::string fileR =
+//     "./data/61Degrees/4.10mm/"
+//     "DataF_CH1@DT5730S_59483_run_61_4.10_TRANSM_REFL.txt";
+// std::string fileIR =
+//     "./data/61Degrees/CH1_3PTFE-LED_61_1.3_2-3.5_70_INC_REFL.txt";
 void runAnalysis() {
   std::string fileI =
-      "./data/60Degrees/CH0_3PTFE-LED_60_1.3_2-3.5_70_INC_TRANSM.txt";
+      "./data/DATA/"
+      "DataF_CH0@DT5730S_59483_run_3PTFE-LED_45_1.3_2-3.5_70_INC_TRANSM_"
+      "SCRAPED.txt";
   std::string fileR =
-      "./data/60Degrees/5.15mm/"
-      "DataF_CH1@DT5730S_59483_run_60_5.15_TRANSM_REFL.txt";
+      "./data/DATA/DataF_CH1@DT5730S_59483_run_45_2.05_TRANSM_REFL_METAL_1.txt";
   std::string fileIR =
-      "./data/60Degrees/CH1_3PTFE-LED_60_1.3_2-3.5_70_INC_REFL.txt";
+      "./data/DATA/"
+      "DataF_CH1@DT5730S_59483_run_3PTFE-LED_45_1.3_2-3.5_70_INC_REFL_SCRAPED."
+      "txt";
 
-  // Histograms
   TH1F *hI, *hR, *hIR, *hFinal;
-
-  // Build histograms
+  setFitStyle();
   ProcessFilesAndCombine(fileI, fileR, fileIR, 10., hI, hR, hIR, hFinal);
 
-  // ==== Draw everything on separate canvases ====
+  // Incident
   TCanvas *c1 = new TCanvas("c1", "Incident", 800, 600);
-  hI->SetLineColor(kRed);
-  hI->SetLineWidth(2);
+  hI->SetLineColor(kRed + 1);
+  hI->SetLineWidth(3);
+  hI->SetTitle("Incident Signal");
+  hI->GetXaxis()->SetTitle("Time [ns]");
+  hI->GetYaxis()->SetTitle("Counts");
   hI->Draw("HIST");
-  c1->SaveAs("./plots/dig/incident.png");
 
-  TCanvas *c2 = new TCanvas("c2", "Reflected (raw)", 800, 600);
-  hR->SetLineColor(kBlue);
-  hR->SetLineWidth(2);
+  TLegend *leg1 = new TLegend(0.7, 0.7, 0.9, 0.9);
+  leg1->AddEntry(hI, "Incident Signal", "l");
+  leg1->Draw();
+  c1->SaveAs("./plots/dig/incident.pdf");
+
+  // Reflected raw
+  TCanvas *c2 = new TCanvas("c2", "Reflected", 800, 600);
+  hR->SetLineColor(kBlue + 1);
+  hR->SetLineWidth(3);
+  hR->SetTitle("Reflected Signal (Raw)");
+  hR->GetXaxis()->SetTitle("Time [ns]");
+  hR->GetYaxis()->SetTitle("Counts");
   hR->Draw("HIST");
-  c2->SaveAs("./plots/dig/reflected_raw.png");
 
-  TCanvas *c3 = new TCanvas("c3", "Incident Reflected (IR)", 800, 600);
+  TLegend *leg2 = new TLegend(0.7, 0.7, 0.9, 0.9);
+  leg2->AddEntry(hR, "Reflected Signal (Raw)", "l");
+  leg2->Draw();
+  c2->SaveAs("./plots/dig/reflected_raw.pdf");
+
+  // Incident-reflected
+  TCanvas *c3 = new TCanvas("c3", "Incident Reflected", 800, 600);
   hIR->SetLineColor(kGreen + 2);
-  hIR->SetLineWidth(2);
+  hIR->SetLineWidth(3);
+  hIR->SetTitle("Incident-Reflected Overlap");
+  hIR->GetXaxis()->SetTitle("Time [ns]");
+  hIR->GetYaxis()->SetTitle("Counts");
   hIR->Draw("HIST");
-  c3->SaveAs("./plots/dig/incident_reflected.png");
 
-  TCanvas *c4 = new TCanvas("c4", "Final corrected (R - IR)/I", 800, 600);
-  hFinal->SetLineColor(kMagenta);
-  hFinal->SetLineWidth(2);
+  TLegend *leg3 = new TLegend(0.7, 0.7, 0.9, 0.9);
+  leg3->AddEntry(hIR, "Incident-Reflected Overlap", "l");
+  leg3->Draw();
+  c3->SaveAs("./plots/dig/incident_reflected.pdf");
+
+  // Final corrected
+  TCanvas *c4 = new TCanvas("c4", "Final Corrected", 800, 600);
+  hFinal->SetLineColor(kMagenta + 2);
+  hFinal->SetLineWidth(1);
+  hFinal->SetLineWidth(3);
+  hFinal->SetTitle("Final Result: (R - IR) / I");
+  hFinal->GetXaxis()->SetTitle("Time after trigger [ns]");
+  hFinal->GetYaxis()->SetTitle("Arbirtary units");
   hFinal->Draw("HIST");
-  c4->SaveAs("./plots/dig/final_result.png");
+
+  TLegend *leg4 = new TLegend(0.7, 0.7, 0.9, 0.9);
+
+  // First box (red)
+  double yMin = hFinal->GetMinimum();
+  double yMax = hFinal->GetMaximum() * 0.5;  // 50% of max for visibility
+  TBox *box1 = new TBox(220., yMin, 300., yMax);
+  box1->SetFillColor(kOrange + 8);
+  box1->SetFillStyle(3354);  // Hatched style
+  box1->SetLineColor(kOrange + 8);
+  box1->SetLineWidth(2);
+
+  // Second box (dark blue)
+  TBox *box2 = new TBox(175., yMin, 248., yMax);
+  box2->SetFillColor(kBlue + 2);  // Dark blue fill
+  box2->SetFillStyle(3345);
+  box2->SetLineColor(kBlue + 2);
+  box2->SetLineWidth(2);
+  box2->Draw("same");
+  box1->Draw("same");
+
+  // Define lines for the endpoints of the boxes
+  TLine *line1 = new TLine(220., yMin, 220., yMax);  // Left edge of box1
+  TLine *line2 = new TLine(300., yMin, 300., yMax);  // Right edge of box1
+  TLine *line3 = new TLine(175., yMin, 175., yMax);  // Left edge of box2
+  TLine *line4 = new TLine(248., yMin, 248., yMax);  // Right edge of box2
+
+  // Style for visibility (optional)
+  line1->SetLineColor(kOrange + 8);
+  line2->SetLineColor(kOrange + 8);
+  line3->SetLineColor(kBlue + 2);
+  line4->SetLineColor(kBlue + 2);
+
+  line1->SetLineWidth(4);
+  line2->SetLineWidth(4);
+  line3->SetLineWidth(4);
+  line4->SetLineWidth(4);
+
+  // Draw after boxes
+  line1->Draw("same");
+  line2->Draw("same");
+  line3->Draw("same");
+  line4->Draw("same");
+
+  // Legend
+  leg4->AddEntry(hFinal, "Corrected ratio", "L");
+  leg4->AddEntry(box1, "Stability region", "F");
+  leg4->AddEntry(box2, "Incorrect method", "F");
+  leg4->Draw();
+
+  c4->SaveAs("./plots/dig/final_result.pdf");
 }
 
 // This function analyses the waveform by building areaVStime, Noise, PE
 // counts and pulseWidth histos
+// Use below ()
+// (
+//     AreaConvFactor areaConv = Refl,
+//     std::string infileName =
+//         "./data/miscellaneous/"
+//         "DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt",
+//     std::string rootFileName = "./rootFiles/miscellaneous/wfAnalysis.root")
 void waveformAnalysis(
     AreaConvFactor areaConv = Refl,
     std::string infileName =
@@ -707,17 +805,19 @@ void waveformAnalysis(
 
   // Define histograms
   TH2F *hAreaVsTime = new TH2F("hAreaVsTime",
-                               "Pulse area vs relative time; Relative time "
-                               "peak [ns]; Area [ADC #times ns]",
+                               "; Time after "
+                               "trigger [ns]; Area [ADC#times ns]",
                                40, 100., 460., 100, 0., 100000.);
-  TH1F *hNoise = new TH1F("hNoise", "Noise distribution; ADC counts; Counts",
-                          30, 2755, 3000);
-  TH1F *hPhotoElectrons = new TH1F(
-      "hPE", "Pulse area distribution; Area [PE]; Normalized counts", 90, 0, 6);
+  TH1F *hNoise = new TH1F("hNoise", "; ADC Counts; Entries", 30, 2755, 2785);
+  TH1F *hPhotoElectrons =
+      new TH1F("hPE", "; Area [PE]; Normalized counts", 90, 0, 6);
   TH1F *hWidth =
       new TH1F("hWidth", "Width distribution; Width [ns]; Counts", 20, 2, 50);
   TH1F *hPETrigger = new TH1F(
       "hPETrigger", "Trigger region; Area [PE]; Normalized counts", 150, 0, 6);
+  TH1F *hPETriggerWV = new TH1F(
+      "hPETriggerWV",
+      "Trigger region all waveform; Area [PE]; Normalized counts", 150, -5, 20);
   TH1F *hPEPreTrigger =
       new TH1F("hPEPreTrigger",
                "Pre trigger region; Area [PE]; Normalized counts", 15, 0, 2);
@@ -745,7 +845,7 @@ void waveformAnalysis(
       {"90% area time [ns]", 0., 35.},
       {"Neg area/overall area", 0., 0.05},
       {"Neg counts/overall counts", 0., 1.}};
-  int const nBins{150};
+  int const nBins{30};
   TH1F *hPulsePar[nPulseParam];
   TH2F *h2PulsePar[nPulseParam][nPulseParam];
   TGraph *gPulsePar[nPulseParam][nPulseParam];
@@ -817,7 +917,7 @@ void waveformAnalysis(
       const auto &p = pulses[i];
 
       // Insert selections on pulses
-      if (p.peakValue > 15900.) {
+      if (p.peakValue > 13000.) {
         continue;
       }
 
@@ -848,9 +948,9 @@ void waveformAnalysis(
 
   // Create graph for summing pulses
   TGraph *gPulseSum = new TGraph(map.size(), xValues.data(), yValues.data());
-  gPulseSum->SetTitle("Pulse sum; Time since \"trigger\" [ns]; ADC Counts");
+  gPulseSum->SetTitle("; Time after trigger [ns]; ADC Counts");
   gPulseSum->SetLineColor(kBlue);
-  gPulseSum->SetLineWidth(1);
+  gPulseSum->SetLineWidth(3);
   gPulseSum->SetMarkerColor(kBlack);
   gPulseSum->SetMarkerStyle(20);
   gPulseSum->SetMarkerSize(1);
@@ -880,31 +980,34 @@ void waveformAnalysis(
   int pulseCounterTriggerRegion{};
   double totTrigArea{};
   double numTrigPE{};
+  double totTrigAreaWF{};
 
-  // Below gaussian fit on "Pulse sum" graph is used (0.5 sigmas)
-  double const triggerStart{meanSum - 0.5 * sigmaSum};
-  double const triggerEnd{meanSum + 0.5 * sigmaSum};
+  // Below gaussian fit on "Pulse sum" graph is used (antisymmetric 2. sigmas)
+  double const triggerStart{220.};  // 220. to use
+  double const triggerEnd{300.};    // 300. to use
 
   // Variable for analysis in pre-trigger region in 1 single file
   int pulseCounterPreTriggerRegion{};
   double totPreTrigArea{};
   double numPreTrigPE{};
-  double const preTriggerStart{meanSum - 4.5 * sigmaSum};
-  double const preTriggerEnd{meanSum - 4.5 * sigmaSum + 20};
+  double const preTriggerStart{1.};  // 80. to use
+  double const preTriggerEnd{100.};  // 100. to use
 
   // Variable for analysis in post-trigger region 1 in 1 single file
   int pulseCounterPostTriggerRegion1{};
   double totPostTrigArea1{};
   double numPostTrigPE1{};
-  double const postTriggerStart1{meanSum + 3 * sigmaSum};
-  double const postTriggerEnd1{meanSum + 3 * sigmaSum + 20};
+  double const postTriggerStart1{325.};
+  double const postTriggerEnd1{350.};
 
   // Variable for analysis in post-trigger region 2 in 1 single file
   int pulseCounterPostTriggerRegion2{};
   double totPostTrigArea2{};
   double numPostTrigPE2{};
-  double const postTriggerStart2{meanSum + 3 * sigmaSum + 40};
-  double const postTriggerEnd2{meanSum + 3 * sigmaSum + 60};
+  double const postTriggerStart2{375.};
+  double const postTriggerEnd2{400.};
+
+  double WFValue{};
 
   // Prepare to read again the file
   infile.clear();               // Clear the failed state of the stream
@@ -943,6 +1046,27 @@ void waveformAnalysis(
     // Creating WaveformAnalysis object
     WaveformAnalysisPos wf(samples, timestamp, samplePeriod);
 
+    // Define trigger region indices relative to trigger time
+    int trigStartIndex =
+        static_cast<int>((triggerStart) / wf.getSamplePeriod());
+    int trigEndIndex = static_cast<int>((triggerEnd) / wf.getSamplePeriod());
+
+    // Integrate all samples in trigger region
+    double baseline = wf.getBaseline();
+    double trigArea = 0.0;
+
+    for (int i = trigStartIndex; i <= trigEndIndex; ++i) {
+      trigArea += (samples[i] - baseline);
+    }
+
+    // Multiply by sample period to get ADC·ns
+    trigArea *= wf.getSamplePeriod();
+
+    // Accumulate global info
+    totTrigAreaWF += trigArea;
+    hPETriggerWV->Fill(trigArea / areaConvFactor);
+
+    WFValue = totTrigArea / areaConvFactor;
     // Print waveform properties
     std::cout << std::fixed
               << std::setprecision(2);  // Round to 2 decimal place
@@ -966,7 +1090,7 @@ void waveformAnalysis(
       const auto &p = pulses[i];
 
       // Insert selections on pulses
-      if (p.peakValue > 15900.) {
+      if (p.peakValue > 13000.) {
         continue;
       }
 
@@ -1011,7 +1135,7 @@ void waveformAnalysis(
                              (p.endTime - p.startTime)};
       double areaOverFullTime{p.area / ((p.endTime - p.startTime))};
 
-      std::cout << "\n  *** Pulse n. " << i + 1 << " ***\n\n";
+      /* std::cout << "\n  *** Pulse n. " << i + 1 << " ***\n\n";
       std::cout << "  Overall start time           = " << p.startTime
                 << " ns\n";
       std::cout << "  Overall end time             = " << p.endTime << " ns\n";
@@ -1043,7 +1167,7 @@ void waveformAnalysis(
                 << p.area / areaConvFactor << " PE\n";
       std::cout << "  Negative/overall area frac   = " << p.negFracArea
                 << " \n";
-      std::cout << "  Negative/overall counts      = " << p.negFrac << " \n";
+      std::cout << "  Negative/overall counts      = " << p.negFrac << " \n"; */
 
       // Generate a random number between 0 and 7 (used for colour indices)
       int randIndex = rand() % 8;
@@ -1076,7 +1200,8 @@ void waveformAnalysis(
       g->SetMarkerColor(kBlack);
       g->SetMarkerStyle(20);
       g->SetMarkerSize(1);
-      g->SetTitle(Form("Pulse %d; Time [ns]; ADC counts", pulseCounter));
+      g->SetTitle(
+          Form("Pulse %d; Time after trigger [ns]; ADC counts", pulseCounter));
       graphs.push_back(g);
 
       // Superimpose pulses from riseTime
@@ -1192,7 +1317,7 @@ void waveformAnalysis(
 
   // Printing region information
 
-  std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
+  /* std::cout << "\n\n *** INFORMATION ON TOTAL AREA AND NUMBER OF "
                "PHOTOELECTRONS IN PRE-TRIGGER REGION "
             << '[' << preTriggerStart << ',' << preTriggerEnd << "] ns ***\n";
   std::cout << " Pulses region / total  = " << pulseCounterPreTriggerRegion
@@ -1249,12 +1374,12 @@ void waveformAnalysis(
   std::cout << " Total number of PE     = " << numPostTrigPE2 << " PE\n";
   std::cout << " Number of PE per pulse = " << numPostTrigPE2Puls
             << " PE/pulse\n";
-  std::cout << " Rate                   = " << ratePostTrig2 << " PE/ns\n";
+  std::cout << " Rate                   = " << ratePostTrig2 << " PE/ns\n"; */
 
   // FITTING FUNCTIONS SPACE
-  std::cout << "\n\n\n************************************\n";
+  /* std::cout << "\n\n\n************************************\n";
   std::cout << "****** FITTING FUNCTION SPACE ******\n";
-  std::cout << "************************************\n\n\n";
+  std::cout << "************************************\n\n\n"; */
 
   // Fit noise with gaussian function
   hNoise->Fit("gaus");
@@ -1271,6 +1396,40 @@ void waveformAnalysis(
   gPad->Update();
   gPulseSum->Draw("ALP");
 
+  setFitStyle();
+  gPad->Update();
+
+  // Draw all histograms on canvas
+  TLegend *legendArea = new TLegend(0.7, 0.7, 0.9, 0.9);
+
+  // Create canvas for areas in PE of region of interest
+  TCanvas *cNoise = new TCanvas("cNoise", "Total WAVEFUNCTION", 1500, 700);
+  gPad->SetLogy();
+  cNoise->cd();
+  gPulseSum->GetXaxis()->SetLabelFont(62);
+  gPulseSum->GetYaxis()->SetLabelFont(62);
+  gPulseSum->GetXaxis()->SetTitleFont(62);
+  gPulseSum->GetYaxis()->SetTitleFont(62);
+  gPulseSum->GetXaxis()->SetTitleSize(0.05);
+  gPulseSum->GetYaxis()->SetTitleSize(0.05);
+  gPulseSum->GetXaxis()->SetTitleOffset(0.8f);
+  gPulseSum->GetYaxis()->SetTitleOffset(0.7f);
+  gPulseSum->Draw("COLZ");
+  legendArea->AddEntry(hPhotoElectrons, "Data", "L P");
+  legendArea->AddEntry(fGaus, "Fit", "L");
+  legendArea->Draw("SAME");
+  cNoise->SaveAs("/mnt/c/Users/Simone/Desktop/pulse_sum.pdf");
+
+  gPad->Update();
+
+  TLegend *legendPulse = new TLegend(0.7, 0.7, 0.9, 0.9);
+  setFitStyle();
+  cPulseSum->cd();
+  legendPulse->AddEntry(gPulseSum, "Pulse sum", "L P");
+  legendPulse->AddEntry(fGaus, "Fit", "L");
+  gPulseSum->Draw("ALP");
+  legendPulse->Draw("SAME");
+
   // Print pulse Sum fit info
   std::cout << "\n Print pulse sum fit info:\n";
   std::cout << "  Amplitude         = " << fGaus->GetParameter(0) << " +/- "
@@ -1282,6 +1441,11 @@ void waveformAnalysis(
   std::cout << "  P-value           = " << fGaus->GetProb() << '\n';
   std::cout << "  Red chi-squared   = "
             << (fGaus->GetChisquare()) / (fGaus->GetNDF()) << "\n\n";
+
+  setFitStyle();
+
+  // Draw all histograms on canvas
+  TCanvas *cAreaVTime = new TCanvas("cAreaVTime", "Area", 1300, 700);
 
   // Draw all histograms on canvas
   TCanvas *c1 = new TCanvas("c1", "Pulse analysis", 1300, 700);
@@ -1306,9 +1470,21 @@ void waveformAnalysis(
   hPhotoElectrons->SetLineWidth(1);
   hPhotoElectrons->DrawCopy();
 
+  setFitStyle();
+  cAreaVTime->cd();
+  hPhotoElectrons->SetLineWidth(3);
+  hPhotoElectrons->SetMarkerStyle(20);
+  hPhotoElectrons->SetMarkerSize(0.1f);
+  hPhotoElectrons->DrawCopy();
+  // legendArea->AddEntry(hPhotoElectrons, "Data", "L P E");
+  // legendArea->AddEntry(fGaus, "Fit", "L");
+  // legendArea->Draw("SAME");
+
   c1->cd(4);
   hWidth->SetLineWidth(1);
   hWidth->DrawCopy();
+
+  setFitStyle();
 
   // Draw parameters on canvas
   TCanvas *c3 = new TCanvas("c3", "Parameter plots", 1300, 700);
@@ -1346,7 +1522,7 @@ void waveformAnalysis(
   mg->Draw("ALP");
   mg->SetTitle("Pulses");
   mg->SetName("Regions of pulses");
-  mg->GetXaxis()->SetTitle("Time since \"trigger\" [ns]");
+  mg->GetXaxis()->SetTitle("Time after trigger [ns]");
   mg->GetYaxis()->SetTitle("ADC Counts");
 
   // Create canvas to superimpose all pulses of one file
@@ -1372,6 +1548,12 @@ void waveformAnalysis(
   hPEPreTrigger->Scale(1.0 / hPEPreTrigger->GetMaximum());
   hPEPostTrigger1->Scale(1.0 / hPEPostTrigger1->GetMaximum());
   hPEPostTrigger2->Scale(1.0 / hPEPostTrigger2->GetMaximum());
+
+  gPad->Update();
+
+  // Define Gaussian fit in the desired range
+  TF1 *gausFit = new TF1("gausFit", "gaus", -5, 8);
+  gausFit->SetParameters(0.01, 1, 1);
 
   // Draw areas in PE trigger region
   cPEArea->cd(1);
@@ -1401,22 +1583,53 @@ void waveformAnalysis(
   hPEPostTrigger2->SetLineWidth(1);
   hPEPostTrigger2->DrawCopy();
 
+  // Create canvas for areas in PE of region of interest
+  TCanvas *cPEWVTrig =
+      new TCanvas("cPEWVTrig", "Total WAVEFUNCTION", 1500, 700);
+  cPEWVTrig->cd();
+  gPad->SetLogy();
+  hPETriggerWV->Scale(1.0 / hPETriggerWV->GetMaximum());
+  hPETriggerWV->DrawCopy();
+  hPETriggerWV->Fit(gausFit, "R");
+
+  // Extract mean and sigma with errors
+  double mu = gausFit->GetParameter(1);
+  double muErr = gausFit->GetParError(1);
+  double sigma = gausFit->GetParameter(2);
+  double sigmaErr = gausFit->GetParError(2);
+
+  // Print results
+  std::cout << "\nGaussian Fit Results (hPETriggerWV, range [-5,8])\n";
+  std::cout << "  mean      = " << mu << " ± " << muErr << '\n';
+  std::cout << "  sigma     = " << sigma << " ± " << sigmaErr << '\n';
+  std::cout << "AREA OF WAVEFUNCTION: " << WFValue << std::endl;
+
   // Save canvases
   c1->SaveAs("./plots/dig/pulse_analysis_results.pdf");
-  c3->SaveAs("./plots/dig/params_analysis.pdf");
+  // c3->SaveAs("./plots/dig/params_analysis.pdf");
   cPulses->SaveAs("./plots/dig/pulses.pdf");
-  cPulsesSuperimp->SaveAs("./plots/dig/pulsesSuperimposed.pdf");
+  // cPulsesSuperimp->SaveAs("./plots/dig/pulsesSuperimposed.pdf");
   cPulseSum->SaveAs("./plots/dig/cPulseSum.pdf");
-  cPEArea->SaveAs("./plots/dig/cPEArea.pdf");
+  // cPEArea->SaveAs("./plots/dig/cPEArea.pdf");
 
   // Write objects on file
   file1->cd();
   c1->Write();
+  c1->Close();
+  cAreaVTime->Write();
+  cAreaVTime->Close();
+  cPEWVTrig->Write();
+  cPEWVTrig->Close();
+  hPETriggerWV->Write();
   c3->Write();
+  c3->Close();
   mg->Write();
   cPulses->Write();
+  cPulses->Close();
   cPulsesSuperimp->Write();
+  cPulsesSuperimp->Close();
   cPEArea->Write();
+  cPEArea->Close();
   tree->Write();
   // tree->Print();
   file1->Close();
@@ -1433,7 +1646,7 @@ void waveformTotal() {
 
   const double samplePeriod = 2.0;  // In [ns]
   std::ifstream infile(
-      "./data/45Degrees/CH0_3PTFE-LED_45_1.3_2-3.5_70_INC_TRANSM.txt");
+      "./data/miscellaneous/DataF_CH0@DT5730S_59483_run_new_1300_2-3.5.txt");
   std::string line;
 
   int row = 0;
@@ -1471,6 +1684,9 @@ void waveformTotal() {
       }
 
       if (column >= 7) {
+        if (std::stod(item) > 13000.) {
+          continue;
+        }
         yValues.push_back(std::stod(item));
         xValues.push_back(sampleIndex * samplePeriod);
         ++sampleIndex;
@@ -1481,6 +1697,8 @@ void waveformTotal() {
     // Generate a random number between 0 and 7 (used for colour indices)
     int randIndex = rand() % 8;
 
+    setFitStyle();
+
     // Plot each waveform using a graph object
     TGraph *g = new TGraph(xValues.size(), xValues.data(), yValues.data());
     g->SetLineColor(colours[randIndex]);
@@ -1489,13 +1707,10 @@ void waveformTotal() {
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     g->GetYaxis()->SetRangeUser(2000, 16000.);
-    g->SetTitle(Form("Waveform %d; Time [ns]; ADC counts",
-                     row + 1));  // Inserting placeholder
+    g->SetTitle("; Time after trigger [ns]; ADC Counts");
     graphs.push_back(g);
     ++row;
   }
-
-  setFitStyle();
 
   // Draw all graphs
   c2->cd();
@@ -1511,6 +1726,7 @@ void waveformTotal() {
   // c2->BuildLegend(.70, .7, .9, .9, "Legend");
   file2->cd();
   c2->Write();
+  c2->SaveAs("/mnt/c/Users/Simone/Desktop/superimposed_waveform.png");
   file2->Close();
 
   // Print canvas
@@ -1519,7 +1735,7 @@ void waveformTotal() {
 
 void rateAnalysis() {
   // Create angles and thicknesses vector
-  std::vector<std::string> angles = {"30", "45", "60"};
+  std::vector<std::string> angles = {"62"};
   std::vector<std::string> thicknesses = {"0.20", "0.80", "1.55", "2.05",
                                           "3.10", "3.60", "4.10", "5.15"};
 
@@ -1583,7 +1799,7 @@ bool copyFile(std::string const &from, std::string const &to) {
 // Copy incidence transmittance and reflectance in all thickness subfolders
 void copyIncidentFiles() {
   // Create angle vector
-  std::vector<std::string> angles = {"30", "45", "60"};
+  std::vector<std::string> angles = {"30", "45", "60", "61", "62"};
 
   // Loop over angles
   for (auto &a : angles) {
@@ -1738,6 +1954,7 @@ void plotWaveform(
   std::vector<TF1 *> thresholds{};
   std::vector<TBox *> boxes{};
   std::vector<TLine *> lines{};
+  std::vector<TLegend *> legends{};
   TMultiGraph *mg = new TMultiGraph();
   int row{0};
 
@@ -1753,11 +1970,11 @@ void plotWaveform(
   // Loop over rows (waveforms) to extract pulse sum graph
   while (std::getline(infile, line)) {
     // Control over analysed rows
-    if (row < nMinAnalysedRows) {
+    if (row < 663) {
       ++row;
       continue;
     }
-    if (row >= nMaxAnalysedRows) {
+    if (row >= 664) {
       break;
     }
 
@@ -1804,30 +2021,39 @@ void plotWaveform(
     std::cout << "Number of Pulses without selection = " << pulses.size()
               << '\n';
 
+    // Select WV with lots of pulses
+    if (pulses.size() < 3) {
+      continue;
+    }
+
     // Draw threshold for given waveform
     TF1 *fThreshold = new TF1(Form("fThreshold_%d", row), "[0]", 0., 450.);
-    fThreshold->SetLineWidth(4);
+    fThreshold->SetLineWidth(2);
     fThreshold->SetLineStyle(2);
-    fThreshold->SetLineColor(colours[randIndex]);
+    fThreshold->SetLineColor(kGreen + 2);
     fThreshold->SetParNames("Const");
     fThreshold->FixParameter(0, wf.getThreshold());  // Const
     thresholds.push_back(fThreshold);
 
     // Plot each waveform using a graph object
     TGraph *g = new TGraph(xValues.size(), xValues.data(), samples.data());
-    g->SetLineColor(colours[randIndex]);
-    g->SetLineWidth(1);
+    g->SetLineColor(kBlue);
+    g->SetLineWidth(2);
     g->SetMarkerColor(kBlack);
     g->SetMarkerStyle(20);
     g->SetMarkerSize(1);
     graphs.push_back(g);
+    TLegend *legend = new TLegend(0.7, 0.7, 0.9, 0.9);
+    legend->AddEntry(g, "Waveform", "L P");
+    legend->AddEntry(fThreshold, "Threshold", "L");
+    legends.push_back(legend);
 
     // Loop on pulses
     for (size_t i = 0; i < pulses.size(); ++i) {
       const auto &p = pulses[i];
 
       // Insert selections on pulses
-      if (p.peakValue > 15900.) {
+      if (p.peakValue > 13000.) {
         continue;
       }
 
@@ -1898,9 +2124,9 @@ void plotWaveform(
   for (size_t i = 0; i < graphs.size(); ++i) {
     mg->Add(graphs[i]);
   }
-  mg->SetTitle("Pulse finder");
+  // mg->SetTitle("Pulse finder");
   mg->SetName("mg");
-  mg->GetXaxis()->SetTitle("Time since \"trigger\" [ns]");
+  mg->GetXaxis()->SetTitle("Time after trigger [ns]");
   mg->GetYaxis()->SetTitle("ADC Counts");
   c2->cd();
   mg->Draw("ALP");
@@ -1913,6 +2139,11 @@ void plotWaveform(
   for (auto &b : boxes) {
     b->Draw("SAME");
   }
+  for (auto &l : legends) {
+    l->Draw("SAME");
+  }
+
+  setFitStyle();
 
   // Save canvas
   c2->Update();
@@ -1922,8 +2153,10 @@ void plotWaveform(
 }
 
 int main() {
-  rateAnalysis();
-  copyIncidentFiles();
+  // rateAnalysis();
+  // copyIncidentFiles();
+
+  rateAnalysis45();
 
   return EXIT_SUCCESS;
 }
