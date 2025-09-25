@@ -41,7 +41,6 @@
 # Text files, PDFs and images
 *.txt
 *.pdf
-!PasquiniSimoneReportSSSPPP.pdf
 *.png
 *.svg
 
@@ -56,3 +55,6 @@ nicolasLoop.cpp
 *.in
 *.cxx*
 *_maincpp
+
+# Do not ignore the following:
+!PasquiniSimoneReportSSSPPP.pdf
