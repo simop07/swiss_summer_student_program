@@ -41,6 +41,7 @@
 # Text files, PDFs and images
 *.txt
 *.pdf
+!PasquiniSimoneReportSSSPPP.pdf
 *.png
 *.svg
 
