@@ -1,10 +1,23 @@
-cff-version: 1.0.0
-message: "If you use this software, please cite it as below."
+abstract: '<p>Developed <code>C++</code>/<code>ROOT</code> software for PTFE transmittance
+  and reflectance measurements.</p>
+
+  <p>Processes PMT waveforms, extracts pulses, and applies geometric corrections.</p>
+
+  <p>Computes $T$ and $R$ for PTFE discs (0.2-5.15 mm) at $30^\circ$, $45^\circ$,
+  $60^\circ$.</p>'
 authors:
 - family-names: Pasquini
   given-names: Simone
-title: "UZH Summer Student Program"
-version: 1.0.0
-doi: https://doi.org/10.5281/zenodo.16323819
-date-released: 2025-08-11
-url: "https://github.com/simop07/swiss_summer_student_program"
+cff-version: 1.2.0
+date-released: '2025-09-25'
+doi: 10.5281/zenodo.17200120
+identifiers:
+- type: swh
+  value: swh:1:dir:58d12b9401c19ec199c874814389ea33d2e12bba;origin=https://doi.org/10.5281/zenodo.16323819;visit=swh:1:snp:fcbfae55ac7596e97d873a6e870a75fe685c0598;anchor=swh:1:rel:366705b0de87330cf17b18044f2483c52c8ede21;path=simop07-swiss_summer_student_program-aba39b2
+license:
+- mit
+message: If you use this software, please cite it using the metadata from this file.
+repository-code: https://github.com/simop07/swiss_summer_student_program/tree/v1.1.0
+title: UZH Summer Student Program
+type: software
+version: v1.1.0
