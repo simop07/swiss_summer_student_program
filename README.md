@@ -1,6 +1,6 @@
 <p align="center"> <img src="./plots/s3p3_logo.png" width="30%"> </p>
 
-# UZH Swiss Summer Student Particle Physics Program
+# UZH Summer Student Program
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17200120.svg)](https://doi.org/10.5281/zenodo.17200120)
 [![GitHub license](https://img.shields.io/github/license/simop07/swiss_summer_student_program)](https://github.com/simop07/swiss_summer_student_program/blob/main/LICENSE)
